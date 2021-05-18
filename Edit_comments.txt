@@ -1,0 +1,6 @@
+Edit notes:
+- Main changes to channelmixer.c
+- facilitation via slider width changes in generate_prefs.xsl and darktableconfig.dtd
+- these make use of parameters in darktableconfig.xml.in
+
+Also added change to allow deleting from darkroom: at end of libs/duplicate.c (line 432)
