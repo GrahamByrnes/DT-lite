@@ -23,16 +23,13 @@
 #ifdef DT_HAVE_SIGNAL_TRACE
 #include <execinfo.h>
 #endif
+
 typedef struct dt_control_signal_t
 {
   /* the sinks for the signals */
   GObject *sink;
 } dt_control_signal_t;
 
-/*
-                                                         GSignalFlags signal_flags,
-                                                         ...);
-   */
 typedef struct dt_signal_description
 {
   const char *name;
@@ -46,7 +43,6 @@ typedef struct dt_signal_description
   gboolean synchronous;
 } dt_signal_description;
 
-
 static GType uint_arg[] = { G_TYPE_UINT };
 static GType pointer_arg[] = { G_TYPE_POINTER };
 static GType pointer_2arg[] = { G_TYPE_POINTER, G_TYPE_POINTER };
@@ -54,7 +50,7 @@ static GType collection_args[] = { G_TYPE_UINT, G_TYPE_POINTER, G_TYPE_UINT };
 static GType image_export_arg[]
     = { G_TYPE_UINT, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_POINTER, G_TYPE_POINTER, G_TYPE_POINTER };
 static GType history_will_change_arg[]
-= { G_TYPE_POINTER, G_TYPE_UINT, G_TYPE_POINTER };
+         = { G_TYPE_POINTER, G_TYPE_UINT, G_TYPE_POINTER };
 
 // callback for the destructor of DT_SIGNAL_COLLECTION_CHANGED
 static void _collection_changed_destroy_callback(gpointer instance, int query_change, gpointer imgs,
@@ -178,7 +174,6 @@ static GType _signal_type;
 dt_control_signal_t *dt_control_signal_init()
 {
   dt_control_signal_t *ctlsig = g_malloc0(sizeof(dt_control_signal_t));
-
   /* setup dummy gobject typeinfo */
   GTypeQuery query;
   GTypeInfo type_info = { 0, (GBaseInitFunc)NULL, (GBaseFinalizeFunc)NULL, (GClassInitFunc)NULL,
@@ -188,10 +183,8 @@ dt_control_signal_t *dt_control_signal_init()
   type_info.class_size = query.class_size;
   type_info.instance_size = query.instance_size;
   _signal_type = g_type_register_static(G_TYPE_OBJECT, "DarktableSignals", &type_info, 0);
-
   /* create our pretty empty gobject */
   ctlsig->sink = g_object_new(_signal_type, NULL);
-
   /* create the signals */
   for(int k = 0; k < DT_SIGNAL_COUNT; k++)
   {
@@ -199,11 +192,10 @@ dt_control_signal_t *dt_control_signal_init()
         _signal_description[k].accumulator, _signal_description[k].accu_data,
         _signal_description[k].c_marshaller, _signal_description[k].return_type,
         _signal_description[k].n_params, _signal_description[k].param_types);
+
     if(_signal_description[k].destructor)
-    {
       g_signal_connect_after(G_OBJECT(ctlsig->sink), _signal_description[k].name,
                              _signal_description[k].destructor, NULL);
-    }
   }
   return ctlsig;
 }
@@ -267,12 +259,14 @@ static void _print_trace (const char* op)
 void dt_control_signal_raise(const dt_control_signal_t *ctlsig, dt_signal_t signal, ...)
 {
   // ignore all signals on shutdown
-  if(!dt_control_running()) return;
+  if(!dt_control_running())
+    return;
 
   dt_signal_description *signal_description = &_signal_description[signal];
-
   _signal_param_t *params = (_signal_param_t *)malloc(sizeof(_signal_param_t));
-  if(!params) return;
+
+  if(!params)
+    return;
 
   GValue *instance_and_params = calloc(1 + signal_description->n_params, sizeof(GValue));
   if(!instance_and_params)
@@ -314,7 +308,9 @@ void dt_control_signal_raise(const dt_control_signal_t *ctlsig, dt_signal_t sign
         fprintf(stderr, "error: unsupported parameter type `%s' for signal `%s'\n",
                 g_type_name(type), signal_description->name);
         va_end(extra_args);
-        for(int j = 0; j <= i; j++) g_value_unset(&instance_and_params[j]);
+        for(int j = 0; j <= i; j++)
+          g_value_unset(&instance_and_params[j]);
+
         free(instance_and_params);
         free(params);
         return;
@@ -328,15 +324,11 @@ void dt_control_signal_raise(const dt_control_signal_t *ctlsig, dt_signal_t sign
   params->n_params = signal_description->n_params;
 
   if(!signal_description->synchronous)
-  {
     g_main_context_invoke(NULL, _signal_raise, params);
-  }
   else
   {
     if(pthread_equal(darktable.control->gui_thread, pthread_self()))
-    {
       _signal_raise(params);
-    }
     else
     {
       async_com_data communication;

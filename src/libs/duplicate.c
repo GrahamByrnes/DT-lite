@@ -92,17 +92,20 @@ static void _lib_duplicate_new_clicked_callback(GtkWidget *widget, GdkEventButto
 {
   const int imgid = darktable.develop->image_storage.id;
   const int newid = dt_image_duplicate(imgid);
-  if (newid <= 0) return;
+  if (newid <= 0)
+    return;
   dt_history_delete_on_image(newid);
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_TAG_CHANGED);
   dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD, NULL);
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_VIEWMANAGER_THUMBTABLE_ACTIVATE, newid);
 }
+
 static void _lib_duplicate_duplicate_clicked_callback(GtkWidget *widget, GdkEventButton *event, dt_lib_module_t *self)
 {
   const int imgid = darktable.develop->image_storage.id;
   const int newid = dt_image_duplicate(imgid);
-  if (newid <= 0) return;
+  if (newid <= 0) 
+    return;
   dt_history_copy_and_paste_on_image(imgid, newid, FALSE, NULL, TRUE, TRUE);
   dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD, NULL);
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_VIEWMANAGER_THUMBTABLE_ACTIVATE, newid);
@@ -156,15 +159,15 @@ static void _lib_duplicate_thumb_press_callback(GtkWidget *widget, GdkEventButto
 
       dt_dev_invalidate(dev);
       dt_control_queue_redraw_center();
-
       dt_dev_invalidate(darktable.develop);
-
       d->imgid = imgid;
       int fw, fh;
       fw = fh = 0;
       dt_image_get_final_size(imgid, &fw, &fh);
+
       if(d->cur_final_width <= 0)
         dt_image_get_final_size(dev->image_storage.id, &d->cur_final_width, &d->cur_final_height);
+
       d->allow_zoom
           = (d->cur_final_width - fw < DUPLICATE_COMPARE_SIZE && d->cur_final_width - fw > -DUPLICATE_COMPARE_SIZE
              && d->cur_final_height - fh < DUPLICATE_COMPARE_SIZE
@@ -226,7 +229,6 @@ void gui_post_expose(dt_lib_module_t *self, cairo_t *cri, int32_t width, int32_t
   }
 
   const int32_t tb = darktable.develop->border_size;
-
   // we rescale the sizes to the screen size
   if (img_ht * (width - 2 * tb) > img_wd * (height - 2 * tb))
   {
@@ -267,7 +269,6 @@ void gui_post_expose(dt_lib_module_t *self, cairo_t *cri, int32_t width, int32_t
   {
     d->preview_width = width;
     d->preview_height = height;
-
     res = dt_view_image_get_surface(d->imgid, img_wd * nz, img_ht * nz, &d->preview_surf, TRUE);
 
     if(!res)
@@ -281,7 +282,6 @@ void gui_post_expose(dt_lib_module_t *self, cairo_t *cri, int32_t width, int32_t
   if(d->preview_surf)
   {
     cairo_save(cri);
-
     // force middle grey in background
     if(dev->iso_12646.enabled)
       cairo_set_source_rgb(cri, 0.5, 0.5, 0.5);
@@ -290,7 +290,6 @@ void gui_post_expose(dt_lib_module_t *self, cairo_t *cri, int32_t width, int32_t
 
     // draw background
     cairo_paint(cri);
-
     // move coordinates according to margin
     float wd, ht;
     if(d->allow_zoom)
@@ -303,6 +302,7 @@ void gui_post_expose(dt_lib_module_t *self, cairo_t *cri, int32_t width, int32_t
       wd = img_wd / darktable.gui->ppd;
       ht = img_ht / darktable.gui->ppd;
     }
+
     const float margin_left = ceilf(.5f * (width - wd));
     const float margin_top = ceilf(.5f * (height - ht));
     cairo_translate(cri, margin_left, margin_top);
@@ -387,7 +387,6 @@ static void _lib_duplicate_init_callback(gpointer instance, dt_lib_module_t *sel
   dt_develop_t *dev = darktable.develop;
 
   int count = 0;
-
   // we get a summarize of all versions of the image
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "SELECT i.version, i.id, m.value"
