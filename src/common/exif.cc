@@ -480,24 +480,24 @@ static bool _exif_decode_xmp_data(dt_image_t *img, Exiv2::XmpData &xmpData, int 
       }
     }
 
-    GList *tags = NULL;
-    // preserve dt tags which are not saved in xmp file
-    if(!exif_read) dt_tag_set_tags(tags, imgs, TRUE, TRUE, FALSE);
-    if(FIND_XMP_TAG("Xmp.lr.hierarchicalSubject"))
-      _exif_import_tags(img, pos);
-    else if(FIND_XMP_TAG("Xmp.dc.subject"))
-      _exif_import_tags(img, pos);
+    if(dt_conf_get_bool("write_sidecar_files") ||
+       dt_conf_get_bool("ui_last/import_last_tags_imported"))
+    {                                                 
+      GList *tags = NULL;
+      // preserve dt tags which are not saved in xmp file
+      if(!exif_read) dt_tag_set_tags(tags, imgs, TRUE, TRUE, FALSE);
+      if(FIND_XMP_TAG("Xmp.lr.hierarchicalSubject"))
+        _exif_import_tags(img, pos);
+      else if(FIND_XMP_TAG("Xmp.dc.subject"))
+        _exif_import_tags(img, pos);
+    }
 
     /* read gps location */
     if(FIND_XMP_TAG("Xmp.exif.GPSLatitude"))
-    {
       img->geoloc.latitude = dt_util_gps_string_to_number(pos->toString().c_str());
-    }
 
     if(FIND_XMP_TAG("Xmp.exif.GPSLongitude"))
-    {
       img->geoloc.longitude = dt_util_gps_string_to_number(pos->toString().c_str());
-    }
 
     if(FIND_XMP_TAG("Xmp.exif.GPSAltitude"))
     {
@@ -1031,7 +1031,7 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
       dt_strlcpy_to_utf8(img->exif_lens, sizeof(img->exif_lens), pos, exifData);
     }
 
-    // finaly the lens has only numbers and parentheses, let's try to use
+    // finally the lens has only numbers and parentheses, let's try to use
     // Exif.Photo.LensModel if defined.
 
     std::string lens(img->exif_lens);
@@ -1418,7 +1418,8 @@ int dt_exif_read(dt_image_t *img, const char *path)
   if(!stat(path, &statbuf))
   {
     struct tm result;
-    strftime(img->exif_datetime_taken, 20, "%Y:%m:%d %H:%M:%S", localtime_r(&statbuf.st_mtime, &result));
+    strftime(img->exif_datetime_taken, 20, "%Y:%m:%d %H:%M:%S",
+             localtime_r(&statbuf.st_mtime, &result));
   }
 
   try
@@ -2981,7 +2982,7 @@ int dt_exif_xmp_read(dt_image_t *img, const char *filename, const int history_on
         iop_order_list = g_list_append(iop_order_list, e);
       }
 
-      // and finally reoder the full list based on the iop-order
+      // and finally reorder the full list based on the iop-order
 
       iop_order_list = g_list_sort(iop_order_list, dt_sort_iop_list_by_order_f);
     }

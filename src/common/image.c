@@ -53,15 +53,6 @@
 #endif
 #include <glib/gstdio.h>
 
-/*typedef struct dt_undo_monochrome_t
-{
-  int32_t imgid;
-  gboolean before;
-  gboolean after;
-} dt_undo_monochrome_t;
-
-static void _pop_undo_execute(const int imgid, const gboolean before, const gboolean after);*/
-
 static int64_t max_image_position()
 {
   sqlite3_stmt *stmt = NULL;
@@ -2184,9 +2175,7 @@ void dt_image_synch_xmps(const GList *img)
 void dt_image_synch_xmp(const int selected)
 {
   if(selected > 0)
-  {
     dt_image_write_sidecar_file(selected);
-  }
   else
   {
     const GList *imgs = dt_view_get_images_to_act_on(FALSE, TRUE);
