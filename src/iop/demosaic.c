@@ -3095,9 +3095,9 @@ void reload_defaults(dt_iop_module_t *module)
 {
   dt_iop_demosaic_params_t *d = module->default_params;
 
-  if(dt_image_is_monochrome(&module->dev->image_storage))
-    d->demosaicing_method = DT_IOP_DEMOSAIC_PASSTHROUGH_MONOCHROME;
-  else if(module->dev->image_storage.buf_dsc.filters == 9u)
+//  if(dt_image_is_monochrome(&module->dev->image_storage))
+//    d->demosaicing_method = DT_IOP_DEMOSAIC_PASSTHROUGH_MONOCHROME;
+  if(module->dev->image_storage.buf_dsc.filters == 9u)
     d->demosaicing_method = DT_IOP_DEMOSAIC_MARKESTEIJN;
   else
     d->demosaicing_method = DT_IOP_DEMOSAIC_PPG;
@@ -3118,17 +3118,17 @@ void gui_changed(dt_iop_module_t *self, GtkWidget *w, void *previous)
     (p->demosaicing_method != DT_IOP_DEMOSAIC_PASSTHR_COLORX);
 
   if(w == g->demosaic_method_bayer)
-  {
     gtk_widget_set_visible(g->median_thrs, p->demosaicing_method == DT_IOP_DEMOSAIC_PPG);
-  }
 
   dt_image_t *img = dt_image_cache_get(darktable.image_cache, self->dev->image_storage.id, 'w');
   int changed = img->flags & DT_IMAGE_MONOCHROME_BAYER;
+
   if((p->demosaicing_method == DT_IOP_DEMOSAIC_PASSTHROUGH_MONOCHROME) ||
      (p->demosaicing_method == DT_IOP_DEMOSAIC_PASSTHR_MONOX))
     img->flags |= DT_IMAGE_MONOCHROME_BAYER;
   else
-    img->flags &= ~DT_IMAGE_MONOCHROME_BAYER;   
+    img->flags &= ~DT_IMAGE_MONOCHROME_BAYER;
+
   const int mask_bw = dt_image_monochrome_flags(img);
   changed ^= img->flags & DT_IMAGE_MONOCHROME_BAYER;
   dt_image_cache_write_release(darktable.image_cache, img, DT_IMAGE_CACHE_RELAXED);
@@ -3145,15 +3145,16 @@ void gui_init(struct dt_iop_module_t *self)
   dt_iop_demosaic_gui_data_t *g = (dt_iop_demosaic_gui_data_t *)self->gui_data;
 
   g->box_raw = self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, DT_BAUHAUS_SPACE);
-
   g->demosaic_method_bayer = dt_bauhaus_combobox_from_params(self, "demosaicing_method");
-  for(int i=0;i<6;i++) dt_bauhaus_combobox_remove_at(g->demosaic_method_bayer, 5);
+  for(int i=0;i<6;i++)
+    dt_bauhaus_combobox_remove_at(g->demosaic_method_bayer, 5);
+
   gtk_widget_set_tooltip_text(g->demosaic_method_bayer, _("demosaicing raw data method"));
-
   g->demosaic_method_xtrans = dt_bauhaus_combobox_from_params(self, "demosaicing_method");
-  for(int i=0;i<5;i++) dt_bauhaus_combobox_remove_at(g->demosaic_method_xtrans, 0);
-  gtk_widget_set_tooltip_text(g->demosaic_method_xtrans, _("demosaicing raw data method"));
+  for(int i=0;i<5;i++)
+    dt_bauhaus_combobox_remove_at(g->demosaic_method_xtrans, 0);
 
+  gtk_widget_set_tooltip_text(g->demosaic_method_xtrans, _("demosaicing raw data method"));
   g->median_thrs = dt_bauhaus_slider_from_params(self, "median_thrs");
   dt_bauhaus_slider_set_step(g->median_thrs, 0.001);
   dt_bauhaus_slider_set_digits(g->median_thrs, 3);

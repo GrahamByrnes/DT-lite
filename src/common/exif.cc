@@ -732,13 +732,9 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
 
     // look for maker & model first so we can use that info later
     if(FIND_EXIF_TAG("Exif.Image.Make"))
-    {
       dt_strlcpy_to_utf8(img->exif_maker, sizeof(img->exif_maker), pos, exifData);
-    }
     else if(FIND_EXIF_TAG("Exif.PanasonicRaw.Make"))
-    {
       dt_strlcpy_to_utf8(img->exif_maker, sizeof(img->exif_maker), pos, exifData);
-    }
 
     for(char *c = img->exif_maker + sizeof(img->exif_maker) - 1; c > img->exif_maker; c--)
       if(*c != ' ' && *c != '\0')
@@ -748,13 +744,9 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
       }
 
     if(FIND_EXIF_TAG("Exif.Image.Model"))
-    {
       dt_strlcpy_to_utf8(img->exif_model, sizeof(img->exif_model), pos, exifData);
-    }
     else if(FIND_EXIF_TAG("Exif.PanasonicRaw.Model"))
-    {
       dt_strlcpy_to_utf8(img->exif_model, sizeof(img->exif_model), pos, exifData);
-    }
 
     for(char *c = img->exif_model + sizeof(img->exif_model) - 1; c > img->exif_model; c--)
       if(*c != ' ' && *c != '\0')
@@ -768,31 +760,21 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
 
     /* Read shutter time */
     if(FIND_EXIF_TAG("Exif.Photo.ExposureTime"))
-    {
       // dt_strlcpy_to_utf8(uf->conf->shutterText, max_name, pos, exifData);
       img->exif_exposure = pos->toFloat();
-    }
     else if(FIND_EXIF_TAG("Exif.Photo.ShutterSpeedValue"))
-    {
       // uf_strlcpy_to_utf8(uf->conf->shutterText, max_name, pos, exifData);
       img->exif_exposure = 1.0 / pos->toFloat();
-    }
 
     // Read exposure bias
     if(FIND_EXIF_TAG("Exif.Photo.ExposureBiasValue"))
-    {
       img->exif_exposure_bias = pos->toFloat();
-    }
 
     /* Read aperture */
     if(FIND_EXIF_TAG("Exif.Photo.FNumber"))
-    {
       img->exif_aperture = pos->toFloat();
-    }
     else if(FIND_EXIF_TAG("Exif.Photo.ApertureValue"))
-    {
       img->exif_aperture = pos->toFloat();
-    }
 
     /* Read ISO speed - Nikon happens to return a pair for Lo and Hi modes */
     if((pos = Exiv2::isoSpeed(exifData)) != exifData.end() && pos->size())
@@ -819,9 +801,7 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
       }
       else if((!g_strcmp0(img->exif_maker, "SONY") || !g_strcmp0(img->exif_maker, "Canon"))
         && FIND_EXIF_TAG("Exif.Photo.RecommendedExposureIndex"))
-      {
         img->exif_iso = pos->toFloat();
-      }
     }
 
     /* Read focal length  */
@@ -892,9 +872,7 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
     {
       const float FocusDistanceUpper = pos->toFloat();
       if(FocusDistanceUpper <= 0.0f || (int)FocusDistanceUpper >= 0xffff)
-      {
         img->exif_focus_distance = 0.0f;
-      }
       else
       {
         img->exif_focus_distance = FocusDistanceUpper / 100.0;
@@ -910,20 +888,14 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
       }
     }
     else if(FIND_EXIF_TAG("Exif.CanonSi.SubjectDistance"))
-    {
       img->exif_focus_distance = pos->toFloat() / 100.0;
-    }
     else if((pos = Exiv2::subjectDistance(exifData)) != exifData.end() && pos->size())
-    {
       img->exif_focus_distance = pos->toFloat();
-    }
     else if(Exiv2::testVersion(0,27,2) && FIND_EXIF_TAG("Exif.Sony2Fp.FocusPosition2"))
     {
       const float focus_position = pos->toFloat();
-
       if (FIND_EXIF_TAG("Exif.Photo.FocalLengthIn35mmFilm")) {
           const float focal_length_35mm = pos->toFloat();
-
           /* http://u88.n24.queensu.ca/exiftool/forum/index.php/topic,3688.msg29653.html#msg29653 */
           img->exif_focus_distance = (pow(2, focus_position / 16 - 5) + 1) * focal_length_35mm / 1000;
       }
@@ -933,13 +905,9 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
      * Read image orientation
      */
     if(FIND_EXIF_TAG("Exif.Image.Orientation"))
-    {
       img->orientation = dt_image_orientation_to_flip_bits(pos->toLong());
-    }
     else if(FIND_EXIF_TAG("Exif.PanasonicRaw.Orientation"))
-    {
       img->orientation = dt_image_orientation_to_flip_bits(pos->toLong());
-    }
 
     /* read gps location */
     if(FIND_EXIF_TAG("Exif.GPSInfo.GPSLatitude"))
@@ -994,13 +962,9 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
       dt_strlcpy_to_utf8(img->exif_lens, sizeof(img->exif_lens), pos, exifData);
     }
     else if(EXIV2_MAKE_VERSION(0,25,0) <= Exiv2::versionNumber() && FIND_EXIF_TAG("Exif.PentaxDng.LensType"))
-    {
       dt_strlcpy_to_utf8(img->exif_lens, sizeof(img->exif_lens), pos, exifData);
-    }
     else if(FIND_EXIF_TAG("Exif.Panasonic.LensType"))
-    {
       dt_strlcpy_to_utf8(img->exif_lens, sizeof(img->exif_lens), pos, exifData);
-    }
     else if(FIND_EXIF_TAG("Exif.OlympusEq.LensType"))
     {
       /* For every Olympus camera Exif.OlympusEq.LensType is present. */
@@ -1015,21 +979,16 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
          * This means that exiv2 couldn't convert it to human readable
          * form. */
         if(FIND_EXIF_TAG("Exif.OlympusEq.LensModel"))
-        {
           dt_strlcpy_to_utf8(img->exif_lens, sizeof(img->exif_lens), pos, exifData);
-        }
         /* Just in case Exif.OlympusEq.LensModel hasn't been found */
         else if(FIND_EXIF_TAG("Exif.Photo.LensModel"))
-        {
           dt_strlcpy_to_utf8(img->exif_lens, sizeof(img->exif_lens), pos, exifData);
-        }
+
         fprintf(stderr, "[exif] Warning: lens \"%s\" unknown as \"%s\"\n", img->exif_lens, lens.c_str());
       }
     }
     else if((pos = Exiv2::lensName(exifData)) != exifData.end() && pos->size())
-    {
       dt_strlcpy_to_utf8(img->exif_lens, sizeof(img->exif_lens), pos, exifData);
-    }
 
     // finally the lens has only numbers and parentheses, let's try to use
     // Exif.Photo.LensModel if defined.
@@ -1045,9 +1004,7 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
     /* Read flash mode */
     if ( (pos=exifData.findKey(Exiv2::ExifKey("Exif.Photo.Flash")))
          != exifData.end() && pos->size())
-    {
       uf_strlcpy_to_utf8(uf->conf->flashText, max_name, pos, exifData);
-    }
     /* Read White Balance Setting */
     if ( (pos=exifData.findKey(Exiv2::ExifKey("Exif.Photo.WhiteBalance")))
          != exifData.end() && pos->size())
@@ -1149,8 +1106,6 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
         for(int i = 0; i < 9; i++) colmatrix[i] = cm1_pos->toFloat(i);
         illu = 0;
       }
-
-
       // Take the found CalibrationIlluminant / ColorMatrix pair.
       // D65 or default: just copy. Otherwise multiply by the specific correction matrix.
       if(illu != -1)
@@ -1185,7 +1140,8 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
             mat3mul(img->d65_color_matrix, correctmat[6], colmatrix);
             break;
           default:
-            for(int i = 0; i < 9; i++) img->d65_color_matrix[i] = colmatrix[i];
+            for(int i = 0; i < 9; i++)
+              img->d65_color_matrix[i] = colmatrix[i];
             break;
         }
         // Maybe there is a predefined camera matrix in adobe_coeff?
@@ -1193,7 +1149,8 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
         colmatrix[0] = NAN;
         dt_dcraw_adobe_coeff(img->camera_model, (float(*)[12])colmatrix);
         if(!isnan(colmatrix[0]))
-          for(int i = 0; i < 9; i++) img->d65_color_matrix[i] = colmatrix[i];
+          for(int i = 0; i < 9; i++) 
+            img->d65_color_matrix[i] = colmatrix[i];
       }
     }
 
@@ -1222,8 +1179,11 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
       if(FIND_EXIF_TAG("Exif.SubImage1.PhotometricInterpretation"))
         phi = pos->toLong();
 
-      if((format == 3) && (bps >= 16) && (((spp == 1) && (phi == 32803)) || ((spp == 3) && (phi == 34892)))) is_hdr = TRUE;
-      if((format == 1) && (bps == 16) && (spp == 1) && (phi == 34892)) is_monochrome = TRUE;
+      if((format == 3) && (bps >= 16) && (((spp == 1) && (phi == 32803)) || ((spp == 3) && (phi == 34892))))
+        is_hdr = TRUE;
+
+      if((format == 1) && (bps == 16) && (spp == 1) && (phi == 34892))
+        is_monochrome = TRUE;
     }
 
     if(is_hdr)
@@ -1269,9 +1229,7 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
 
     // Improve lens detection for Sony SAL lenses.
     if(FIND_EXIF_TAG("Exif.Sony2.LensID") && pos->toLong() != 65535 && pos->print().find('|') == std::string::npos)
-    {
       dt_strlcpy_to_utf8(img->exif_lens, sizeof(img->exif_lens), pos, exifData);
-    }
     // Workaround for an issue on newer Sony NEX cams.
     // The default EXIF field is not used by Sony to store lens data
     // http://dev.exiv2.org/issues/883
@@ -1303,7 +1261,6 @@ void dt_exif_apply_default_metadata(dt_image_t *img)
   if(dt_conf_get_bool("ui_last/import_apply_metadata") == TRUE)
   {
     char *str;
-
     for(unsigned int i = 0; i < DT_METADATA_NUMBER; i++)
     {
       if(dt_metadata_get_type(i) != DT_METADATA_TYPE_INTERNAL)
@@ -1325,6 +1282,7 @@ void dt_exif_apply_default_metadata(dt_image_t *img)
     }
 
     str = dt_conf_get_string("ui_last/import_last_tags");
+
     if(img->id > 0 && str != NULL && str[0] != '\0')
     {
       GList *imgs = NULL;
