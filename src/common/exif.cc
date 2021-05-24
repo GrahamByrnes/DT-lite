@@ -681,9 +681,7 @@ void dt_exif_img_check_usercrop(dt_image_t *img, const char *filename)
 static bool dt_exif_read_exif_tag(Exiv2::ExifData &exifData, Exiv2::ExifData::const_iterator *pos, string key)
 {
   try
-  {
     return (*pos = exifData.findKey(Exiv2::ExifKey(key))) != exifData.end() && (*pos)->size();
-  }
   catch(Exiv2::AnyError &e)
   {
     std::string s(e.what());
@@ -697,30 +695,22 @@ static void _find_datetime_taken(Exiv2::ExifData &exifData, Exiv2::ExifData::con
                                  char *exif_datetime_taken)
 {
   if(FIND_EXIF_TAG("Exif.Image.DateTimeOriginal"))
-  {
     dt_strlcpy_to_utf8(exif_datetime_taken, 20, pos, exifData);
-  }
   else if(FIND_EXIF_TAG("Exif.Photo.DateTimeOriginal"))
-  {
     dt_strlcpy_to_utf8(exif_datetime_taken, 20, pos, exifData);
-  }
   else
-  {
     *exif_datetime_taken = '\0';
-  }
 }
 
 static void mat3mul(float *dst, const float *const m1, const float *const m2)
 {
   for(int k = 0; k < 3; k++)
-  {
     for(int i = 0; i < 3; i++)
     {
       float x = 0.0f;
       for(int j = 0; j < 3; j++) x += m1[3 * k + j] * m2[3 * j + i];
       dst[3 * k + i] = x;
     }
-  }
 }
 
 static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
@@ -4038,12 +4028,12 @@ gboolean dt_exif_get_datetime_taken(const uint8_t *data, size_t size, time_t *da
     {
       struct tm exif_tm= {0};
       if(sscanf(exif_datetime_taken,"%d:%d:%d %d:%d:%d",
-        &exif_tm.tm_year,
-        &exif_tm.tm_mon,
-        &exif_tm.tm_mday,
-        &exif_tm.tm_hour,
-        &exif_tm.tm_min,
-        &exif_tm.tm_sec) == 6)
+                &exif_tm.tm_year,
+                &exif_tm.tm_mon,
+                &exif_tm.tm_mday,
+                &exif_tm.tm_hour,
+                &exif_tm.tm_min,
+                &exif_tm.tm_sec) == 6)
       {
         exif_tm.tm_year -= 1900;
         exif_tm.tm_mon--;

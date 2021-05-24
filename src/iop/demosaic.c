@@ -3095,9 +3095,9 @@ void reload_defaults(dt_iop_module_t *module)
 {
   dt_iop_demosaic_params_t *d = module->default_params;
 
-//  if(dt_image_is_monochrome(&module->dev->image_storage))
-//    d->demosaicing_method = DT_IOP_DEMOSAIC_PASSTHROUGH_MONOCHROME;
-  if(module->dev->image_storage.buf_dsc.filters == 9u)
+  if(dt_image_is_monochrome(&module->dev->image_storage))
+    d->demosaicing_method = DT_IOP_DEMOSAIC_PASSTHROUGH_MONOCHROME;
+  else if(module->dev->image_storage.buf_dsc.filters == 9u)
     d->demosaicing_method = DT_IOP_DEMOSAIC_MARKESTEIJN;
   else
     d->demosaicing_method = DT_IOP_DEMOSAIC_PPG;
