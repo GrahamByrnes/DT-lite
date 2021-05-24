@@ -681,7 +681,9 @@ void dt_exif_img_check_usercrop(dt_image_t *img, const char *filename)
 static bool dt_exif_read_exif_tag(Exiv2::ExifData &exifData, Exiv2::ExifData::const_iterator *pos, string key)
 {
   try
+  {
     return (*pos = exifData.findKey(Exiv2::ExifKey(key))) != exifData.end() && (*pos)->size();
+  }
   catch(Exiv2::AnyError &e)
   {
     std::string s(e.what());
