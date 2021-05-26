@@ -1156,6 +1156,7 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
       int bps = 0;
       int spp = 0;
       int phi = 0;
+      int cmr = 1;
 
       if(FIND_EXIF_TAG("Exif.SubImage1.SampleFormat"))
         format = pos->toLong();
@@ -1174,8 +1175,9 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
       if((format == 3) && (bps >= 16) && (((spp == 1) && (phi == 32803)) || ((spp == 3) && (phi == 34892))))
         is_hdr = TRUE;
 
-      //if((format == 1) && (bps == 16) && (spp == 1) && (phi == 34892))
-       // is_monochrome = TRUE;
+      if((format == 1) && (bps == 16) && (spp == 1) && (phi == 34892) && (cmr == 0))
+        is_monochrome = TRUE;
+       // adding the cmr tag seems to fix this, maybe
     }
 
     if(is_hdr)
