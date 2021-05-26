@@ -1171,6 +1171,9 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
 
       if(FIND_EXIF_TAG("Exif.SubImage1.PhotometricInterpretation"))
         phi = pos->toLong();
+    
+      if(FIND_EXIF_TAG("Exif.SubImage1.ColorimetricReference"))
+        cmr = pos->toLong();
 
       if((format == 3) && (bps >= 16) && (((spp == 1) && (phi == 32803)) || ((spp == 3) && (phi == 34892))))
         is_hdr = TRUE;
