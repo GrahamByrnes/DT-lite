@@ -1171,10 +1171,10 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
       if(FIND_EXIF_TAG("Exif.SubImage1.PhotometricInterpretation"))
         phi = pos->toLong();
 
-      if((format == 3) && (bps >= 16) && (((spp == 1) && (phi == 32803)) || ((spp == 3) && (phi == 34892))))
+      if((format == 3) && (bps >= 16) && (((spp == 1) && (phi == 32803)) || ((spp == 3) && (phi == 34888))))
         is_hdr = TRUE;
 
-      if((format == 1) && (bps == 16) && (spp == 1) && (phi == 34892))
+      if((format == 1) && (bps == 16) && (spp == 1) && (phi == 34884)) //34892))
         is_monochrome = TRUE;
     }
 
