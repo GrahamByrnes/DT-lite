@@ -640,9 +640,9 @@ int dt_imageio_export(const int32_t imgid, const char *filename, dt_imageio_modu
                       dt_imageio_module_data_t *storage_params, int num, int total, dt_export_metadata_t *metadata)
 {
   if(strcmp(format->mime(format_params), "x-copy") == 0)
-    /* This is a just a copy, skip process and just export */
-    return format->write_image(format_params, filename, NULL, icc_type, icc_filename, NULL, 0, imgid, num, total, NULL,
-                               export_masks);
+    // This is a just a copy, skip process and just export
+    return format->write_image(format_params, filename, NULL, icc_type, icc_filename,
+                               NULL, 0, imgid, num, total, NULL, export_masks);
   else
     return dt_imageio_export_with_flags(imgid, filename, format, format_params, FALSE, FALSE, high_quality, upscale,
                                         FALSE, NULL, copy_metadata, export_masks, icc_type, icc_filename, icc_intent,
@@ -663,11 +663,10 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
   dt_develop_t dev;
   dt_dev_init(&dev, 0);
   dt_dev_load_image(&dev, imgid);
-
   const int buf_is_downscaled
       = (thumbnail_export && dt_conf_get_bool("plugins/lighttable/low_quality_thumbnails"));
-
   dt_mipmap_buffer_t buf;
+
   if(buf_is_downscaled)
     dt_mipmap_cache_get(darktable.mipmap_cache, &buf, imgid, DT_MIPMAP_F, DT_MIPMAP_BLOCKING, 'r');
   else
@@ -710,17 +709,14 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     }
 
     GList *modules_used = NULL;
-
     dt_dev_pop_history_items_ext(&dev, dev.history_end);
-
     dt_ioppr_update_for_style_items(&dev, style_items, format_params->style_append);
-
     GList *st_items = g_list_first(style_items);
+
     while(st_items)
     {
       dt_style_item_t *st_item = (dt_style_item_t *)st_items->data;
       dt_styles_apply_style_item(&dev, st_item, &modules_used, format_params->style_append);
-
       st_items = g_list_next(st_items);
     }
 
@@ -729,7 +725,6 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
   }
 
   dt_ioppr_resync_modules_order(&dev);
-
   dt_dev_pixelpipe_set_icc(&pipe, icc_type, icc_filename, icc_intent);
   dt_dev_pixelpipe_set_input(&pipe, &dev, (float *)buf.buf, buf.width, buf.height, buf.iscale);
   dt_dev_pixelpipe_create_nodes(&pipe, &dev);
@@ -737,9 +732,12 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
 
   if(filter)
   {
-    if(!strncmp(filter, "pre:", 4)) dt_dev_pixelpipe_disable_after(&pipe, filter + 4);
-    if(!strncmp(filter, "post:", 5)) dt_dev_pixelpipe_disable_before(&pipe, filter + 5);
+    if(!strncmp(filter, "pre:", 4))
+      dt_dev_pixelpipe_disable_after(&pipe, filter + 4);
+    if(!strncmp(filter, "post:", 5))
+      dt_dev_pixelpipe_disable_before(&pipe, filter + 5);
   }
+
   dt_dev_pixelpipe_get_dimensions(&pipe, &dev, pipe.iwidth, pipe.iheight, &pipe.processed_width,
                                   &pipe.processed_height);
   dt_show_times(&start, "[export] creating pixelpipe");
@@ -771,8 +769,7 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
   const gboolean high_quality_processing
       = ((format_params->max_width == 0 || format_params->max_width >= pipe.processed_width)
          && (format_params->max_height == 0 || format_params->max_height >= pipe.processed_height))
-            ? FALSE
-            : high_quality;
+            ? FALSE : high_quality;
 
   /* The pipeline might have out-of-bounds problems at the right and lower borders leading to
      artefacts or mem access errors if ignored. (#3646)
@@ -796,13 +793,11 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
   const gboolean iscropped =
     ((pipe.processed_width < (wd - img->crop_x - img->crop_width)) ||
      (pipe.processed_height < (ht - img->crop_y - img->crop_height)));
-
   const gboolean exact_size = (
       iscropped || upscale ||
       (format_params->max_width != 0) ||
       (format_params->max_height != 0) ||
       thumbnail_export);
-
   int width = format_params->max_width > 0 ? format_params->max_width : 0;
   int height = format_params->max_height > 0 ? format_params->max_height : 0;
 
@@ -874,8 +869,8 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
   }
 
   const int bpp = format->bpp(format_params);
-
   dt_get_times(&start);
+
   if(high_quality_processing)
   {
     /*
@@ -986,7 +981,8 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
       {
         // convert in place
         const size_t k = (size_t)processed_width * y + x;
-        for(int i = 0; i < 3; i++) buf16[4 * k + i] = CLAMP(buff[4 * k + i] * 0x10000, 0, 0xffff);
+        for(int i = 0; i < 3; i++)
+          buf16[4 * k + i] = CLAMP(buff[4 * k + i] * 0x10000, 0, 0xffff);
       }
   }
   // else output float, no further harm done to the pixels :)
@@ -1012,10 +1008,8 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     free(exif_profile);
   }
   else
-  {
-    res = format->write_image(format_params, filename, outbuf, icc_type, icc_filename, NULL, 0, imgid, num, total,
-                              &pipe, export_masks);
-  }
+    res = format->write_image(format_params, filename, outbuf, icc_type, icc_filename,
+                              NULL, 0, imgid, num, total, &pipe, export_masks);
 
   dt_dev_pixelpipe_cleanup(&pipe);
   dt_dev_cleanup(&dev);
@@ -1023,10 +1017,8 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
 
   /* now write xmp into that container, if possible */
   if(copy_metadata && (format->flags(format_params) & FORMAT_FLAGS_SUPPORT_XMP))
-  {
     dt_exif_xmp_attach_export(imgid, filename, metadata);
     // no need to cancel the export if this fail
-  }
 
   if(!thumbnail_export && strcmp(format->mime(format_params), "memory")
     && !(format->flags(format_params) & FORMAT_FLAGS_NO_TMPFILE))

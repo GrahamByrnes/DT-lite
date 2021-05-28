@@ -1083,13 +1083,7 @@ static void _darkroom_ui_apply_style_popupmenu(GtkWidget *w, gpointer user_data)
 
   // if we got any styles, lets popup menu for selection
   if(menu)
-  {
-#if GTK_CHECK_VERSION(3, 22, 0)
     gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
-#else
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, 0);
-#endif
-  }
   else
     dt_control_log(_("no styles have been created yet"));
 }
@@ -1358,13 +1352,13 @@ static gboolean _profile_quickbutton_released(GtkWidget *widget, GdkEvent *event
 static void _gamut_quickbutton_clicked(GtkWidget *w, gpointer user_data)
 {
   dt_develop_t *d = (dt_develop_t *)user_data;
+
   if(darktable.color_profiles->mode == DT_PROFILE_GAMUTCHECK)
     darktable.color_profiles->mode = DT_PROFILE_NORMAL;
   else
     darktable.color_profiles->mode = DT_PROFILE_GAMUTCHECK;
 
   _update_softproof_gamut_checking(d);
-
   dt_dev_reprocess_center(d);
 }
 
@@ -1372,7 +1366,6 @@ static gboolean _gamut_quickbutton_pressed(GtkWidget *widget, GdkEvent *event, g
 {
   dt_develop_t *d = (dt_develop_t *)user_data;
   GdkEventButton *e = (GdkEventButton *)event;
-
   gtk_popover_set_relative_to(GTK_POPOVER(d->profile.floating_window), d->profile.gamut_button);
 
   if(e->button == 3)
@@ -1393,9 +1386,10 @@ static void _update_softproof_gamut_checking(dt_develop_t *d)
   g_signal_handlers_block_by_func(d->profile.softproof_button, _softproof_quickbutton_clicked, d);
   g_signal_handlers_block_by_func(d->profile.gamut_button, _gamut_quickbutton_clicked, d);
 
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(d->profile.softproof_button), darktable.color_profiles->mode == DT_PROFILE_SOFTPROOF);
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(d->profile.gamut_button), darktable.color_profiles->mode == DT_PROFILE_GAMUTCHECK);
-
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(d->profile.softproof_button),
+                                                 darktable.color_profiles->mode == DT_PROFILE_SOFTPROOF);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(d->profile.gamut_button),
+                                                 darktable.color_profiles->mode == DT_PROFILE_GAMUTCHECK);
   g_signal_handlers_unblock_by_func(d->profile.softproof_button, _softproof_quickbutton_clicked, d);
   g_signal_handlers_unblock_by_func(d->profile.gamut_button, _gamut_quickbutton_clicked, d);
 }
@@ -1467,6 +1461,7 @@ static void softproof_profile_callback(GtkWidget *combo, gpointer user_data)
   dt_develop_t *d = (dt_develop_t *)user_data;
   gboolean profile_changed = FALSE;
   const int pos = dt_bauhaus_combobox_get(combo);
+
   for(GList *profiles = darktable.color_profiles->profiles; profiles; profiles = g_list_next(profiles))
   {
     dt_colorspaces_color_profile_t *pp = (dt_colorspaces_color_profile_t *)profiles->data;
@@ -1475,13 +1470,13 @@ static void softproof_profile_callback(GtkWidget *combo, gpointer user_data)
       if(darktable.color_profiles->softproof_type != pp->type
         || (darktable.color_profiles->softproof_type == DT_COLORSPACE_FILE
             && strcmp(darktable.color_profiles->softproof_filename, pp->filename)))
-
       {
         darktable.color_profiles->softproof_type = pp->type;
         g_strlcpy(darktable.color_profiles->softproof_filename, pp->filename,
                   sizeof(darktable.color_profiles->softproof_filename));
         profile_changed = TRUE;
       }
+
       goto end;
     }
   }
@@ -1495,7 +1490,8 @@ static void softproof_profile_callback(GtkWidget *combo, gpointer user_data)
 end:
   if(profile_changed)
   {
-    dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_PROFILE_USER_CHANGED, DT_COLORSPACES_PROFILE_TYPE_SOFTPROOF);
+    dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_PROFILE_USER_CHANGED,
+                            DT_COLORSPACES_PROFILE_TYPE_SOFTPROOF);
     dt_dev_reprocess_all(d);
   }
 }
@@ -1519,6 +1515,7 @@ static void display_profile_callback(GtkWidget *combo, gpointer user_data)
                   sizeof(darktable.color_profiles->display_filename));
         profile_changed = TRUE;
       }
+
       goto end;
     }
   }
@@ -1559,6 +1556,7 @@ static void display2_profile_callback(GtkWidget *combo, gpointer user_data)
                   sizeof(darktable.color_profiles->display2_filename));
         profile_changed = TRUE;
       }
+
       goto end;
     }
   }
@@ -1601,6 +1599,7 @@ static void histogram_profile_callback(GtkWidget *combo, gpointer user_data)
                   sizeof(darktable.color_profiles->histogram_filename));
         profile_changed = TRUE;
       }
+
       goto end;
     }
   }
@@ -1624,6 +1623,7 @@ static void _preference_changed(gpointer instance, gpointer user_data)
 {
   GtkWidget *display_intent = GTK_WIDGET(user_data);
   const int force_lcms2 = dt_conf_get_bool("plugins/lighttable/export/force_lcms2");
+
   if(force_lcms2)
   {
     gtk_widget_set_no_show_all(display_intent, FALSE);
@@ -1653,19 +1653,17 @@ static void _update_display_profile_cmb(GtkWidget *cmb_display_profile)
   while(l)
   {
     dt_colorspaces_color_profile_t *prof = (dt_colorspaces_color_profile_t *)l->data;
+
     if(prof->display_pos > -1)
-    {
       if(prof->type == darktable.color_profiles->display_type
          && (prof->type != DT_COLORSPACE_FILE
              || !strcmp(prof->filename, darktable.color_profiles->display_filename)))
-      {
         if(dt_bauhaus_combobox_get(cmb_display_profile) != prof->display_pos)
         {
           dt_bauhaus_combobox_set(cmb_display_profile, prof->display_pos);
           break;
         }
-      }
-    }
+
     l = g_list_next(l);
   }
 }
@@ -1676,19 +1674,17 @@ static void _update_display2_profile_cmb(GtkWidget *cmb_display_profile)
   while(l)
   {
     dt_colorspaces_color_profile_t *prof = (dt_colorspaces_color_profile_t *)l->data;
+
     if(prof->display2_pos > -1)
-    {
       if(prof->type == darktable.color_profiles->display2_type
          && (prof->type != DT_COLORSPACE_FILE
              || !strcmp(prof->filename, darktable.color_profiles->display2_filename)))
-      {
         if(dt_bauhaus_combobox_get(cmb_display_profile) != prof->display2_pos)
         {
           dt_bauhaus_combobox_set(cmb_display_profile, prof->display2_pos);
           break;
         }
-      }
-    }
+
     l = g_list_next(l);
   }
 }
