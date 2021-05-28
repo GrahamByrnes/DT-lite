@@ -660,6 +660,7 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
                                  dt_imageio_module_data_t *storage_params, int num, int total,
                                  dt_export_metadata_t *metadata)
 {
+  dt_dev_write_history(darktable.develop);  /******/
   dt_develop_t dev;
   dt_dev_init(&dev, 0);
   dt_dev_load_image(&dev, imgid);
