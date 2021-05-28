@@ -91,6 +91,7 @@ static int display_image_cb(lua_State *L)
 {
   dt_develop_t *dev = darktable.develop;
   dt_lua_image_t imgid = -1;
+  
   if(luaL_testudata(L, 1, "dt_lua_image_t"))
   {
     luaA_to(L, dt_lua_image_t, &imgid, 1);
@@ -2504,21 +2505,16 @@ void enter(dt_view_t *self)
 void leave(dt_view_t *self)
 {
   _unregister_modules_drag_n_drop(self);
-
   /* disconnect from filmstrip image activate */
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_view_darkroom_filmstrip_activate_callback),
                                (gpointer)self);
-
   /* disconnect from pipe finish signal */
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_darkroom_ui_pipe_finish_signal_callback),
                                (gpointer)self);
-
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_darkroom_ui_preview2_pipe_finish_signal_callback),
                                (gpointer)self);
-
   // store groups for next time:
   dt_conf_set_int("plugins/darkroom/groups", dt_dev_modulegroups_get(darktable.develop));
-
   // store last active plugin:
   if(darktable.develop->gui_module)
     dt_conf_set_string("plugins/darkroom/active", darktable.develop->gui_module->op);
@@ -2564,8 +2560,8 @@ void leave(dt_view_t *self)
   dt_dev_pixelpipe_cleanup_nodes(dev->pipe);
   dt_dev_pixelpipe_cleanup_nodes(dev->preview2_pipe);
   dt_dev_pixelpipe_cleanup_nodes(dev->preview_pipe);
-
   dt_pthread_mutex_lock(&dev->history_mutex);
+
   while(dev->history)
   {
     dt_dev_history_item_t *hist = (dt_dev_history_item_t *)(dev->history->data);
@@ -2586,6 +2582,7 @@ void leave(dt_view_t *self)
     free(module);
     dev->iop = g_list_delete_link(dev->iop, dev->iop);
   }
+
   while(dev->alliop)
   {
     dt_iop_cleanup_module((dt_iop_module_t *)dev->alliop->data);
@@ -2594,11 +2591,9 @@ void leave(dt_view_t *self)
   }
 
   dt_pthread_mutex_unlock(&dev->history_mutex);
-
   dt_pthread_mutex_unlock(&dev->pipe_mutex);
   dt_pthread_mutex_unlock(&dev->preview2_pipe_mutex);
   dt_pthread_mutex_unlock(&dev->preview_pipe_mutex);
-
   // cleanup visible masks
   if(dev->form_gui)
   {
@@ -2613,20 +2608,15 @@ void leave(dt_view_t *self)
   dev->forms = NULL;
   g_list_free_full(dev->allforms, (void (*)(void *))dt_masks_free_form);
   dev->allforms = NULL;
-
   // take care of the overexposed window
   if(dev->overexposed.timeout > 0) g_source_remove(dev->overexposed.timeout);
   gtk_widget_hide(dev->overexposed.floating_window);
   gtk_widget_hide(dev->profile.floating_window);
-
   dt_ui_scrollbars_show(darktable.gui->ui, FALSE);
-
   // darkroom development could have changed a collection, so update that before being back in lightroom
   dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD,
                              g_list_append(NULL, GINT_TO_POINTER(darktable.develop->image_storage.id)));
-
   darktable.develop->image_storage.id = -1;
-
   dt_print(DT_DEBUG_CONTROL, "[run_job-] 11 %f in darkroom mode\n", dt_get_wtime());
 }
 
@@ -2635,9 +2625,9 @@ void mouse_leave(dt_view_t *self)
   // if we are not hovering over a thumbnail in the filmstrip -> show metadata of opened image.
   dt_develop_t *dev = (dt_develop_t *)self->data;
   dt_control_set_mouse_over_id(dev->image_storage.id);
-
   // masks
   int handled = dt_masks_events_mouse_leave(dev->gui_module);
+
   if(handled) return;
   // module
   if(dev->gui_module && dev->gui_module->mouse_leave)
@@ -2679,9 +2669,9 @@ void mouse_moved(dt_view_t *self, double x, double y, double pressure, int which
   const int32_t tb = dev->border_size;
   const int32_t capwd = self->width  - 2*tb;
   const int32_t capht = self->height - 2*tb;
-
   // if we are not hovering over a thumbnail in the filmstrip -> show metadata of opened image.
   int32_t mouse_over_id = dt_control_get_mouse_over_id();
+
   if(mouse_over_id == -1)
   {
     mouse_over_id = dev->image_storage.id;
@@ -2692,8 +2682,13 @@ void mouse_moved(dt_view_t *self, double x, double y, double pressure, int which
   const int32_t width_i = self->width;
   const int32_t height_i = self->height;
   float offx = 0.0f, offy = 0.0f;
-  if(width_i > capwd) offx = (capwd - width_i) * .5f;
-  if(height_i > capht) offy = (capht - height_i) * .5f;
+
+  if(width_i > capwd)
+    offx = (capwd - width_i) * .5f;
+
+  if(height_i > capht)
+    offy = (capht - height_i) * .5f;
+
   int handled = 0;
 
   if(dev->gui_module && dev->gui_module->request_color_pick != DT_REQUEST_COLORPICK_OFF
@@ -2724,6 +2719,7 @@ void mouse_moved(dt_view_t *self, double x, double y, double pressure, int which
         dev->preview_status = DT_DEV_PIXELPIPE_DIRTY;
       }
     }
+
     dt_control_queue_redraw();
     return;
   }
@@ -2731,10 +2727,12 @@ void mouse_moved(dt_view_t *self, double x, double y, double pressure, int which
   y += offy;
   // masks
   handled = dt_masks_events_mouse_moved(dev->gui_module, x, y, pressure, which);
+
   if(handled) return;
   // module
   if(dev->gui_module && dev->gui_module->mouse_moved)
     handled = dev->gui_module->mouse_moved(dev->gui_module, x, y, pressure, which);
+
   if(handled) return;
 
   if(darktable.control->button_down && darktable.control->button_down_which == 1)
@@ -2769,8 +2767,11 @@ int button_released(dt_view_t *self, double x, double y, int which, uint32_t sta
   const int32_t capht = self->height - 2*tb;
   const int32_t width_i = self->width;
   const int32_t height_i = self->height;
-  if(width_i > capwd) x += (capwd - width_i) * .5f;
-  if(height_i > capht) y += (capht - height_i) * .5f;
+
+  if(width_i > capwd)
+    x += (capwd - width_i) * .5f;
+  if(height_i > capht)
+    y += (capht - height_i) * .5f;
 
   int handled = 0;
   if(dev->gui_module && dev->gui_module->request_color_pick != DT_REQUEST_COLORPICK_OFF && which == 1)
@@ -2799,14 +2800,20 @@ int button_pressed(dt_view_t *self, double x, double y, double pressure, int whi
   const int32_t width_i = self->width;
   const int32_t height_i = self->height;
   float offx = 0.0f, offy = 0.0f;
-  if(width_i > capwd) offx = (capwd - width_i) * .5f;
-  if(height_i > capht) offy = (capht - height_i) * .5f;
+
+  if(width_i > capwd)
+    offx = (capwd - width_i) * .5f;
+
+  if(height_i > capht)
+    offy = (capht - height_i) * .5f;
 
   int handled = 0;
+
   if(dev->gui_module && dev->gui_module->request_color_pick != DT_REQUEST_COLORPICK_OFF && which == 1)
   {
     float zoom_x, zoom_y;
     dt_dev_get_pointer_zoom_pos(dev, x + offx, y + offy, &zoom_x, &zoom_y);
+
     if(mouse_in_imagearea(self, x, y))
     {
       // The default box will be a square with 1% of the image width
@@ -2852,10 +2859,9 @@ int button_pressed(dt_view_t *self, double x, double y, double pressure, int whi
         }
       }
       else
-      {
         dev->preview_status = DT_DEV_PIXELPIPE_DIRTY;
-      }
     }
+
     dt_control_queue_redraw();
     return 1;
   }
@@ -2876,20 +2882,25 @@ int button_pressed(dt_view_t *self, double x, double y, double pressure, int whi
   // masks
   if(dev->form_visible)
     handled = dt_masks_events_button_pressed(dev->gui_module, x, y, pressure, which, type, state);
+
   if(handled)
     return handled;
   // module
   if(dev->gui_module && dev->gui_module->button_pressed)
     handled = dev->gui_module->button_pressed(dev->gui_module, x, y, pressure, which, type, state);
+
   if(handled)
     return handled;
+
   if(which == 1 && type == GDK_2BUTTON_PRESS)
     return 0;
+
   if(which == 1)
   {
     dt_control_change_cursor(GDK_HAND1);
     return 1;
   }
+
   if(which == 2)
   {
     // zoom to 1:1 2:1 and back
@@ -2904,6 +2915,7 @@ int button_pressed(dt_view_t *self, double x, double y, double pressure, int whi
     const float scale = dt_dev_get_zoom_scale(dev, zoom, 1<<closeup, 0);
     zoom_x += (1.0 / scale) * (x - .5f * dev->width) / procw;
     zoom_y += (1.0 / scale) * (y - .5f * dev->height) / proch;
+
     if(zoom == DT_ZOOM_1)
     {
       if(!closeup)
@@ -2917,6 +2929,7 @@ int button_pressed(dt_view_t *self, double x, double y, double pressure, int whi
     }
     else
       zoom = DT_ZOOM_1;
+
     dt_dev_check_zoom_bounds(dev, &zoom_x, &zoom_y, zoom, closeup, NULL, NULL);
     dt_control_set_dev_zoom(zoom);
     dt_control_set_dev_closeup(closeup);
@@ -2927,6 +2940,7 @@ int button_pressed(dt_view_t *self, double x, double y, double pressure, int whi
     dt_control_navigation_redraw();
     return 1;
   }
+
   return 0;
 }
 
@@ -2948,8 +2962,12 @@ void scrolled(dt_view_t *self, double x, double y, int up, int state)
   const int32_t capht = self->height - 2*tb;
   const int32_t width_i = self->width;
   const int32_t height_i = self->height;
-  if(width_i > capwd) x += (capwd - width_i) * .5f;
-  if(height_i > capht) y += (capht - height_i) * .5f;
+
+  if(width_i > capwd)
+    x += (capwd - width_i) * .5f;
+
+  if(height_i > capht)
+    y += (capht - height_i) * .5f;
 
   int handled = 0;
   // dynamic accels
@@ -2994,11 +3012,14 @@ void scrolled(dt_view_t *self, double x, double y, int up, int state)
     return;
   }
   // masks
-  if(dev->form_visible) handled = dt_masks_events_mouse_scrolled(dev->gui_module, x, y, up, state);
+  if(dev->form_visible)
+    handled = dt_masks_events_mouse_scrolled(dev->gui_module, x, y, up, state);
+
   if(handled) return;
   // module
   if(dev->gui_module && dev->gui_module->scrolled)
     handled = dev->gui_module->scrolled(dev->gui_module, x, y, up, state);
+
   if(handled) return;
   // free zoom
   dt_dev_zoom_t zoom;
@@ -3012,13 +3033,13 @@ void scrolled(dt_view_t *self, double x, double y, int up, int state)
   float scale = dt_dev_get_zoom_scale(dev, zoom, 1<<closeup, 0);
   const float fitscale = dt_dev_get_zoom_scale(dev, DT_ZOOM_FIT, 1.0, 0);
   float oldscale = scale;
-
   // offset from center now (current zoom_{x,y} points there)
   float mouse_off_x = x - .5 * dev->width, mouse_off_y = y - .5 * dev->height;
   zoom_x += mouse_off_x / (procw * scale);
   zoom_y += mouse_off_y / (proch * scale);
   zoom = DT_ZOOM_FREE;
   closeup = 0;
+
   if(up)
   {
     if((scale == 1.0f || scale == 2.0f) && !((state & GDK_CONTROL_MASK) == GDK_CONTROL_MASK)) return;
@@ -3053,8 +3074,12 @@ void scrolled(dt_view_t *self, double x, double y, int up, int state)
       scale = 8.0f;
   }
   // we want to be sure to stop at 1:1 and FIT levels
-  if((scale - 1.0) * (oldscale - 1.0) < 0) scale = 1.0f;
-  if((scale - fitscale) * (oldscale - fitscale) < 0) scale = fitscale;
+  if((scale - 1.0) * (oldscale - 1.0) < 0)
+    scale = 1.0f;
+
+  if((scale - fitscale) * (oldscale - fitscale) < 0)
+    scale = fitscale;
+
   scale = fmaxf(fminf(scale, 16.0f), 0.5 * fitscale);
 
   // for 200% zoom we want pixel doubling instead of interpolation
@@ -3079,8 +3104,12 @@ void scrolled(dt_view_t *self, double x, double y, int up, int state)
     closeup = 1;  // enable closeup mode (pixel doubling)
   }
 
-  if(fabsf(scale - 1.0f) < 0.001f) zoom = DT_ZOOM_1;
-  if(fabsf(scale - fitscale) < 0.001f) zoom = DT_ZOOM_FIT;
+  if(fabsf(scale - 1.0f) < 0.001f)
+    zoom = DT_ZOOM_1;
+
+  if(fabsf(scale - fitscale) < 0.001f)
+    zoom = DT_ZOOM_FIT;
+
   dt_control_set_dev_zoom_scale(scale);
   dt_control_set_dev_closeup(closeup);
   scale = dt_dev_get_zoom_scale(dev, zoom, 1<<closeup, 0);
@@ -3152,8 +3181,8 @@ GSList *mouse_actions(const dt_view_t *self)
   a->action = DT_MOUSE_ACTION_DRAG_DROP;
   g_strlcpy(a->name, _("[modules] change module position in pipe"), sizeof(a->name));
   lm = g_slist_append(lm, a);
-
   const dt_develop_t *dev = (dt_develop_t *)self->data;
+
   if(dev->form_visible)// masks
     lm2 = dt_masks_mouse_actions(dev->form_visible);
   else if(dev->gui_module && dev->gui_module->mouse_actions)
@@ -3161,12 +3190,14 @@ GSList *mouse_actions(const dt_view_t *self)
     lm2 = dev->gui_module->mouse_actions(dev->gui_module);
   // we concatenate the 2 lists
   GSList *l = lm2;
+
   while(l)
   {
     a = (dt_mouse_action_t *)l->data;
     if(a) lm = g_slist_append(lm, a);
     l = g_slist_next(l);
   }
+
   g_slist_free(lm2);
 
   return lm;
@@ -3297,13 +3328,13 @@ static void second_window_scrolled(GtkWidget *widget, dt_develop_t *dev, double 
   float scale = dt_second_window_get_zoom_scale(dev, zoom, 1 << closeup, 0);
   const float fitscale = dt_second_window_get_zoom_scale(dev, DT_ZOOM_FIT, 1.0, 0);
   float oldscale = scale;
-
   // offset from center now (current zoom_{x,y} points there)
   float mouse_off_x = x - .5 * dev->second_window.width, mouse_off_y = y - .5 * dev->second_window.height;
   zoom_x += mouse_off_x / (procw * scale);
   zoom_y += mouse_off_y / (proch * scale);
   zoom = DT_ZOOM_FREE;
   closeup = 0;
+
   if(up)
   {
     if((scale == 1.0f || scale == 2.0f) && !((state & GDK_CONTROL_MASK) == GDK_CONTROL_MASK)) return;
@@ -3485,6 +3516,7 @@ static gboolean dt_gui_get_second_window_scroll_unit_deltas(const GdkEventScroll
       // handle
       acc_x += event->delta_x;
       acc_y += event->delta_y;
+
       if(fabs(acc_x) >= 1.0)
       {
         gdouble amt = trunc(acc_x);
@@ -3493,6 +3525,7 @@ static gboolean dt_gui_get_second_window_scroll_unit_deltas(const GdkEventScroll
         if(delta_y) *delta_y = 0;
         handled = TRUE;
       }
+
       if(fabs(acc_y) >= 1.0)
       {
         gdouble amt = trunc(acc_y);
@@ -3501,6 +3534,7 @@ static gboolean dt_gui_get_second_window_scroll_unit_deltas(const GdkEventScroll
         if(delta_y) *delta_y = (int)amt;
         handled = TRUE;
       }
+
       break;
     default:
       break;

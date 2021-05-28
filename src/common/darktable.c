@@ -167,9 +167,12 @@ gboolean dt_supported_image(const gchar *filename)
 {
   gboolean supported = FALSE;
   char *ext = g_strrstr(filename, ".");
+
   if(!ext)
     return FALSE;
+
   ext++;
+
   for(const char **i = dt_supported_extensions; *i != NULL; i++)
     if(!g_ascii_strncasecmp(ext, *i, strlen(*i)))
     {
@@ -185,7 +188,8 @@ static void strip_semicolons_from_keymap(const char *path)
   FILE *fin = g_fopen(path, "rb");
   FILE *fout;
 
-  if(!fin) return;
+  if(!fin)
+    return;
 
   snprintf(pathtmp, sizeof(pathtmp), "%s_tmp", path);
   fout = g_fopen(pathtmp, "wb");
@@ -204,21 +208,23 @@ static void strip_semicolons_from_keymap(const char *path)
     while(c == '\n' || c == '\r') c = fgetc(fin);
     ungetc(c, fin);
   }
-
   // Then ignore the first two characters of each line, copying the rest out
   while(c != EOF)
   {
     fseek(fin, 2, SEEK_CUR);
+
     while(c != '\n' && c != '\r' && c != EOF)
     {
       c = fgetc(fin);
       if(c != '\n' && c != '\r' && c != EOF) fputc(c, fout);
     }
+
     while(c == '\n' || c == '\r')
     {
       fputc(c, fout);
       c = fgetc(fin);
     }
+
     ungetc(c, fin);
   }
 
@@ -237,7 +243,9 @@ static void strip_semicolons_from_keymap(const char *path)
 int dt_load_from_string(const gchar *input, gboolean open_image_in_dr, gboolean *single_image)
 {
   int id = 0;
-  if(input == NULL || input[0] == '\0') return 0;
+
+  if(input == NULL || input[0] == '\0')
+    return 0;
 
   char *filename = dt_util_normalize_path(input);
 
@@ -251,16 +259,17 @@ int dt_load_from_string(const gchar *input, gboolean open_image_in_dr, gboolean 
   {
     // import a directory into a film roll
     id = dt_film_import(filename);
+
     if(id)
     {
       dt_film_open(id);
       dt_ctl_switch_mode_to("lighttable");
     }
     else
-    {
       dt_control_log(_("error loading directory `%s'"), filename);
-    }
-    if(single_image) *single_image = FALSE;
+
+    if(single_image)
+      *single_image = FALSE;
   }
   else
   {
@@ -270,6 +279,7 @@ int dt_load_from_string(const gchar *input, gboolean open_image_in_dr, gboolean 
     const int filmid = dt_film_new(&film, directory);
     id = dt_image_import(filmid, filename, TRUE);
     g_free(directory);
+
     if(id)
     {
       dt_film_open(filmid);
@@ -284,19 +294,18 @@ int dt_load_from_string(const gchar *input, gboolean open_image_in_dr, gboolean 
         dt_control_log(_("file `%s' has unknown format!"), filename);
       }
       else
-      {
         if(open_image_in_dr)
         {
           dt_control_set_mouse_over_id(id);
           dt_ctl_switch_mode_to("darkroom");
         }
-      }
+
     }
     else
-    {
       dt_control_log(_("error loading file `%s'"), filename);
-    }
-    if(single_image) *single_image = TRUE;
+
+    if(single_image)
+      *single_image = TRUE;
   }
   g_free(filename);
   return id;
@@ -365,7 +374,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 #endif
 
   dt_set_signal_handlers();
-
   int sse2_supported = 0;
 
 #ifdef HAVE_BUILTIN_CPU_SUPPORTS
@@ -375,6 +383,7 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 #else
   sse2_supported = dt_detect_cpu_features() & CPU_FLAG_SSE2;
 #endif
+
   if(!sse2_supported)
   {
     fprintf(stderr, "[dt_init] SSE2 instruction set is unavailable.\n");
@@ -429,7 +438,9 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 #endif
     }
 
-    if(set_env) g_setenv("XDG_DATA_DIRS", new_xdg_data_dirs, 1);
+    if(set_env)
+      g_setenv("XDG_DATA_DIRS", new_xdg_data_dirs, 1);
+
     g_free(new_xdg_data_dirs);
   }
 
@@ -449,17 +460,16 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   pthread_mutexattr_t recursive_locking;
   pthread_mutexattr_init(&recursive_locking);
   pthread_mutexattr_settype(&recursive_locking, PTHREAD_MUTEX_RECURSIVE);
+
   for (int k=0; k<DT_IMAGE_DBLOCKS; k++)
-  {
     dt_pthread_mutex_init(&(darktable.db_image[k]),&(recursive_locking));
-  }
+
   dt_pthread_mutex_init(&(darktable.plugin_threadsafe), NULL);
   dt_pthread_mutex_init(&(darktable.dev_threadsafe), NULL);
   dt_pthread_mutex_init(&(darktable.capabilities_threadsafe), NULL);
   dt_pthread_mutex_init(&(darktable.exiv2_threadsafe), NULL);
   dt_pthread_mutex_init(&(darktable.readFile_mutex), NULL);
   darktable.control = (dt_control_t *)calloc(1, sizeof(dt_control_t));
-
   // database
   char *dbfilename_from_command = NULL;
   char *noiseprofiles_from_command = NULL;
@@ -484,16 +494,13 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   {
 #ifdef _WIN32
     if(!strcmp(argv[k], "/?"))
-    {
       return usage(argv[0]);
-    }
 #endif
     if(argv[k][0] == '-')
     {
       if(!strcmp(argv[k], "--help") || !strcmp(argv[k], "-h"))
-      {
         return usage(argv[0]);
-      }
+
       else if(!strcmp(argv[k], "--version"))
       {
 #ifdef USE_LUA
@@ -523,9 +530,7 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 #else
                "  OpenMP support disabled\n"
 #endif
-
                "  OpenCL support disabled\n"
-
 #ifdef USE_LUA
                "  Lua support enabled, API version %s\n"
 #else
@@ -683,6 +688,7 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
         }
         else
           return usage(argv[0]);
+
         k++;
         argv[k-1] = NULL;
         argv[k] = NULL;
@@ -690,13 +696,12 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
       else if(!strcmp(argv[k], "--d-signal") && argc > k + 1)
       {
         gchar *str = g_ascii_strup(argv[k+1], -1);
-
         #define CHKSIGDBG(sig) else if(!g_strcmp0(str, #sig)) do {darktable.unmuted_signal_dbg[sig] = TRUE;} while (0)
+
         if(!g_strcmp0(str, "ALL"))
-        {
           for(int sig=0; sig<DT_SIGNAL_COUNT; sig++)
             darktable.unmuted_signal_dbg[sig] = TRUE;
-        }
+
         CHKSIGDBG(DT_SIGNAL_MOUSE_OVER_IMAGE_CHANGE);
         CHKSIGDBG(DT_SIGNAL_ACTIVE_IMAGES_CHANGE);
         CHKSIGDBG(DT_SIGNAL_CONTROL_REDRAW_ALL);
@@ -808,7 +813,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
         return usage(argv[0]); // fail on unrecognized options
     }
   }
-
   // remove the NULLs to not confuse gtk_init() later.
   for(int i = 1; i < argc; i++)
   {
@@ -838,7 +842,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   {
     // I doubt that connecting to dbus for darktable-cli makes sense
     darktable.dbus = dt_dbus_init();
-
     // make sure that we have no stale global progress bar visible. thus it's run as early as possible
     dt_control_progress_init(darktable.control);
   }
@@ -849,6 +852,7 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   dt_loc_init_datadir(datadir_from_command);
   dt_loc_init_plugindir(moduledir_from_command);
   dt_loc_init_localedir(localedir_from_command);
+
   if(dt_loc_init_tmp_dir(tmpdir_from_command))
   {
     fprintf(stderr, "error: invalid temporary directory: %s\n", darktable.tmpdir);
@@ -875,7 +879,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 
   // set the interface language and prepare selection for prefs
   darktable.l10n = dt_l10n_init(init_gui);
-
   // we need this REALLY early so that error messages can be shown, however after gtk_disable_setlocale
   if(init_gui)
   {
@@ -886,9 +889,9 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
     gdk_set_allowed_backends("x11,*");
 #endif
     gtk_init(&argc, &argv);
-
     // execute a performance check and configuration if needed
     int last_configure_version = dt_conf_get_int("performance_configuration_version_completed");
+
     if(last_configure_version < DT_CURRENT_PERFORMANCE_CONFIGURE_VERSION)
     {
       // ask the user whether he/she would like
@@ -908,13 +911,10 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
         dt_conf_set_int("performance_configuration_version_completed", DT_CURRENT_PERFORMANCE_CONFIGURE_VERSION);
     }
   }
-
   // detect cpu features and decide which codepaths to enable
   dt_codepaths_init();
-
   // get the list of color profiles
   darktable.color_profiles = dt_colorspaces_init();
-
   // initialize the database
   darktable.db = dt_database_init(dbfilename_from_command, load_data, init_gui);
   if(darktable.db == NULL)
@@ -930,7 +930,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 #ifndef MAC_INTEGRATION
       // send the images to the other instance via dbus
       fprintf(stderr, "trying to open the images in the running instance\n");
-
       GDBusConnection *connection = NULL;
       for(int i = 1; i < argc; i++)
       {
@@ -946,21 +945,20 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
                                                              G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL) != NULL;
         g_free(filename);
       }
-      if(connection) g_object_unref(connection);
-#endif
 
-      if(!image_loaded_elsewhere) dt_database_show_error(darktable.db);
+      if(connection)
+        g_object_unref(connection);
+#endif
+      if(!image_loaded_elsewhere)
+        dt_database_show_error(darktable.db);
     }
     fprintf(stderr, "ERROR: can't acquire database lock, aborting.\n");
     return 1;
   }
-
   //db maintenance on startup (if configured to do so)
   dt_database_maybe_maintenance(darktable.db, init_gui, FALSE);
-
   // Initialize the signal system
   darktable.signals = dt_control_signal_init();
-
   // Make sure that the database and xmp files are in sync
   // We need conf and db to be up and running for that which is the case here.
   // FIXME: is this also useful in non-gui mode?
@@ -1003,19 +1001,16 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   darktable.points = (dt_points_t *)calloc(1, sizeof(dt_points_t));
   dt_points_init(darktable.points, dt_get_num_threads());
   darktable.noiseprofile_parser = dt_noiseprofile_init(noiseprofiles_from_command);
-
   // must come before mipmap_cache, because that one will need to access
   // image dimensions stored in here:
   darktable.image_cache = (dt_image_cache_t *)calloc(1, sizeof(dt_image_cache_t));
   dt_image_cache_init(darktable.image_cache);
-
   darktable.mipmap_cache = (dt_mipmap_cache_t *)calloc(1, sizeof(dt_mipmap_cache_t));
   dt_mipmap_cache_init(darktable.mipmap_cache);
 
   // The GUI must be initialized before the views, because the init()
   // functions of the views depend on darktable.control->accels_* to register
   // their keyboard accelerators
-
   if(init_gui)
   {
     darktable.gui = (dt_gui_gtk_t *)calloc(1, sizeof(dt_gui_gtk_t));
@@ -1031,7 +1026,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 
   darktable.view_manager = (dt_view_manager_t *)calloc(1, sizeof(dt_view_manager_t));
   dt_view_manager_init(darktable.view_manager);
-
   // check whether we were able to load darkroom view. if we failed, we'll crash everywhere later on.
   if(!darktable.develop)
   {
@@ -1041,7 +1035,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 
   darktable.imageio = (dt_imageio_t *)calloc(1, sizeof(dt_imageio_t));
   dt_imageio_init(darktable.imageio);
-
   // load default iop order
   darktable.iop_order_list = dt_ioppr_get_iop_order_list(0, FALSE);
   // load iop order rules
@@ -1054,13 +1047,10 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
     fprintf(stderr, "ERROR: iop order looks bad, aborting.\n");
     return 1;
   }
-
   // set up memory.darktable_iop_names table
   dt_iop_set_darktable_iop_table();
-
   // set up the list of exiv2 metadata
   dt_exif_set_exiv2_taglist();
-
   // init metadata flags
   dt_metadata_init();
 
@@ -1074,28 +1064,23 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 
     darktable.lib = (dt_lib_t *)calloc(1, sizeof(dt_lib_t));
     dt_lib_init(darktable.lib);
-
     dt_gui_gtk_load_config();
-
     // init the gui part of views
     dt_view_manager_gui_init(darktable.view_manager);
     // Loading the keybindings
     char keyfile[PATH_MAX] = { 0 };
-
     // First dump the default keymapping
     snprintf(keyfile, sizeof(keyfile), "%s/keyboardrc_default", datadir);
     gtk_accel_map_save(keyfile);
-
     // Removing extraneous semi-colons from the default keymap
     strip_semicolons_from_keymap(keyfile);
-
     // Then load any modified keys if available
     snprintf(keyfile, sizeof(keyfile), "%s/keyboardrc", datadir);
+    
     if(g_file_test(keyfile, G_FILE_TEST_EXISTS))
       gtk_accel_map_load(keyfile);
     else
       gtk_accel_map_save(keyfile); // Save the default keymap if none is present
-
     // initialize undo struct
     darktable.undo = dt_undo_init();
   }
@@ -1166,16 +1151,12 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
     }
 #endif
   }
-
   // last but not least construct the popup that asks the user about images whose xmp files are newer than the
   // db entry
   if(init_gui && changed_xmp_files)
-  {
     dt_control_crawler_show_image_list(changed_xmp_files);
-  }
 
   dt_print(DT_DEBUG_CONTROL, "[init] startup took %f seconds\n", dt_get_wtime() - start_wtime);
-
   return 0;
 }
 
@@ -1192,43 +1173,43 @@ void dt_cleanup()
 #ifdef USE_LUA
   dt_lua_finalize_early();
 #endif
-
   // anything that asks user for input should be placed before this line
-
   if(init_gui)
   {
     // hide main window and do rest of the cleanup in the background
     gtk_widget_hide(dt_ui_main_window(darktable.gui->ui));
-
     dt_ctl_switch_mode_to("");
     dt_dbus_destroy(darktable.dbus);
-
     dt_control_shutdown(darktable.control);
-
     dt_lib_cleanup(darktable.lib);
     free(darktable.lib);
   }
+
 #ifdef USE_LUA
   dt_lua_finalize();
 #endif
   dt_view_manager_cleanup(darktable.view_manager);
   free(darktable.view_manager);
+
   if(init_gui)
   {
     dt_imageio_cleanup(darktable.imageio);
     free(darktable.imageio);
     free(darktable.gui);
   }
+
   dt_image_cache_cleanup(darktable.image_cache);
   free(darktable.image_cache);
   dt_mipmap_cache_cleanup(darktable.mipmap_cache);
   free(darktable.mipmap_cache);
+
   if(init_gui)
   {
     dt_control_cleanup(darktable.control);
     free(darktable.control);
     dt_undo_cleanup(darktable.undo);
   }
+
   dt_colorspaces_cleanup(darktable.color_profiles);
   dt_conf_cleanup(darktable.conf);
   free(darktable.conf);
@@ -1256,22 +1237,18 @@ void dt_cleanup()
   dt_database_destroy(darktable.db);
 
   if(init_gui)
-  {
     dt_bauhaus_cleanup();
-  }
 
   dt_capabilities_cleanup();
 
   for (int k=0; k<DT_IMAGE_DBLOCKS; k++)
-  {
     dt_pthread_mutex_destroy(&(darktable.db_image[k]));
-  }
+
   dt_pthread_mutex_destroy(&(darktable.plugin_threadsafe));
   dt_pthread_mutex_destroy(&(darktable.dev_threadsafe));
   dt_pthread_mutex_destroy(&(darktable.capabilities_threadsafe));
   dt_pthread_mutex_destroy(&(darktable.exiv2_threadsafe));
   dt_pthread_mutex_destroy(&(darktable.readFile_mutex));
-
   dt_exif_cleanup();
 }
 
@@ -1325,7 +1302,6 @@ size_t dt_round_size_sse(const size_t size)
   // Round the size of a buffer to the closest 64 higher multiple
   return dt_round_size(size, 64);
 }
-
 
 #ifdef _WIN32
 void dt_free_align(void *mem)
@@ -1441,7 +1417,6 @@ void dt_configure_performance()
   dt_conf_set_int("performance_configuration_version_completed", DT_CURRENT_PERFORMANCE_CONFIGURE_VERSION);
 }
 
-
 int dt_capabilities_check(char *capability)
 {
   GList *capabilities = darktable.capabilities;
@@ -1457,7 +1432,6 @@ int dt_capabilities_check(char *capability)
   return FALSE;
 }
 
-
 void dt_capabilities_add(char *capability)
 {
   dt_pthread_mutex_lock(&darktable.capabilities_threadsafe);
@@ -1468,7 +1442,6 @@ void dt_capabilities_add(char *capability)
   dt_pthread_mutex_unlock(&darktable.capabilities_threadsafe);
 }
 
-
 void dt_capabilities_remove(char *capability)
 {
   dt_pthread_mutex_lock(&darktable.capabilities_threadsafe);
@@ -1477,7 +1450,6 @@ void dt_capabilities_remove(char *capability)
 
   dt_pthread_mutex_unlock(&darktable.capabilities_threadsafe);
 }
-
 
 void dt_capabilities_cleanup()
 {

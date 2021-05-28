@@ -740,18 +740,14 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     if(!strncmp(filter, "pre:", 4)) dt_dev_pixelpipe_disable_after(&pipe, filter + 4);
     if(!strncmp(filter, "post:", 5)) dt_dev_pixelpipe_disable_before(&pipe, filter + 5);
   }
-
   dt_dev_pixelpipe_get_dimensions(&pipe, &dev, pipe.iwidth, pipe.iheight, &pipe.processed_width,
                                   &pipe.processed_height);
-
   dt_show_times(&start, "[export] creating pixelpipe");
-
   // find output color profile for this image:
   int sRGB = 1;
+
   if(icc_type == DT_COLORSPACE_SRGB)
-  {
     sRGB = 1;
-  }
   else if(icc_type == DT_COLORSPACE_NONE)
   {
     GList *modules = dev.iop;
@@ -769,9 +765,7 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     }
   }
   else
-  {
     sRGB = 0;
-  }
 
   // get only once at the beginning, in case the user changes it on the way:
   const gboolean high_quality_processing

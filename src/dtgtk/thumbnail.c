@@ -195,7 +195,7 @@ static gboolean _thumb_expose_again(gpointer user_data)
     return FALSE;
 
   GtkWidget *widget = (GtkWidget *)user_data;
-  gtk_widget_queue_draw(widget);
+   gtk_widget_queue_draw(widget);
   return FALSE;
 }
 
@@ -288,6 +288,7 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
   // if we have a rgbbuf but the thumb is not anymore the darkroom main one
   dt_develop_t *dev = darktable.develop;
   const dt_view_t *v = dt_view_manager_get_current_view(darktable.view_manager);
+
   if(thumb->img_surf_preview
      && (v->view(v) != DT_VIEW_DARKROOM || !dev->preview_pipe->output_backbuf
          || dev->preview_pipe->output_imgid != thumb->imgid))
@@ -305,8 +306,8 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
   {
     // let's ensure we have the right margins
     _thumb_retrieve_margins(thumb);
-
     int image_w, image_h;
+
     if(thumb->over == DT_THUMBNAIL_OVERLAYS_ALWAYS_NORMAL || thumb->over == DT_THUMBNAIL_OVERLAYS_ALWAYS_EXTENDED)
     {
       image_w = thumb->width - thumb->img_margin->left - thumb->img_margin->right;
@@ -414,7 +415,9 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
 
       cairo_surface_t *tmp_surf = thumb->img_surf;
       thumb->img_surf = img_surf;
-      if(tmp_surf && cairo_surface_get_reference_count(tmp_surf) > 0) cairo_surface_destroy(tmp_surf);
+
+      if(tmp_surf && cairo_surface_get_reference_count(tmp_surf) > 0)
+        cairo_surface_destroy(tmp_surf);
 
       if(thumb->display_focus)
       {
@@ -424,6 +427,7 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
         char path[PATH_MAX] = { 0 };
         gboolean from_cache = TRUE;
         dt_image_full_path(thumb->imgid, path, sizeof(path), &from_cache);
+
         if(!dt_imageio_large_thumbnail(path, &full_res_thumb, &full_res_thumb_wd, &full_res_thumb_ht, &color_space))
         {
           // we look for focus areas
@@ -456,6 +460,7 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
     gtk_widget_set_size_request(thumb->w_image_box, imgbox_w, imgbox_h);
     // and we set the position of the image
     int posx, posy;
+
     if(thumb->over == DT_THUMBNAIL_OVERLAYS_ALWAYS_NORMAL || thumb->over == DT_THUMBNAIL_OVERLAYS_ALWAYS_EXTENDED)
     {
       posx = thumb->img_margin->left + (image_w - imgbox_w) / 2;
@@ -881,6 +886,7 @@ static void _dt_mipmaps_updated_callback(gpointer instance, int imgid, gpointer 
   // we recompte the history tooltip if needed
   thumb->is_altered = dt_image_altered(thumb->imgid);
   gtk_widget_set_visible(thumb->w_altered, thumb->is_altered);
+
   if(thumb->is_altered)
   {
     char *tooltip = dt_history_get_items_as_string(thumb->imgid);
@@ -890,7 +896,6 @@ static void _dt_mipmaps_updated_callback(gpointer instance, int imgid, gpointer 
       g_free(tooltip);
     }
   }
-
   // reset surface
   thumb->img_surf_dirty = TRUE;
   gtk_widget_queue_draw(thumb->w_main);
@@ -900,10 +905,12 @@ static gboolean _event_box_enter_leave(GtkWidget *widget, GdkEventCrossing *even
 {
   dt_thumbnail_t *thumb = (dt_thumbnail_t *)user_data;
   // if we leave for ancestor, that means we leave for blank thumbtable area
-  if(event->type == GDK_LEAVE_NOTIFY && event->detail == GDK_NOTIFY_ANCESTOR) dt_control_set_mouse_over_id(-1);
+  if(event->type == GDK_LEAVE_NOTIFY && event->detail == GDK_NOTIFY_ANCESTOR)
+    dt_control_set_mouse_over_id(-1);
 
   if(!thumb->mouse_over && event->type == GDK_ENTER_NOTIFY && !thumb->disable_mouseover)
     dt_control_set_mouse_over_id(thumb->imgid);
+
   _set_flag(widget, GTK_STATE_FLAG_PRELIGHT, (event->type == GDK_ENTER_NOTIFY));
   _set_flag(thumb->w_image_box, GTK_STATE_FLAG_PRELIGHT, (event->type == GDK_ENTER_NOTIFY));
   return FALSE;
