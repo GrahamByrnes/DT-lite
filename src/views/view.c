@@ -1170,6 +1170,7 @@ void dt_view_active_images_reset(gboolean raise)
   if(raise)
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_ACTIVE_IMAGES_CHANGE);
 }
+
 void dt_view_active_images_add(int imgid, gboolean raise)
 {
   darktable.view_manager->active_images
@@ -1177,6 +1178,7 @@ void dt_view_active_images_add(int imgid, gboolean raise)
   if(raise)
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_ACTIVE_IMAGES_CHANGE);
 }
+
 GSList *dt_view_active_images_get()
 {
   return darktable.view_manager->active_images;
@@ -1270,7 +1272,6 @@ void dt_view_collection_update(const dt_view_manager_t *vm)
     vm->proxy.module_collect.update(vm->proxy.module_collect.module);
 }
 
-
 int32_t dt_view_tethering_get_selected_imgid(const dt_view_manager_t *vm)
 {
   if(vm->proxy.tethering.view)
@@ -1299,7 +1300,6 @@ void dt_view_print_settings(const dt_view_manager_t *vm, dt_print_info_t *pinfo)
     vm->proxy.print.print_settings(vm->proxy.print.view, pinfo);
 }
 #endif
-
 
 static gchar *_mouse_action_get_string(dt_mouse_action_t *ma)
 {
