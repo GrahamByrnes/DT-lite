@@ -63,13 +63,22 @@ int default_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_p
 int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
                   void *new_params, const int new_version)
 {
+  if(old_version == 1 && new_version == 2)
+  {
+    dt_iop_mask_manager_params_t *n = (dt_iop_mask_manager_params_t *)new_params;
+    dt_iop_mask_manager_params_t *d = (dt_iop_mask_manager_params_t *)self->default_params;
+    *n = *d; // start with a fresh copy of default parameters
+    return 0;
+  }
+  
   return 1;
 }
 
 void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const void *const i, void *const o,
              const dt_iop_roi_t *const roi_in, const dt_iop_roi_t *const roi_out)
 {
-  memcpy(o, i, (size_t)4 * roi_out->width * roi_out->height * sizeof(float));
+  const int ch = piece->colors;
+  memcpy(o, i, (size_t)ch * roi_out->width * roi_out->height * sizeof(float));
 }
 
 void commit_params(struct dt_iop_module_t *self, dt_iop_params_t *params, dt_dev_pixelpipe_t *pipe,
@@ -88,23 +97,6 @@ void cleanup_pipe(struct dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev
 {
   free(piece->data);
   piece->data = NULL;
-}
-
-void init(dt_iop_module_t *module)
-{
-  module->params = calloc(1, sizeof(dt_iop_mask_manager_params_t));
-  module->default_params = calloc(1, sizeof(dt_iop_mask_manager_params_t));
-  module->default_enabled = 0;
-  module->params_size = sizeof(dt_iop_mask_manager_params_t);
-  module->gui_data = NULL;
-}
-
-void cleanup(dt_iop_module_t *module)
-{
-  free(module->params);
-  module->params = NULL;
-  free(module->default_params);
-  module->default_params = NULL;
 }
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
