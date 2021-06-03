@@ -569,7 +569,6 @@ void dt_masks_gui_form_save_creation(dt_develop_t *dev, dt_iop_module_t *module,
   } while(exist);
 
   dev->forms = g_list_append(dev->forms, form);
-
   dt_dev_add_masks_history_item(dev, module, TRUE);
 
   if(module)
@@ -606,7 +605,8 @@ void dt_masks_gui_form_save_creation(dt_develop_t *dev, dt_iop_module_t *module,
     //dt_dev_add_history_item(dev, module, TRUE);
   }
   // show the form if needed
-  if(gui) dev->form_gui->formid = form->formid;
+  if(gui)
+    dev->form_gui->formid = form->formid;
 }
 
 int dt_masks_form_duplicate(dt_develop_t *dev, int formid)
@@ -629,6 +629,7 @@ int dt_masks_form_duplicate(dt_develop_t *dev, int formid)
   if(fbase->type & DT_MASKS_GROUP)
   {
     GList *pts = g_list_first(fbase->points);
+
     while(pts)
     {
       dt_masks_point_group_t *pt = (dt_masks_point_group_t *)pts->data;
@@ -645,6 +646,7 @@ int dt_masks_form_duplicate(dt_develop_t *dev, int formid)
   else if(fbase->type & DT_MASKS_CIRCLE)
   {
     GList *pts = g_list_first(fbase->points);
+
     while(pts)
     {
       dt_masks_point_circle_t *pt = (dt_masks_point_circle_t *)pts->data;
@@ -657,6 +659,7 @@ int dt_masks_form_duplicate(dt_develop_t *dev, int formid)
   else if(fbase->type & DT_MASKS_PATH)
   {
     GList *pts = g_list_first(fbase->points);
+
     while(pts)
     {
       dt_masks_point_path_t *pt = (dt_masks_point_path_t *)pts->data;
@@ -669,6 +672,7 @@ int dt_masks_form_duplicate(dt_develop_t *dev, int formid)
   else if(fbase->type & DT_MASKS_GRADIENT)
   {
     GList *pts = g_list_first(fbase->points);
+
     while(pts)
     {
       dt_masks_point_gradient_t *pt = (dt_masks_point_gradient_t *)pts->data;
@@ -681,6 +685,7 @@ int dt_masks_form_duplicate(dt_develop_t *dev, int formid)
   else if(fbase->type & DT_MASKS_ELLIPSE)
   {
     GList *pts = g_list_first(fbase->points);
+
     while(pts)
     {
       dt_masks_point_ellipse_t *pt = (dt_masks_point_ellipse_t *)pts->data;
@@ -693,6 +698,7 @@ int dt_masks_form_duplicate(dt_develop_t *dev, int formid)
   else if(fbase->type & DT_MASKS_BRUSH)
   {
     GList *pts = g_list_first(fbase->points);
+
     while(pts)
     {
       dt_masks_point_brush_t *pt = (dt_masks_point_brush_t *)pts->data;
@@ -730,13 +736,9 @@ int dt_masks_get_points_border(dt_develop_t *dev, dt_masks_form_t *form, float *
     }
   }
   else if(form->type & DT_MASKS_PATH)
-  {
     return dt_path_get_points_border(dev, form, points, points_count, border, border_count, source);
-  }
   else if(form->type & DT_MASKS_BRUSH)
-  {
     return dt_brush_get_points_border(dev, form, points, points_count, border, border_count, source);
-  }
   else if(form->type & DT_MASKS_GRADIENT)
   {
     dt_masks_point_gradient_t *gradient = (dt_masks_point_gradient_t *)(g_list_first(form->points)->data);
@@ -764,8 +766,10 @@ int dt_masks_get_points_border(dt_develop_t *dev, dt_masks_form_t *form, float *
     {
       if(border)
         return dt_ellipse_get_points(dev, x, y,
-                                     (ellipse->flags & DT_MASKS_ELLIPSE_PROPORTIONAL ? a * (1.0f + ellipse->border) : a + ellipse->border),
-                                     (ellipse->flags & DT_MASKS_ELLIPSE_PROPORTIONAL ? b * (1.0f + ellipse->border) : b + ellipse->border),
+                                     (ellipse->flags & DT_MASKS_ELLIPSE_PROPORTIONAL 
+                                       ? a * (1.0f + ellipse->border) : a + ellipse->border),
+                                     (ellipse->flags & DT_MASKS_ELLIPSE_PROPORTIONAL
+                                       ? b * (1.0f + ellipse->border) : b + ellipse->border),
                                      ellipse->rotation, border, border_count);
       else
         return 1;
@@ -779,25 +783,15 @@ int dt_masks_get_area(dt_iop_module_t *module, dt_dev_pixelpipe_iop_t *piece, dt
                       int *width, int *height, int *posx, int *posy)
 {
   if(form->type & DT_MASKS_CIRCLE)
-  {
     return dt_circle_get_area(module, piece, form, width, height, posx, posy);
-  }
   else if(form->type & DT_MASKS_PATH)
-  {
     return dt_path_get_area(module, piece, form, width, height, posx, posy);
-  }
   else if(form->type & DT_MASKS_GRADIENT)
-  {
     return dt_gradient_get_area(module, piece, form, width, height, posx, posy);
-  }
   else if(form->type & DT_MASKS_ELLIPSE)
-  {
     return dt_ellipse_get_area(module, piece, form, width, height, posx, posy);
-  }
   else if(form->type & DT_MASKS_BRUSH)
-  {
     return dt_brush_get_area(module, piece, form, width, height, posx, posy);
-  }
 
   return 0;
 }
@@ -806,27 +800,19 @@ int dt_masks_get_source_area(dt_iop_module_t *module, dt_dev_pixelpipe_iop_t *pi
                              int *width, int *height, int *posx, int *posy)
 {
   *width = *height = *posx = *posy = 0;
-
   // must be a clone form
   if(form->type & DT_MASKS_CLONE)
   {
     if(form->type & DT_MASKS_CIRCLE)
-    {
       return dt_circle_get_source_area(module, piece, form, width, height, posx, posy);
-    }
     else if(form->type & DT_MASKS_PATH)
-    {
       return dt_path_get_source_area(module, piece, form, width, height, posx, posy);
-    }
     else if(form->type & DT_MASKS_ELLIPSE)
-    {
       return dt_ellipse_get_source_area(module, piece, form, width, height, posx, posy);
-    }
     else if(form->type & DT_MASKS_BRUSH)
-    {
       return dt_brush_get_source_area(module, piece, form, width, height, posx, posy);
-    }
   }
+
   return 0;
 }
 
@@ -834,29 +820,18 @@ int dt_masks_get_mask(dt_iop_module_t *module, dt_dev_pixelpipe_iop_t *piece, dt
                       float **buffer, int *width, int *height, int *posx, int *posy)
 {
   if(form->type & DT_MASKS_CIRCLE)
-  {
     return dt_circle_get_mask(module, piece, form, buffer, width, height, posx, posy);
-  }
   else if(form->type & DT_MASKS_PATH)
-  {
     return dt_path_get_mask(module, piece, form, buffer, width, height, posx, posy);
-  }
   else if(form->type & DT_MASKS_GROUP)
-  {
     return dt_group_get_mask(module, piece, form, buffer, width, height, posx, posy);
-  }
   else if(form->type & DT_MASKS_GRADIENT)
-  {
     return dt_gradient_get_mask(module, piece, form, buffer, width, height, posx, posy);
-  }
   else if(form->type & DT_MASKS_ELLIPSE)
-  {
     return dt_ellipse_get_mask(module, piece, form, buffer, width, height, posx, posy);
-  }
   else if(form->type & DT_MASKS_BRUSH)
-  {
     return dt_brush_get_mask(module, piece, form, buffer, width, height, posx, posy);
-  }
+
   return 0;
 }
 
@@ -864,29 +839,17 @@ int dt_masks_get_mask_roi(dt_iop_module_t *module, dt_dev_pixelpipe_iop_t *piece
                           const dt_iop_roi_t *roi, float *buffer)
 {
   if(form->type & DT_MASKS_CIRCLE)
-  {
     return dt_circle_get_mask_roi(module, piece, form, roi, buffer);
-  }
   else if(form->type & DT_MASKS_PATH)
-  {
     return dt_path_get_mask_roi(module, piece, form, roi, buffer);
-  }
   else if(form->type & DT_MASKS_GROUP)
-  {
     return dt_group_get_mask_roi(module, piece, form, roi, buffer);
-  }
   else if(form->type & DT_MASKS_GRADIENT)
-  {
     return dt_gradient_get_mask_roi(module, piece, form, roi, buffer);
-  }
   else if(form->type & DT_MASKS_ELLIPSE)
-  {
     return dt_ellipse_get_mask_roi(module, piece, form, roi, buffer);
-  }
   else if(form->type & DT_MASKS_BRUSH)
-  {
     return dt_brush_get_mask_roi(module, piece, form, roi, buffer);
-  }
   return 0;
 }
 
@@ -894,17 +857,13 @@ int dt_masks_version(void)
 {
   return DEVELOP_MASKS_VERSION;
 }
-
+/*
 static int dt_masks_legacy_params_v1_to_v2(dt_develop_t *dev, void *params)
 {
-  /*
-   * difference: before v2 images were originally rotated on load, and then
-   * maybe in flip iop
-   * after v2: images are only rotated in flip iop.
-   */
-
+   // difference: before v2 images were originally rotated on load, and then
+   // maybe in flip iop
+   // after v2: images are only rotated in flip iop.
   dt_masks_form_t *m = (dt_masks_form_t *)params;
-
   const dt_image_orientation_t ori = dt_image_orientation(&dev->image_storage);
 
   if(ori == ORIENTATION_NONE)
@@ -919,8 +878,8 @@ static int dt_masks_legacy_params_v1_to_v2(dt_develop_t *dev, void *params)
 
     const char *opname = "flip";
     dt_iop_module_t *module = NULL;
-
     GList *modules = dev->iop;
+
     while(modules)
     {
       dt_iop_module_t *find_op = (dt_iop_module_t *)modules->data;
@@ -935,10 +894,8 @@ static int dt_masks_legacy_params_v1_to_v2(dt_develop_t *dev, void *params)
     if(module == NULL) return 1;
 
     dt_dev_pixelpipe_iop_t piece = { 0 };
-
     module->init_pipe(module, NULL, &piece);
     module->commit_params(module, module->default_params, NULL, &piece);
-
     piece.buf_in.width = 1;
     piece.buf_in.height = 1;
 
@@ -1001,26 +958,20 @@ static int dt_masks_legacy_params_v1_to_v2(dt_develop_t *dev, void *params)
     }
 
     if(m->type & DT_MASKS_CLONE)
-    {
       // NOTE: can be: DT_MASKS_CIRCLE, DT_MASKS_ELLIPSE, DT_MASKS_PATH
       module->distort_backtransform(module, &piece, m->source, 1);
-    }
 
     m->version = 2;
-
     return 0;
   }
-}
+}*/
 
 static void dt_masks_legacy_params_v2_to_v3_transform(const dt_image_t *img, float *points)
 {
   const float w = (float)img->width, h = (float)img->height;
-
   const float cx = (float)img->crop_x, cy = (float)img->crop_y;
-
   const float cw = (float)(img->width - img->crop_x - img->crop_width),
               ch = (float)(img->height - img->crop_y - img->crop_height);
-
   /*
    * masks coordinates are normalized, so we need to:
    * 1. de-normalize them by image original cropped dimensions
@@ -1035,16 +986,15 @@ static void dt_masks_legacy_params_v2_to_v3_transform_only_rescale(const dt_imag
                                                                    size_t points_count)
 {
   const float w = (float)img->width, h = (float)img->height;
-
   const float cw = (float)(img->width - img->crop_x - img->crop_width),
               ch = (float)(img->height - img->crop_y - img->crop_height);
-
   /*
    * masks coordinates are normalized, so we need to:
    * 1. de-normalize them by minimal of image original cropped dimensions
    * 2. normalize them by the minimal of image fully uncropped dimensions
    */
-  for(size_t i = 0; i < points_count; i++) points[i] = ((points[i] * MIN(cw, ch))) / MIN(w, h);
+  for(size_t i = 0; i < points_count; i++)
+    points[i] = ((points[i] * MIN(cw, ch))) / MIN(w, h);
 }
 
 static int dt_masks_legacy_params_v2_to_v3(dt_develop_t *dev, void *params)
@@ -1053,9 +1003,7 @@ static int dt_masks_legacy_params_v2_to_v3(dt_develop_t *dev, void *params)
    * difference: before v3 images were originally cropped on load
    * after v3: images are cropped in rawprepare iop.
    */
-
   dt_masks_form_t *m = (dt_masks_form_t *)params;
-
   const dt_image_t *img = &(dev->image_storage);
 
   if(img->crop_x == 0 && img->crop_y == 0 && img->crop_width == 0 && img->crop_height == 0)
@@ -1176,7 +1124,6 @@ static int dt_masks_legacy_params_v4_to_v5(dt_develop_t *dev, void *params)
   }
 
   m->version = 5;
-
   return 0;
 }
 
@@ -1201,7 +1148,6 @@ static int dt_masks_legacy_params_v5_to_v6(dt_develop_t *dev, void *params)
   }
 
   m->version = 6;
-
   return 0;
 }
 
@@ -1209,14 +1155,8 @@ static int dt_masks_legacy_params_v5_to_v6(dt_develop_t *dev, void *params)
 int dt_masks_legacy_params(dt_develop_t *dev, void *params, const int old_version, const int new_version)
 {
   int res = 1;
-#if 0 // we should not need this any longer
-  if(old_version == 1 && new_version == 2)
-  {
-    res = dt_masks_legacy_params_v1_to_v2(dev, params);
-  }
-#endif
 
-  if(old_version == 1 && new_version == 6)
+/*  if(old_version == 1 && new_version == 6)
   {
     res = dt_masks_legacy_params_v1_to_v2(dev, params);
     if(!res) res = dt_masks_legacy_params_v2_to_v3(dev, params);
@@ -1224,7 +1164,8 @@ int dt_masks_legacy_params(dt_develop_t *dev, void *params, const int old_versio
     if(!res) res = dt_masks_legacy_params_v4_to_v5(dev, params);
     if(!res) res = dt_masks_legacy_params_v5_to_v6(dev, params);
   }
-  else if(old_version == 2 && new_version == 6)
+  else */
+  if(old_version == 2 && new_version == 6)
   {
     res = dt_masks_legacy_params_v2_to_v3(dev, params);
     if(!res) res = dt_masks_legacy_params_v3_to_v4(dev, params);
@@ -1243,9 +1184,7 @@ int dt_masks_legacy_params(dt_develop_t *dev, void *params, const int old_versio
     if(!res) res = dt_masks_legacy_params_v5_to_v6(dev, params);
   }
   else if(old_version == 5 && new_version == 6)
-  {
     res = dt_masks_legacy_params_v5_to_v6(dev, params);
-  }
 
   return res;
 }
@@ -1258,17 +1197,15 @@ dt_masks_form_t *dt_masks_create(dt_masks_type_t type)
   form->type = type;
   form->version = dt_masks_version();
   form->formid = time(NULL);
-
   return form;
 }
 
 dt_masks_form_t *dt_masks_create_ext(dt_masks_type_t type)
 {
   dt_masks_form_t *form = dt_masks_create(type);
-
   // all forms created here are registered in darktable.develop->allforms for later cleanup
   if(form)
-  darktable.develop->allforms = g_list_append(darktable.develop->allforms, form);
+    darktable.develop->allforms = g_list_append(darktable.develop->allforms, form);
 
   return form;
 }
@@ -1292,6 +1229,7 @@ dt_masks_form_t *dt_masks_get_from_id_ext(GList *forms, int id)
   {
     dt_masks_form_t *form = (dt_masks_form_t *)forms->data;
     if(form->formid == id) return form;
+
     forms = g_list_next(forms);
   }
   return NULL;
@@ -1320,9 +1258,7 @@ void dt_masks_read_masks_history(dt_develop_t *dev, const int imgid)
   {
     // db record:
     // 0-img, 1-formid, 2-form_type, 3-name, 4-version, 5-points, 6-points_count, 7-source, 8-num
-
     // we get the values
-
     const int formid = sqlite3_column_int(stmt, 1);
     const int num = sqlite3_column_int(stmt, 8);
     const dt_masks_type_t type = sqlite3_column_int(stmt, 2);
@@ -1403,7 +1339,6 @@ void dt_masks_read_masks_history(dt_develop_t *dev, const int imgid)
         continue;
       }
     }
-
     // if this is a new history entry let's find it
     if(num_prev != num)
     {
@@ -1423,9 +1358,7 @@ void dt_masks_read_masks_history(dt_develop_t *dev, const int imgid)
     }
     // add the form to the history entry
     if(hist_item)
-    {
       hist_item->forms = g_list_append(hist_item->forms, form);
-    }
     else
       fprintf(stderr,
               "[_dev_read_masks_history] can't find history entry %i while adding mask %s(%i)\n",
@@ -2647,7 +2580,6 @@ void dt_masks_update_image(dt_develop_t *dev)
 {
   /* invalidate image data*/
   // dt_similarity_image_dirty(dev->image_storage.id);
-
   // invalidate buffers and force redraw of darkroom
   dev->pipe->changed |= DT_DEV_PIPE_SYNCH;
   dev->preview_pipe->changed |= DT_DEV_PIPE_SYNCH;

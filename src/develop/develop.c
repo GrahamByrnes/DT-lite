@@ -1630,9 +1630,7 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
 
   int history_end_current = 0;
   sqlite3_stmt *stmt;
-
   dt_ioppr_set_default_iop_order(dev, imgid);
-
   int auto_apply_modules = 0;
   gboolean first_run = FALSE;
 
@@ -1640,7 +1638,6 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
   {
     // cleanup
     DT_DEBUG_SQLITE3_EXEC(dt_database_get(darktable.db), "DELETE FROM memory.history", NULL, NULL, NULL);
-
     // prepend all default modules to memory.history
     _dev_add_default_modules(dev, imgid);
     const int default_modules = _dev_get_module_nb_records();
@@ -1659,12 +1656,10 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
                               -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   if(sqlite3_step(stmt) == SQLITE_ROW) // seriously, this should never fail
-  {
     if(sqlite3_column_type(stmt, 0) != SQLITE_NULL)
       history_end_current = sqlite3_column_int(stmt, 0);
-  }
-  sqlite3_finalize(stmt);
 
+  sqlite3_finalize(stmt);
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "SELECT imgid, num, module, operation,"
                               "       op_params, enabled, blendop_params,"
@@ -1682,10 +1677,10 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
     // 7-blendop_version, 8 multi_priority, 9 multi_name, 10 iop_order
     dt_dev_history_item_t *hist = (dt_dev_history_item_t *)calloc(1, sizeof(dt_dev_history_item_t));
     hist->enabled = sqlite3_column_int(stmt, 5);
-
     const char *opname = (const char *)sqlite3_column_text(stmt, 3);
     const int multi_priority = sqlite3_column_int(stmt, 8);
     const char *multi_name = (const char *)sqlite3_column_text(stmt, 9);
+
     if(!opname)
     {
       fprintf(stderr, "[dev_read_history] database history for image `%s' seems to be corrupted!\n",
@@ -1695,7 +1690,6 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
     }
 
     const int iop_order = dt_ioppr_get_iop_order(dev->iop_order_list, opname, multi_priority);
-
     hist->module = NULL;
     dt_iop_module_t *find_op = NULL;
     for(GList *modules = dev->iop; modules; modules = g_list_next(modules))
@@ -1713,10 +1707,8 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
           break;
         }
         else if(multi_priority > 0)
-        {
           // we just say that we find the name, so we just have to add new instance of this module
           find_op = module;
-        }
       }
     }
     if(!hist->module && find_op)
@@ -1789,8 +1781,13 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
         fprintf(stderr, "[dev_read_history] module `%s' version mismatch: history is %d, dt %d.\n",
                 hist->module->op, modversion, hist->module->version());
         const char *fname = dev->image_storage.filename + strlen(dev->image_storage.filename);
-        while(fname > dev->image_storage.filename && *fname != '/') fname--;
-        if(fname > dev->image_storage.filename) fname++;
+
+        while(fname > dev->image_storage.filename && *fname != '/')
+          fname--;
+
+        if(fname > dev->image_storage.filename)
+          fname++;
+
         dt_control_log(_("%s: module `%s' version mismatch: %d != %d"), fname, hist->module->op,
                        hist->module->version(), modversion);
         dt_dev_free_history_item(hist);
@@ -1806,7 +1803,6 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
         }
         legacy_params = TRUE;
       }
-
       /*
        * Fix for flip iop: previously it was not always needed, but it might be
        * in history stack as "orientation (off)", but now we always want it
@@ -1829,18 +1825,15 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
     dev->history = g_list_append(dev->history, hist);
     dev->history_end++;
   }
+
   sqlite3_finalize(stmt);
-
   dt_ioppr_resync_modules_order(dev);
-
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "SELECT history_end FROM main.images WHERE id = ?1",
                               -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   if(sqlite3_step(stmt) == SQLITE_ROW) // seriously, this should never fail
-  {
     if(sqlite3_column_type(stmt, 0) != SQLITE_NULL)
       dev->history_end = sqlite3_column_int(stmt, 0);
-  }
 
   sqlite3_finalize(stmt);
   dt_ioppr_check_iop_order(dev, imgid, "dt_dev_read_history_no_image end");
