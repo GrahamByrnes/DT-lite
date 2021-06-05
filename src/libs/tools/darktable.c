@@ -171,11 +171,9 @@ static gboolean _lib_darktable_draw_callback(GtkWidget *widget, cairo_t *cr, gpo
   dt_lib_module_t *self = (dt_lib_module_t *)user_data;
   dt_lib_darktable_t *d = (dt_lib_darktable_t *)self->data;
   GtkStyleContext *context = gtk_widget_get_style_context(widget);
-
   GtkAllocation allocation;
   gtk_widget_get_allocation(widget, &allocation);
   gtk_render_background(context, cr, 0, 0, allocation.width, allocation.height);
-
   // Get the normal foreground color from the CSS stylesheet
   GdkRGBA *tmpcolor;
   gtk_style_context_get(context, GTK_STATE_FLAG_NORMAL, "color", &tmpcolor, NULL);
@@ -255,6 +253,8 @@ static void _lib_darktable_show_about_dialog()
   gtk_dialog_run(GTK_DIALOG(dialog));
   gtk_widget_destroy(dialog);
 }
+
+
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
 // kate: tab-indents: off; indent-width 2; replace-tabs on; indent-mode cstyle; remove-trailing-spaces modified;

@@ -58,7 +58,6 @@ int position()
 void update(dt_lib_module_t *self)
 {
   dt_lib_ioporder_t *d = (dt_lib_ioporder_t *)self->data;
-
   const dt_iop_order_t kind = dt_ioppr_get_iop_order_list_kind(darktable.develop->iop_order_list);
 
   if(kind == DT_IOP_ORDER_CUSTOM)
@@ -66,7 +65,6 @@ void update(dt_lib_module_t *self)
     gchar *iop_order_list = dt_ioppr_serialize_text_iop_order_list(darktable.develop->iop_order_list);
     gboolean found = FALSE;
     int index = 0;
-
     sqlite3_stmt *stmt;
 
     DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
@@ -92,13 +90,12 @@ void update(dt_lib_module_t *self)
         found = TRUE;
         g_free(iop_list_text);
         break;
-    }
+      }
 
       g_free(iop_list_text);
     }
 
     sqlite3_finalize(stmt);
-
     g_free(iop_order_list);
 
     if(!found)
@@ -128,7 +125,6 @@ static void _invalidate_pipe(dt_develop_t *dev)
   dev->pipe->cache_obsolete = 1;
   dev->preview_pipe->cache_obsolete = 1;
   dev->preview2_pipe->cache_obsolete = 1;
-
   // invalidate buffers and force redraw of darkroom
   dt_dev_invalidate_all(dev);
 }
@@ -145,7 +141,6 @@ void gui_init(dt_lib_module_t *self)
 
   self->data = (void *)d;
   self->widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-
   GtkWidget *label = gtk_label_new(_("current order"));
 
   d->widget = gtk_label_new("");
@@ -172,19 +167,14 @@ void gui_cleanup(dt_lib_module_t *self)
 void gui_reset (dt_lib_module_t *self)
 {
   dt_lib_ioporder_t *d = (dt_lib_ioporder_t *)self->data;
-
   // the module reset is use to select the v3.0 iop-order
-
   GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
 
   if(iop_order_list)
   {
     const int32_t imgid = darktable.develop->image_storage.id;
-
     dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
-
     _invalidate_pipe(darktable.develop);
-
     d->current_mode = DT_IOP_ORDER_V30;
     gtk_label_set_text(GTK_LABEL(d->widget), _("v3.0"));
   }
@@ -216,20 +206,14 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
   if(iop_order_list)
   {
     const int32_t imgid = darktable.develop->image_storage.id;
-
     dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
-
     _invalidate_pipe(darktable.develop);
-
     update(self);
-
     g_list_free_full(iop_order_list, free);
     return 0;
   }
   else
-  {
     return 1;
-  }
 }
 
 void *get_params(dt_lib_module_t *self, int *size)

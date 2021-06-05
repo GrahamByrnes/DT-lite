@@ -1180,7 +1180,7 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
 
       if((format == 1) && (bps == 16) && (spp == 1) && (phi == 34892) && (cmr == 0))
         is_monochrome = TRUE;
-       // adding the cmr tag seems to fix this, maybe
+       // 34892 is correct DNG key for LINEAR_RAW but seems to screw up recognition of mono
     }
 
     if(is_hdr)

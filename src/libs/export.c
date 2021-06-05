@@ -203,12 +203,10 @@ static void _mouse_over_image_callback(gpointer instance, dt_lib_module_t *self)
 static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
 {
   char style[128] = { 0 };
-
   // Let's get the max dimension restriction if any...
   // TODO: pass the relevant values directly, not using the conf ...
   const uint32_t max_width = dt_conf_get_int(CONFIG_PREFIX "width");
   const uint32_t max_height = dt_conf_get_int(CONFIG_PREFIX "height");
-
   // get the format_name and storage_name settings which are plug-ins name and not necessary what is displayed on the combobox.
   // note that we cannot take directly the combobox entry index as depending on the storage some format are not listed.
   char *format_name = dt_conf_get_string(CONFIG_PREFIX "format_name");
@@ -253,9 +251,7 @@ static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
     confirm_message = NULL;
 
     if(res != GTK_RESPONSE_YES)
-    {
       return;
-    }
   }
 
   gboolean upscale = dt_conf_get_bool(CONFIG_PREFIX "upscale");
@@ -275,7 +271,6 @@ static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
   GList *list = g_list_copy((GList *)dt_view_get_images_to_act_on(TRUE, TRUE));
   dt_control_export(list, max_width, max_height, format_index, storage_index, high_quality, upscale, export_masks,
                     style, style_append, icc_type, icc_filename, icc_intent, d->metadata_export);
-
   g_free(icc_filename);
 }
 
@@ -293,7 +288,6 @@ void _set_dimensions(dt_lib_export_t *d, uint32_t max_width, uint32_t max_height
   g_free(max_height_char);
   _resync_print_dimensions(d);
 }
-
 
 void _print_size_update_display(dt_lib_export_t *self)
 {

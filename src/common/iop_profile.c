@@ -62,19 +62,22 @@ static void _transform_from_to_rgb_lab_lcms2(const float *const image_in, float 
   }
   else
     rgb_profile = dt_colorspaces_get_profile(DT_COLORSPACE_LIN_REC2020, "", DT_PROFILE_DIRECTION_WORK)->profile;
+
   if(rgb_profile)
   {
     cmsColorSpaceSignature rgb_color_space = cmsGetColorSpace(rgb_profile);
+
     if(rgb_color_space != cmsSigRgbData)
     {
-        fprintf(stderr, "working profile color space `%c%c%c%c' not supported\n",
+      fprintf(stderr, "working profile color space `%c%c%c%c' not supported\n",
                 (char)(rgb_color_space>>24),
                 (char)(rgb_color_space>>16),
                 (char)(rgb_color_space>>8),
                 (char)(rgb_color_space));
-        rgb_profile = NULL;
+      rgb_profile = NULL;
     }
   }
+
   if(rgb_profile == NULL)
   {
     rgb_profile = dt_colorspaces_get_profile(DT_COLORSPACE_LIN_REC2020, "", DT_PROFILE_DIRECTION_WORK)->profile;
@@ -82,7 +85,6 @@ static void _transform_from_to_rgb_lab_lcms2(const float *const image_in, float 
   }
 
   lab_profile = dt_colorspaces_get_profile(DT_COLORSPACE_LAB, "", DT_PROFILE_DIRECTION_ANY)->profile;
-
   cmsHPROFILE *input_profile = NULL;
   cmsHPROFILE *output_profile = NULL;
   cmsUInt32Number input_format = TYPE_RGBA_FLT;
@@ -104,6 +106,7 @@ static void _transform_from_to_rgb_lab_lcms2(const float *const image_in, float 
   }
 
   xform = cmsCreateTransform(input_profile, input_format, output_profile, output_format, intent, 0);
+
   if(xform)
   {
 #ifdef _OPENMP
@@ -136,15 +139,17 @@ static void _transform_rgb_to_rgb_lcms2(const float *const image_in, float *cons
   cmsHPROFILE *from_rgb_profile = NULL;
   cmsHPROFILE *to_rgb_profile = NULL;
 
-  if(type_from == DT_COLORSPACE_DISPLAY || type_to == DT_COLORSPACE_DISPLAY || type_from == DT_COLORSPACE_DISPLAY2
-     || type_to == DT_COLORSPACE_DISPLAY2)
+  if(type_from == DT_COLORSPACE_DISPLAY || type_to == DT_COLORSPACE_DISPLAY
+     || type_from == DT_COLORSPACE_DISPLAY2 || type_to == DT_COLORSPACE_DISPLAY2)
     pthread_rwlock_rdlock(&darktable.color_profiles->xprofile_lock);
 
   if(type_from != DT_COLORSPACE_NONE)
   {
     const dt_colorspaces_color_profile_t *profile_from
         = dt_colorspaces_get_profile(type_from, filename_from, DT_PROFILE_DIRECTION_ANY);
-    if(profile_from) from_rgb_profile = profile_from->profile;
+        
+    if(profile_from)
+      from_rgb_profile = profile_from->profile;
   }
   else
     fprintf(stderr, "[_transform_rgb_to_rgb_lcms2] invalid from profile\n");
@@ -162,6 +167,7 @@ static void _transform_rgb_to_rgb_lcms2(const float *const image_in, float *cons
   if(from_rgb_profile)
   {
     cmsColorSpaceSignature rgb_color_space = cmsGetColorSpace(from_rgb_profile);
+
     if(rgb_color_space != cmsSigRgbData)
     {
       fprintf(stderr, "[_transform_rgb_to_rgb_lcms2] profile color space `%c%c%c%c' not supported\n",
@@ -170,9 +176,11 @@ static void _transform_rgb_to_rgb_lcms2(const float *const image_in, float *cons
       from_rgb_profile = NULL;
     }
   }
+
   if(to_rgb_profile)
   {
     cmsColorSpaceSignature rgb_color_space = cmsGetColorSpace(to_rgb_profile);
+
     if(rgb_color_space != cmsSigRgbData)
     {
       fprintf(stderr, "[_transform_rgb_to_rgb_lcms2] profile color space `%c%c%c%c' not supported\n",
@@ -211,7 +219,6 @@ static void _transform_rgb_to_rgb_lcms2(const float *const image_in, float *cons
     {
       const float *const in = image_in + y * width * 4;
       float *const out = image_out + y * width * 4;
-
       cmsDoTransform(xform, in, out, width);
     }
   }
@@ -262,8 +269,6 @@ static inline void _transform_lcms2_rgb(const float *const image_in, float *cons
                               profile_info_to->intent);
 }
 
-///////////////////////////////////////
-
 static inline void _transform_rgb_to_lab_matrix(const float *const restrict image_in, float *const restrict image_out,
                                                 const int width, const int height,
                                                 const dt_iop_order_iccprofile_info_t *const profile_info)
@@ -303,9 +308,7 @@ static inline void _transform_lab_to_rgb_matrix(const float *const restrict imag
   {
     const float *const in = image_in + y;
     float *const out = image_out + y;
-
     float xyz[3] DT_ALIGNED_PIXEL = { 0.0f, 0.0f, 0.0f };
-
     dt_Lab_to_XYZ(in, xyz);
     _ioppr_xyz_to_linear_rgb_matrix(xyz, out, matrix);
   }
@@ -403,7 +406,6 @@ static inline void _transform_mono(struct dt_iop_module_t *self, const float *co
     fprintf(stderr, "[_transform_mono] invalid conversion from %i to %i\n", cst_from, cst_to);
   }
 }
-///////////////////////////
 
 #define DT_IOPPR_LUT_SAMPLES 0x10000
 
@@ -458,7 +460,6 @@ static int dt_ioppr_generate_profile_info(dt_iop_order_iccprofile_info_t *profil
 
   profile_info->nonlinearlut = 0;
   profile_info->grey = 0.1842f;
-
   profile_info->type = type;
   g_strlcpy(profile_info->filename, filename, sizeof(profile_info->filename));
   profile_info->intent = intent;
@@ -468,7 +469,9 @@ static int dt_ioppr_generate_profile_info(dt_iop_order_iccprofile_info_t *profil
 
   const dt_colorspaces_color_profile_t *profile
       = dt_colorspaces_get_profile(type, filename, DT_PROFILE_DIRECTION_ANY);
-  if(profile) rgb_profile = profile->profile;
+
+  if(profile)
+    rgb_profile = profile->profile;
 
   if(type == DT_COLORSPACE_DISPLAY || type == DT_COLORSPACE_DISPLAY2)
     pthread_rwlock_unlock(&darktable.color_profiles->xprofile_lock);
@@ -477,6 +480,7 @@ static int dt_ioppr_generate_profile_info(dt_iop_order_iccprofile_info_t *profil
   if(rgb_profile)
   {
     cmsColorSpaceSignature rgb_color_space = cmsGetColorSpace(rgb_profile);
+
     if(rgb_color_space != cmsSigRgbData)
     {
       fprintf(stderr, "working profile color space `%c%c%c%c' not supported\n",
@@ -487,7 +491,6 @@ static int dt_ioppr_generate_profile_info(dt_iop_order_iccprofile_info_t *profil
       rgb_profile = NULL;
     }
   }
-
   // get the matrix
   if(rgb_profile)
   {
@@ -525,8 +528,8 @@ dt_iop_order_iccprofile_info_t *dt_ioppr_get_profile_info_from_list(struct dt_de
                                                                     const int profile_type, const char *profile_filename)
 {
   dt_iop_order_iccprofile_info_t *profile_info = NULL;
-
   GList *profiles = g_list_first(dev->allprofile_info);
+
   while(profiles)
   {
     dt_iop_order_iccprofile_info_t *prof = (dt_iop_order_iccprofile_info_t *)(profiles->data);
@@ -545,15 +548,14 @@ dt_iop_order_iccprofile_info_t *dt_ioppr_add_profile_info_to_list(struct dt_deve
                                                                   const char *profile_filename, const int intent)
 {
   dt_iop_order_iccprofile_info_t *profile_info = dt_ioppr_get_profile_info_from_list(dev, profile_type, profile_filename);
+
   if(profile_info == NULL)
   {
     profile_info = malloc(sizeof(dt_iop_order_iccprofile_info_t));
     dt_ioppr_init_profile_info(profile_info, 0);
     const int err = dt_ioppr_generate_profile_info(profile_info, profile_type, profile_filename, intent);
     if(err == 0)
-    {
       dev->allprofile_info = g_list_append(dev->allprofile_info, profile_info);
-    }
     else
     {
       free(profile_info);
@@ -568,8 +570,8 @@ dt_iop_order_iccprofile_info_t *dt_ioppr_get_iop_work_profile_info(struct dt_iop
   dt_iop_order_iccprofile_info_t *profile = NULL;
   // first check if the module is between colorin and colorout
   gboolean in_between = FALSE;
-
   GList *modules = g_list_first(iop_list);
+
   while(modules)
   {
     dt_iop_module_t *mod = (dt_iop_module_t *)(modules->data);
@@ -597,9 +599,10 @@ dt_iop_order_iccprofile_info_t *dt_ioppr_get_iop_work_profile_info(struct dt_iop
     dt_colorspaces_color_profile_type_t type = DT_COLORSPACE_NONE;
     const char *filename = NULL;
     dt_develop_t *dev = module->dev;
-
     dt_ioppr_get_work_profile_type(dev, &type, &filename);
-    if(filename) profile = dt_ioppr_add_profile_info_to_list(dev, type, filename, DT_INTENT_PERCEPTUAL);
+
+    if(filename)
+      profile = dt_ioppr_add_profile_info_to_list(dev, type, filename, DT_INTENT_PERCEPTUAL);
   }
 
   return profile;
@@ -617,8 +620,8 @@ dt_iop_order_iccprofile_info_t *dt_ioppr_set_pipe_work_profile_info(struct dt_de
       type, filename);
     profile_info = dt_ioppr_add_profile_info_to_list(dev, DT_COLORSPACE_LIN_REC2020, "", intent);
   }
+  
   pipe->dsc.work_profile_info = profile_info;
-
   return profile_info;
 }
 
@@ -627,6 +630,7 @@ dt_iop_order_iccprofile_info_t *dt_ioppr_get_histogram_profile_info(struct dt_de
   dt_colorspaces_color_profile_type_t histogram_profile_type;
   const char *histogram_profile_filename;
   dt_ioppr_get_histogram_profile_type(&histogram_profile_type, &histogram_profile_filename);
+
   return dt_ioppr_add_profile_info_to_list(dev, histogram_profile_type, histogram_profile_filename,
                                            DT_INTENT_PERCEPTUAL);
 }
@@ -642,14 +646,15 @@ void dt_ioppr_get_work_profile_type(struct dt_develop_t *dev, int *profile_type,
 {
   *profile_type = DT_COLORSPACE_NONE;
   *profile_filename = NULL;
-
   // use introspection to get the params values
   dt_iop_module_so_t *colorin_so = NULL;
   dt_iop_module_t *colorin = NULL;
   GList *modules = g_list_first(darktable.iop);
+
   while(modules)
   {
     dt_iop_module_so_t *module_so = (dt_iop_module_so_t *)(modules->data);
+
     if(!strcmp(module_so->op, "colorin"))
     {
       colorin_so = module_so;
@@ -657,12 +662,15 @@ void dt_ioppr_get_work_profile_type(struct dt_develop_t *dev, int *profile_type,
     }
     modules = g_list_next(modules);
   }
+
   if(colorin_so && colorin_so->get_p)
   {
     modules = g_list_first(dev->iop);
+
     while(modules)
     {
       dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
+
       if(!strcmp(module->op, "colorin"))
       {
         colorin = module;
@@ -671,6 +679,7 @@ void dt_ioppr_get_work_profile_type(struct dt_develop_t *dev, int *profile_type,
       modules = g_list_next(modules);
     }
   }
+
   if(colorin)
   {
     dt_colorspaces_color_profile_type_t *_type = colorin_so->get_p(colorin->params, "type_work");
@@ -691,14 +700,15 @@ void dt_ioppr_get_export_profile_type(struct dt_develop_t *dev, int *profile_typ
 {
   *profile_type = DT_COLORSPACE_NONE;
   *profile_filename = NULL;
-
   // use introspection to get the params values
   dt_iop_module_so_t *colorout_so = NULL;
   dt_iop_module_t *colorout = NULL;
   GList *modules = g_list_last(darktable.iop);
+
   while(modules)
   {
     dt_iop_module_so_t *module_so = (dt_iop_module_so_t *)(modules->data);
+
     if(!strcmp(module_so->op, "colorout"))
     {
       colorout_so = module_so;
@@ -706,12 +716,15 @@ void dt_ioppr_get_export_profile_type(struct dt_develop_t *dev, int *profile_typ
     }
     modules = g_list_previous(modules);
   }
+
   if(colorout_so && colorout_so->get_p)
   {
     modules = g_list_last(dev->iop);
+
     while(modules)
     {
       dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
+
       if(!strcmp(module->op, "colorout"))
       {
         colorout = module;
@@ -720,10 +733,12 @@ void dt_ioppr_get_export_profile_type(struct dt_develop_t *dev, int *profile_typ
       modules = g_list_previous(modules);
     }
   }
+
   if(colorout)
   {
     dt_colorspaces_color_profile_type_t *_type = colorout_so->get_p(colorout->params, "type");
     char *_filename = colorout_so->get_p(colorout->params, "filename");
+
     if(_type && _filename)
     {
       *profile_type = *_type;
@@ -739,7 +754,6 @@ void dt_ioppr_get_export_profile_type(struct dt_develop_t *dev, int *profile_typ
 void dt_ioppr_get_histogram_profile_type(int *profile_type, const char **profile_filename)
 {
   const dt_colorspaces_color_mode_t mode = darktable.color_profiles->mode;
-
   // if in gamut check use soft proof
   if(mode != DT_PROFILE_NORMAL || darktable.color_profiles->histogram_type == DT_COLORSPACE_SOFTPROOF)
   {
@@ -767,6 +781,7 @@ void dt_ioppr_transform_image_colorspace(struct dt_iop_module_t *self, const flo
     *converted_cst = cst_to;
     return;
   }
+
   if(profile_info == NULL || profile_info->type == DT_COLORSPACE_NONE)
   {
     *converted_cst = cst_from;
