@@ -281,20 +281,13 @@ typedef struct dt_iop_gui_blend_data_t
   dt_pthread_mutex_t lock;
 } dt_iop_gui_blend_data_t;
 
-/** global init of blendops */
-dt_blendop_cl_global_t *dt_develop_blend_init_cl_global(void);
-/** global cleanup of blendops */
-void dt_develop_blend_free_cl_global(dt_blendop_cl_global_t *b);
-/** apply blend */
 void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelpipe_iop_t *piece,
                               const void *const i, void *const o, const struct dt_iop_roi_t *const roi_in,
                               const struct dt_iop_roi_t *const roi_out);
-/** get blend version */
+// get blend version
 int dt_develop_blend_version(void);
-/** check if content of params is all zero, indicating a non-initialized set of blend parameters which needs
- * special care. */
-gboolean dt_develop_blend_params_is_all_zero(const void *params, size_t length);
-/** update blendop params from older versions */
+
+// update blendop params from older versions
 int dt_develop_blend_legacy_params(dt_iop_module_t *module, const void *const old_params,
                                    const int old_version, void *new_params, const int new_version,
                                    const int length);
@@ -314,7 +307,7 @@ void dt_iop_gui_blending_lose_focus(dt_iop_module_t *module);
 
 gboolean blend_color_picker_apply(dt_iop_module_t *module, GtkWidget *picker, dt_dev_pixelpipe_iop_t *piece);
 
-/** routine to translate from mode id to sequence in option list */
+// routine to translate from mode id to sequence in option list
 int dt_iop_gui_blending_mode_seq(dt_iop_gui_blend_data_t *bd, int mode);
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh

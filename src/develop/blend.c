@@ -2226,7 +2226,6 @@ static void _blend_RGB_B(const _blend_buffer_desc_t *bd, const float *a, float *
     _blend_noop(bd, a, b, mask, NULL, NULL); // Noop for Lab and Raw (unclamped)
 }
 
-
 static void display_channel(const _blend_buffer_desc_t *bd, const float *a, float *b, const float *mask,
                             dt_dev_pixelpipe_display_mask_t channel,
                             const dt_iop_order_iccprofile_info_t *work_profile)
@@ -2439,7 +2438,6 @@ static void display_channel(const _blend_buffer_desc_t *bd, const float *a, floa
       b[j + 3] = mask[i];
 }
 
-
 _blend_row_func *dt_develop_choose_blend_func(const unsigned int blend_mode)
 {
   _blend_row_func *blend = NULL;
@@ -2602,12 +2600,10 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
      && (mask_mode & DEVELOP_MASK_MASK_CONDITIONAL))
         ? self->request_mask_display
         : DT_DEV_PIXELPIPE_DISPLAY_NONE;
-
   // get channel max values depending on colorspace
   const dt_iop_colorspace_type_t cst = self->blend_colorspace(self, piece->pipe, piece);
   const dt_iop_order_iccprofile_info_t *const work_profile = dt_ioppr_get_pipe_work_profile_info(piece->pipe);
-  // check if mask should be suppressed temporarily (i.e. just set to global
-  // opacity value)
+  // check if mask should be suppressed temporarily (i.e. just set to global opacity value)
   const _Bool suppress_mask = self->suppress_mask && self->dev->gui_attached && (self == self->dev->gui_module)
                               && (piece->pipe == self->dev->pipe) && (mask_mode & DEVELOP_MASK_MASK_CONDITIONAL);
   const _Bool mask_feather = d->feathering_radius > 0.1f;
@@ -2897,7 +2893,7 @@ void tiling_callback_blendop(struct dt_iop_module_t *self, struct dt_dev_pixelpi
 /** check if content of params is all zero, indicating a non-initialized set of
    blend parameters
     which needs special care. */
-gboolean dt_develop_blend_params_is_all_zero(const void *params, size_t length)
+gboolean _develop_blend_params_is_all_zero(const void *params, size_t length)
 {
   const char *data = (const char *)params;
 
@@ -2922,7 +2918,7 @@ int dt_develop_blend_legacy_params(dt_iop_module_t *module, const void *const ol
   // support later (e.g. module exposure). remedy: we simply initialize with the
   // current default blend params
   // in this case.
-  if(dt_develop_blend_params_is_all_zero(old_params, length))
+  if(_develop_blend_params_is_all_zero(old_params, length))
   {
     dt_develop_blend_params_t *n = (dt_develop_blend_params_t *)new_params;
     dt_develop_blend_params_t *d = (dt_develop_blend_params_t *)module->default_blendop_params;
