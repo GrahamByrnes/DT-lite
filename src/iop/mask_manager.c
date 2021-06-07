@@ -77,8 +77,7 @@ int legacy_params(dt_iop_module_t *self, const void *const old_params, const int
 void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const void *const i, void *const o,
              const dt_iop_roi_t *const roi_in, const dt_iop_roi_t *const roi_out)
 {
-  const int ch = piece->colors;
-  memcpy(o, i, (size_t)ch * roi_out->width * roi_out->height * sizeof(float));
+  memcpy(o, i, (size_t)4 * roi_out->width * roi_out->height * sizeof(float));
 }
 
 void commit_params(struct dt_iop_module_t *self, dt_iop_params_t *params, dt_dev_pixelpipe_t *pipe,
