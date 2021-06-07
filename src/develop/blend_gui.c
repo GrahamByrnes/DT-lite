@@ -568,7 +568,6 @@ static float log10_scale_callback(GtkWidget *self, float inval, int dir)
   return outval;
 }
 
-
 static float magnifier_scale_callback(GtkWidget *self, float inval, int dir)
 {
   float outval;
@@ -625,7 +624,6 @@ static int _blendop_blendif_disp_alternative_worker(GtkWidget *widget, dt_iop_mo
   return newmode;
 }
 
-
 static int _blendop_blendif_disp_alternative_mag(GtkWidget *widget, dt_iop_module_t *module, int mode)
 {
   return _blendop_blendif_disp_alternative_worker(widget, module, mode, magnifier_scale_callback, _(" (zoom)"));
@@ -640,7 +638,6 @@ static void _blendof_blendif_disp_alternative_reset(GtkWidget *widget, dt_iop_mo
 {
   (void) _blendop_blendif_disp_alternative_worker(widget, module, 0, NULL, "");
 }
-
 
 static dt_iop_colorspace_type_t _blendop_blendif_get_picker_colorspace(dt_iop_gui_blend_data_t *bd)
 {
@@ -737,7 +734,6 @@ static void _update_gradient_slider_pickers(GtkWidget *callback_dummy, dt_iop_mo
 
   --darktable.gui->reset;
 }
-
 
 static void _blendop_blendif_update_tab(dt_iop_module_t *module, const int tab)
 {
@@ -837,7 +833,6 @@ static void _blendop_blendif_update_tab(dt_iop_module_t *module, const int tab)
   --darktable.gui->reset;
 }
 
-
 static void _blendop_blendif_tab_switch(GtkNotebook *notebook, GtkWidget *page, guint page_num,
                                         dt_iop_gui_blend_data_t *data)
 {
@@ -857,7 +852,6 @@ static void _blendop_blendif_tab_switch(GtkNotebook *notebook, GtkWidget *page, 
 
   _blendop_blendif_update_tab(data->module, data->tab);
 }
-
 
 static void _blendop_blendif_showmask_clicked(GtkWidget *button, GdkEventButton *event, dt_iop_module_t *module)
 {
@@ -1071,9 +1065,8 @@ static int _blendop_masks_add_shape(GtkWidget *widget, dt_iop_module_t *self, gb
 static int _blendop_masks_add_shape_callback(GtkWidget *widget, GdkEventButton *event, dt_iop_module_t *self)
 {
   if(event->button ==1)
-  {
     return _blendop_masks_add_shape(widget, self, event->state & GDK_CONTROL_MASK);
-  }
+
   return FALSE;
 }
 
@@ -1266,9 +1259,7 @@ gboolean blend_color_picker_apply(dt_iop_module_t *module, GtkWidget *picker, dt
 static void _blendop_blendif_channel_mask_view(GtkWidget *widget, dt_iop_module_t *module, dt_dev_pixelpipe_display_mask_t mode)
 {
   dt_iop_gui_blend_data_t *data = module->blend_data;
-
   dt_dev_pixelpipe_display_mask_t new_request_mask_display = module->request_mask_display | mode;
-
   // in case user requests channel display: get the cannel
   if(new_request_mask_display & DT_DEV_PIXELPIPE_DISPLAY_CHANNEL)
   {
@@ -1292,7 +1283,6 @@ static void _blendop_blendif_channel_mask_view(GtkWidget *widget, dt_iop_module_
 static void _blendop_blendif_channel_mask_view_toggle(GtkWidget *widget, dt_iop_module_t *module, dt_dev_pixelpipe_display_mask_t mode)
 {
   dt_iop_gui_blend_data_t *data = module->blend_data;
-
   dt_dev_pixelpipe_display_mask_t new_request_mask_display = module->request_mask_display & ~DT_DEV_PIXELPIPE_DISPLAY_STICKY;
 
   // toggle mode
@@ -1302,14 +1292,14 @@ static void _blendop_blendif_channel_mask_view_toggle(GtkWidget *widget, dt_iop_
     new_request_mask_display |= mode;
 
   dt_pthread_mutex_lock(&data->lock);
+
   if(new_request_mask_display & DT_DEV_PIXELPIPE_DISPLAY_STICKY)
     data->save_for_leave |= DT_DEV_PIXELPIPE_DISPLAY_STICKY;
   else
     data->save_for_leave &= ~DT_DEV_PIXELPIPE_DISPLAY_STICKY;
+
   dt_pthread_mutex_unlock(&data->lock);
-
   new_request_mask_display &= ~DT_DEV_PIXELPIPE_DISPLAY_ANY;
-
   // in case user requests channel display: get the cannel
   if(new_request_mask_display & DT_DEV_PIXELPIPE_DISPLAY_CHANNEL)
   {
@@ -1334,12 +1324,12 @@ static void _blendop_blendif_channel_mask_view_toggle(GtkWidget *widget, dt_iop_
 static gboolean _blendop_blendif_enter(GtkWidget *widget, GdkEventCrossing *event, dt_iop_module_t *module)
 {
   if(darktable.gui->reset) return FALSE;
+
   dt_iop_gui_blend_data_t *data = module->blend_data;
-
   dt_dev_pixelpipe_display_mask_t mode = 0;
-
   // depending on shift modifiers we activate channel and/or mask display
   GdkModifierType modifiers = gtk_accelerator_get_default_mod_mask();
+
   if((event->state & modifiers) == (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
     mode = (DT_DEV_PIXELPIPE_DISPLAY_MASK | DT_DEV_PIXELPIPE_DISPLAY_CHANNEL);
   else if((event->state & modifiers) == GDK_SHIFT_MASK)
@@ -1348,6 +1338,7 @@ static gboolean _blendop_blendif_enter(GtkWidget *widget, GdkEventCrossing *even
     mode = DT_DEV_PIXELPIPE_DISPLAY_MASK;
 
   dt_pthread_mutex_lock(&data->lock);
+
   if(mode && data->timeout_handle)
   {
     // purge any remaining timeout handlers
@@ -1359,10 +1350,9 @@ static gboolean _blendop_blendif_enter(GtkWidget *widget, GdkEventCrossing *even
     // save request_mask_display to restore later
     data->save_for_leave = module->request_mask_display & ~DT_DEV_PIXELPIPE_DISPLAY_STICKY;
   }
+
   dt_pthread_mutex_unlock(&data->lock);
-
   _blendop_blendif_channel_mask_view(widget, module, mode);
-
   dt_control_key_accelerators_off(darktable.control);
   gtk_widget_grab_focus(widget);
   return FALSE;
@@ -1383,11 +1373,13 @@ static gboolean _blendop_blendif_leave_delayed(gpointer data)
     module->request_mask_display = bd->save_for_leave & ~DT_DEV_PIXELPIPE_DISPLAY_STICKY;
     reprocess = 1;
   }
+
   bd->timeout_handle = 0;
   dt_pthread_mutex_unlock(&bd->lock);
 
-if(reprocess)
+  if(reprocess)
     dt_iop_refresh_center(module);  // return FALSE and thereby terminate the handler
+
   return FALSE;
 }
 
@@ -1400,9 +1392,11 @@ static gboolean _blendop_blendif_leave(GtkWidget *widget, GdkEventCrossing *even
   // do not immediately switch-off mask/channel display in case user leaves gradient only briefly.
   // instead we activate a handler function that gets triggered after some timeout
   dt_pthread_mutex_lock(&data->lock);
+
   if(!(module->request_mask_display & DT_DEV_PIXELPIPE_DISPLAY_STICKY) && !data->timeout_handle &&
       (module->request_mask_display != (data->save_for_leave & ~DT_DEV_PIXELPIPE_DISPLAY_STICKY)))
     data->timeout_handle = g_timeout_add(1000, _blendop_blendif_leave_delayed, module);
+
   dt_pthread_mutex_unlock(&data->lock);
 
   if(!darktable.control->key_accelerators_on)
@@ -2242,7 +2236,6 @@ void dt_iop_gui_update_blending(dt_iop_module_t *module)
     gtk_widget_hide(GTK_WIDGET(bd->bottom_box));
   }
 
-
   if(bd->masks_inited && (mask_mode & DEVELOP_MASK_MASK))
   {
     gtk_widget_show(GTK_WIDGET(bd->masks_box));
@@ -2269,25 +2262,18 @@ void dt_iop_gui_update_blending(dt_iop_module_t *module)
     gtk_widget_hide(GTK_WIDGET(bd->raster_box));
   }
   else
-  {
     gtk_widget_hide(GTK_WIDGET(bd->raster_box));
-  }
 
   if(bd->blendif_inited && (mask_mode & DEVELOP_MASK_CONDITIONAL))
-  {
     gtk_widget_show(GTK_WIDGET(bd->blendif_box));
-  }
   else if(bd->blendif_inited)
   {
     /* switch off color picker */
     dt_iop_color_picker_reset(module, FALSE);
-
     gtk_widget_hide(GTK_WIDGET(bd->blendif_box));
   }
   else
-  {
     gtk_widget_hide(GTK_WIDGET(bd->blendif_box));
-  }
 
   if(module->hide_enable_button)
     gtk_widget_hide(GTK_WIDGET(bd->masks_modes_box));

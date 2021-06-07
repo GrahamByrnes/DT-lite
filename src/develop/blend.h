@@ -140,162 +140,6 @@ typedef enum dt_develop_blendif_channels_t
   DEVELOP_BLENDIF_RGB_MASK = 0x77FF
 } dt_develop_blendif_channels_t;
 
-
-/** blend legacy parameters version 1 */
-typedef struct dt_develop_blend_params1_t
-{
-  uint32_t mode;
-  float opacity;
-  uint32_t mask_id;
-} dt_develop_blend_params1_t;
-
-/** blend legacy parameters version 2 */
-typedef struct dt_develop_blend_params2_t
-{
-  /** blending mode */
-  uint32_t mode;
-  /** mixing opacity */
-  float opacity;
-  /** id of mask in current pipeline */
-  uint32_t mask_id;
-  /** blendif mask */
-  uint32_t blendif;
-  /** blendif parameters */
-  float blendif_parameters[4 * 8];
-} dt_develop_blend_params2_t;
-
-/** blend legacy parameters version 3 */
-typedef struct dt_develop_blend_params3_t
-{
-  /** blending mode */
-  uint32_t mode;
-  /** mixing opacity */
-  float opacity;
-  /** id of mask in current pipeline */
-  uint32_t mask_id;
-  /** blendif mask */
-  uint32_t blendif;
-  /** blendif parameters */
-  float blendif_parameters[4 * DEVELOP_BLENDIF_SIZE];
-} dt_develop_blend_params3_t;
-
-/** blend legacy parameters version 4 */
-typedef struct dt_develop_blend_params4_t
-{
-  /** blending mode */
-  uint32_t mode;
-  /** mixing opacity */
-  float opacity;
-  /** id of mask in current pipeline */
-  uint32_t mask_id;
-  /** blendif mask */
-  uint32_t blendif;
-  /** blur radius */
-  float radius;
-  /** blendif parameters */
-  float blendif_parameters[4 * DEVELOP_BLENDIF_SIZE];
-} dt_develop_blend_params4_t;
-
-/** blend legacy parameters version 5 (identical to version 6)*/
-typedef struct dt_develop_blend_params5_t
-{
-  /** what kind of masking to use: off, non-mask (uniformly), hand-drawn mask and/or conditional mask */
-  uint32_t mask_mode;
-  /** blending mode */
-  uint32_t blend_mode;
-  /** mixing opacity */
-  float opacity;
-  /** how masks are combined */
-  uint32_t mask_combine;
-  /** id of mask in current pipeline */
-  uint32_t mask_id;
-  /** blendif mask */
-  uint32_t blendif;
-  /** blur radius */
-  float radius;
-  /** some reserved fields for future use */
-  uint32_t reserved[4];
-  /** blendif parameters */
-  float blendif_parameters[4 * DEVELOP_BLENDIF_SIZE];
-} dt_develop_blend_params5_t;
-
-/** blend legacy parameters version 6 (identical to version 7) */
-typedef struct dt_develop_blend_params6_t
-{
-  /** what kind of masking to use: off, non-mask (uniformly), hand-drawn mask and/or conditional mask */
-  uint32_t mask_mode;
-  /** blending mode */
-  uint32_t blend_mode;
-  /** mixing opacity */
-  float opacity;
-  /** how masks are combined */
-  uint32_t mask_combine;
-  /** id of mask in current pipeline */
-  uint32_t mask_id;
-  /** blendif mask */
-  uint32_t blendif;
-  /** blur radius */
-  float radius;
-  /** some reserved fields for future use */
-  uint32_t reserved[4];
-  /** blendif parameters */
-  float blendif_parameters[4 * DEVELOP_BLENDIF_SIZE];
-} dt_develop_blend_params6_t;
-
-/** blend legacy parameters version 7 */
-typedef struct dt_develop_blend_params7_t
-{
-  /** what kind of masking to use: off, non-mask (uniformly), hand-drawn mask and/or conditional mask */
-  uint32_t mask_mode;
-  /** blending mode */
-  uint32_t blend_mode;
-  /** mixing opacity */
-  float opacity;
-  /** how masks are combined */
-  uint32_t mask_combine;
-  /** id of mask in current pipeline */
-  uint32_t mask_id;
-  /** blendif mask */
-  uint32_t blendif;
-  /** blur radius */
-  float radius;
-  /** some reserved fields for future use */
-  uint32_t reserved[4];
-  /** blendif parameters */
-  float blendif_parameters[4 * DEVELOP_BLENDIF_SIZE];
-} dt_develop_blend_params7_t;
-
-/** blend legacy parameters version 8 */
-typedef struct dt_develop_blend_params8_t
-{
-  /** what kind of masking to use: off, non-mask (uniformly), hand-drawn mask and/or conditional mask */
-  uint32_t mask_mode;
-  /** blending mode */
-  uint32_t blend_mode;
-  /** mixing opacity */
-  float opacity;
-  /** how masks are combined */
-  uint32_t mask_combine;
-  /** id of mask in current pipeline */
-  uint32_t mask_id;
-  /** blendif mask */
-  uint32_t blendif;
-  /** feathering radius */
-  float feathering_radius;
-  /** feathering guide */
-  uint32_t feathering_guide;
-  /** blur radius */
-  float blur_radius;
-  /** mask contrast enhancement */
-  float contrast;
-  /** mask brightness adjustment */
-  float brightness;
-  /** some reserved fields for future use */
-  uint32_t reserved[4];
-  /** blendif parameters */
-  float blendif_parameters[4 * DEVELOP_BLENDIF_SIZE];
-} dt_develop_blend_params8_t;
-
 /** blend parameters current version */
 typedef struct dt_develop_blend_params_t
 {
@@ -332,7 +176,6 @@ typedef struct dt_develop_blend_params_t
   gboolean raster_mask_invert;
 } dt_develop_blend_params_t;
 
-
 typedef struct dt_blendop_cl_global_t
 {
   int kernel_blendop_mask_Lab;
@@ -346,13 +189,11 @@ typedef struct dt_blendop_cl_global_t
   int kernel_blendop_display_channel;
 } dt_blendop_cl_global_t;
 
-
 typedef struct dt_iop_gui_blendif_colorstop_t
 {
   float stoppoint;
   GdkRGBA color;
 } dt_iop_gui_blendif_colorstop_t;
-
 
 typedef struct dt_iop_blend_name_value_t
 {
@@ -365,7 +206,6 @@ extern const dt_develop_name_value_t dt_develop_mask_mode_names[];
 extern const dt_develop_name_value_t dt_develop_combine_masks_names[];
 extern const dt_develop_name_value_t dt_develop_feathering_guide_names[];
 extern const dt_develop_name_value_t dt_develop_invert_mask_names[];
-
 
 #define DEVELOP_MASKS_NB_SHAPES 5
 
@@ -441,29 +281,24 @@ typedef struct dt_iop_gui_blend_data_t
   dt_pthread_mutex_t lock;
 } dt_iop_gui_blend_data_t;
 
-
-
 /** global init of blendops */
 dt_blendop_cl_global_t *dt_develop_blend_init_cl_global(void);
 /** global cleanup of blendops */
 void dt_develop_blend_free_cl_global(dt_blendop_cl_global_t *b);
-
 /** apply blend */
 void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelpipe_iop_t *piece,
                               const void *const i, void *const o, const struct dt_iop_roi_t *const roi_in,
                               const struct dt_iop_roi_t *const roi_out);
-
 /** get blend version */
 int dt_develop_blend_version(void);
-
 /** check if content of params is all zero, indicating a non-initialized set of blend parameters which needs
  * special care. */
 gboolean dt_develop_blend_params_is_all_zero(const void *params, size_t length);
-
 /** update blendop params from older versions */
 int dt_develop_blend_legacy_params(dt_iop_module_t *module, const void *const old_params,
                                    const int old_version, void *new_params, const int new_version,
                                    const int length);
+
 int dt_develop_blend_legacy_params_from_so(dt_iop_module_so_t *module_so, const void *const old_params,
                                            const int old_version, void *new_params, const int new_version,
                                            const int length);
