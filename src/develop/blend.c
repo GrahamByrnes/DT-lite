@@ -2598,8 +2598,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   const dt_dev_pixelpipe_display_mask_t request_mask_display =
     (self->dev->gui_attached && (self == self->dev->gui_module) && (piece->pipe == self->dev->pipe)
      && (mask_mode & DEVELOP_MASK_MASK_CONDITIONAL))
-        ? self->request_mask_display
-        : DT_DEV_PIXELPIPE_DISPLAY_NONE;
+        ? self->request_mask_display : DT_DEV_PIXELPIPE_DISPLAY_NONE;
   // get channel max values depending on colorspace
   const dt_iop_colorspace_type_t cst = self->blend_colorspace(self, piece->pipe, piece);
   const dt_iop_order_iccprofile_info_t *const work_profile = dt_ioppr_get_pipe_work_profile_info(piece->pipe);
@@ -2619,6 +2618,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
     dt_control_log(_("could not allocate buffer for blending"));
     return;
   }
+
   float *const mask = _mask;
 
   if(mask_mode == DEVELOP_MASK_ENABLED || suppress_mask)
@@ -2833,17 +2833,17 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   // now apply blending with per-pixel opacity value as defined in mask
   // select the blend operator
   _blend_row_func *const blend = dt_develop_choose_blend_func(d->blend_mode);
+  _blend_buffer_desc_t bd = { .cst = cst, .stride = (size_t)owidth * 4, .ch = (size_t)4, .bch = bch };
 #ifdef _OPENMP
 #pragma omp parallel for default(none)                                                                            \
-  dt_omp_firstprivate(bch, blend, ch, cst, ivoid, iwidth, mask, \
+  dt_omp_firstprivate(bch, blend, cst, ivoid, iwidth, mask, \
                       mask_display, oheight, ovoid, owidth, \
-                        request_mask_display, work_profile, xoffs, yoffs)
+                      request_mask_display, work_profile, xoffs, yoffs, bd)
 #endif
   for(size_t y = 0; y < oheight; y++)
   {
-    size_t iindex = ((y + yoffs) * iwidth + xoffs) * ch;
-    size_t oindex = y * owidth * ch;
-    _blend_buffer_desc_t bd = { .cst = cst, .stride = (size_t)owidth * ch, .ch = ch, .bch = bch };
+    size_t iindex = ((y + yoffs) * iwidth + xoffs) * 4;
+    size_t oindex = y * owidth * 4;
     float *in = (float *)ivoid + iindex;
     float *out = (float *)ovoid + oindex;
     float *m = mask + y * owidth;
@@ -2854,13 +2854,11 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
       blend(&bd, in, out, m);
 
     if((mask_display & DT_DEV_PIXELPIPE_DISPLAY_MASK) && cst != iop_cs_RAW)
-      for(size_t j = 0; j < bd.stride; j += 4) out[j + 3] = in[j + 3];
+      for(size_t j = 0; j < (size_t)owidth * 4; j += 4) out[j + 3] = in[j + 3];
   }
-
   // register if _this_ module should expose mask or display channel
   if(request_mask_display & (DT_DEV_PIXELPIPE_DISPLAY_MASK | DT_DEV_PIXELPIPE_DISPLAY_CHANNEL))
     piece->pipe->mask_display = request_mask_display;
-
   // check if we should store the mask for export or use in subsequent modules
   // TODO: should we skip raster masks?
   if(piece->pipe->store_all_raster_masks || dt_iop_is_raster_mask_used(self, 0))
