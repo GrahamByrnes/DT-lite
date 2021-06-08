@@ -61,7 +61,6 @@ typedef enum _iop_gui_blendif_channel_t
 
 const dt_develop_name_value_t dt_develop_blend_mode_names[]
     = { { NC_("blendmode", "normal"), DEVELOP_BLEND_NORMAL2 },
-        { NC_("blendmode", "normal bounded"), DEVELOP_BLEND_BOUNDED },
         { NC_("blendmode", "multiply"), DEVELOP_BLEND_MULTIPLY },
         { NC_("blendmode", "average"), DEVELOP_BLEND_AVERAGE },
         { NC_("blendmode", "addition"), DEVELOP_BLEND_ADD },
@@ -2270,7 +2269,6 @@ void dt_iop_gui_init_blending(GtkWidget *iopw, dt_iop_module_t *module)
     {
       dt_bauhaus_combobox_add_section(bd->blend_modes_combo, _("normal & difference modes"));
       _add_blendmode_combo(bd->blend_modes_combo, DEVELOP_BLEND_NORMAL2);
-      _add_blendmode_combo(bd->blend_modes_combo, DEVELOP_BLEND_BOUNDED);
       _add_blendmode_combo(bd->blend_modes_combo, DEVELOP_BLEND_AVERAGE);
       _add_blendmode_combo(bd->blend_modes_combo, DEVELOP_BLEND_DIFFERENCE2);
       dt_bauhaus_combobox_add_section(bd->blend_modes_combo, _("lighten modes"));

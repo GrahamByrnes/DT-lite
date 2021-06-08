@@ -195,36 +195,22 @@ static inline float _blendif_factor(dt_iop_colorspace_type_t cst, const float *i
   switch(cst)
   {
     case iop_cs_Lab:
-      scaled[DEVELOP_BLENDIF_L_in] = clamp_range_f(input[0]/100.0f, 0.0f, 1.0f); // L scaled to 0..1
+      scaled[DEVELOP_BLENDIF_L_in] = clamp_range_f(input[0] / 100.0f, 0.0f, 1.0f); // L scaled to 0..1
       scaled[DEVELOP_BLENDIF_A_in]
-          = clamp_range_f((input[1]+128.0f)/256.0f, 0.0f, 1.0f); // a scaled to 0..1
+          = clamp_range_f((input[1] + 128.0f) / 256.0f, 0.0f, 1.0f); // a scaled to 0..1
       scaled[DEVELOP_BLENDIF_B_in]
-          = clamp_range_f((input[2]+128.0f)/256.0f, 0.0f, 1.0f);                 // b scaled to 0..1
-      scaled[DEVELOP_BLENDIF_L_out] = clamp_range_f(output[0]/100.0f, 0.0f, 1.0f); // L scaled to 0..1
+          = clamp_range_f((input[2] + 128.0f) / 256.0f, 0.0f, 1.0f); // b scaled to 0..1
+      scaled[DEVELOP_BLENDIF_L_out] = clamp_range_f(output[0] / 100.0f, 0.0f, 1.0f); // L scaled to 0..1
       scaled[DEVELOP_BLENDIF_A_out]
-          = clamp_range_f((output[1]+128.0f)/256.0f, 0.0f, 1.0f); // a scaled to 0..1
+          = clamp_range_f((output[1] + 128.0f) / 256.0f, 0.0f, 1.0f); // a scaled to 0..1
       scaled[DEVELOP_BLENDIF_B_out]
-          = clamp_range_f((output[2]+128.0f)/256.0f, 0.0f, 1.0f); // b scaled to 0..1
-
-      if(blendif & 0x7f00) // do we need to consider LCh ?
-      {
-        float LCH_input[3];
-        float LCH_output[3];
-        dt_Lab_2_LCH(input, LCH_input);
-        dt_Lab_2_LCH(output, LCH_output);
-
-        scaled[DEVELOP_BLENDIF_C_in] = clamp_range_f(LCH_input[1]/(128.0f*sqrtf(2.0f)), 0.0f, 1.0f);
-        scaled[DEVELOP_BLENDIF_h_in] = clamp_range_f(LCH_input[2], 0.0f, 1.0f); // h scaled to 0..1
-
-        scaled[DEVELOP_BLENDIF_C_out] = clamp_range_f(LCH_output[1]/(128.0f*sqrtf(2.0f)), 0.0f, 1.0f);
-        scaled[DEVELOP_BLENDIF_h_out] = clamp_range_f(LCH_output[2], 0.0f, 1.0f); // h scaled to 0..1
-      }
-
+          = clamp_range_f((output[2] + 128.0f)/256.0f, 0.0f, 1.0f); // b scaled to 0..1
       channel_mask = DEVELOP_BLENDIF_Lab_MASK;
       break;
     case iop_cs_rgb:
       if(work_profile == NULL)
-        scaled[DEVELOP_BLENDIF_GRAY_in] = clamp_range_f(0.3f*input[0]+0.59f*input[1]+0.11f*input[2], 0.0f, 1.0f);
+        scaled[DEVELOP_BLENDIF_GRAY_in] = clamp_range_f(0.3f * input[0] + 0.59f * input[1] 
+                                                        + 0.11f * input[2], 0.0f, 1.0f);
       else
         scaled[DEVELOP_BLENDIF_GRAY_in] = clamp_range_f(dt_ioppr_get_rgb_matrix_luminance(input,
                                                             work_profile->matrix_in), 0.0f, 1.0f);
@@ -234,7 +220,8 @@ static inline float _blendif_factor(dt_iop_colorspace_type_t cst, const float *i
       scaled[DEVELOP_BLENDIF_BLUE_in] = clamp_range_f(input[2], 0.0f, 1.0f);  // Blue
 
       if(work_profile == NULL)
-        scaled[DEVELOP_BLENDIF_GRAY_out] = clamp_range_f(0.3f*output[0]+0.59f*output[1]+0.11f*output[2], 0.0f, 1.0f);
+        scaled[DEVELOP_BLENDIF_GRAY_out] = clamp_range_f(0.3f * output[0] + 0.59f * output[1]
+                                                         + 0.11f * output[2], 0.0f, 1.0f);
       else
         scaled[DEVELOP_BLENDIF_GRAY_out] = clamp_range_f(dt_ioppr_get_rgb_matrix_luminance(output,
                                                              work_profile->matrix_in), 0.0f, 1.0f);
@@ -242,23 +229,6 @@ static inline float _blendif_factor(dt_iop_colorspace_type_t cst, const float *i
       scaled[DEVELOP_BLENDIF_RED_out] = clamp_range_f(output[0], 0.0f, 1.0f);   // Red
       scaled[DEVELOP_BLENDIF_GREEN_out] = clamp_range_f(output[1], 0.0f, 1.0f); // Green
       scaled[DEVELOP_BLENDIF_BLUE_out] = clamp_range_f(output[2], 0.0f, 1.0f);  // Blue
-
-      if(blendif & 0x7f00) // do we need to consider HSL ?
-      {
-        float HSL_input[3];
-        float HSL_output[3];
-        dt_RGB_2_HSL(input, HSL_input);
-        dt_RGB_2_HSL(output, HSL_output);
-
-        scaled[DEVELOP_BLENDIF_H_in] =clamp_range_f(HSL_input[0], 0.0f, 1.0f); // H scaled to 0..1
-        scaled[DEVELOP_BLENDIF_S_in] =clamp_range_f(HSL_input[1], 0.0f, 1.0f); // S scaled to 0..1
-        scaled[DEVELOP_BLENDIF_l_in] =clamp_range_f(HSL_input[2], 0.0f, 1.0f); // L scaled to 0..1
-
-        scaled[DEVELOP_BLENDIF_H_out] =clamp_range_f(HSL_output[0], 0.0f, 1.0f); // H scaled to 0..1
-        scaled[DEVELOP_BLENDIF_S_out] =clamp_range_f(HSL_output[1], 0.0f, 1.0f); // S scaled to 0..1
-        scaled[DEVELOP_BLENDIF_l_out] =clamp_range_f(HSL_output[2], 0.0f, 1.0f); // L scaled to 0..1
-      }
-
       channel_mask = DEVELOP_BLENDIF_RGB_MASK;
 
       break;
