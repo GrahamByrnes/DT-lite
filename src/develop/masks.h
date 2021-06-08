@@ -167,7 +167,6 @@ typedef struct dt_masks_form_t
 {
   GList *points; // list of point structures
   dt_masks_type_t type;
-
   // position of the source (used only for clone)
   float source[2];
   // name of the form
@@ -254,12 +253,10 @@ typedef struct dt_masks_form_gui_t
 
 /** init dt_masks_form_gui_t struct with default values */
 void dt_masks_init_form_gui(dt_masks_form_gui_t *gui);
-
 /** get points in real space with respect of distortion dx and dy are used to eventually move the center of
  * the circle */
 int dt_masks_get_points_border(dt_develop_t *dev, dt_masks_form_t *form, float **points, int *points_count,
                                float **border, int *border_count, int source);
-
 /** get the rectangle which include the form and his border */
 int dt_masks_get_area(dt_iop_module_t *module, dt_dev_pixelpipe_iop_t *piece, dt_masks_form_t *form,
                       int *width, int *height, int *posx, int *posy);
@@ -280,15 +277,6 @@ int dt_masks_version(void);
 
 // update masks from older versions
 int dt_masks_legacy_params(dt_develop_t *dev, void *params, const int old_version, const int new_version);
-/*
- * TODO:
- *
- * int
- * dt_masks_legacy_params(
- *   dt_develop_t *dev,
- *   const void *const old_params, const int old_version,
- *   void *new_params,             const int new_version);
- */
 
 /** we create a completely new form. */
 dt_masks_form_t *dt_masks_create(dt_masks_type_t type);
@@ -530,7 +518,6 @@ int dt_masks_roundup(int num, int mult)
 
   return (rem == 0) ? num : num + mult - rem;
 }
-
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
