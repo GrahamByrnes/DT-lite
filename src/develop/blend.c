@@ -430,8 +430,8 @@ static void _blend_multiply(const _blend_buffer_desc_t *bd, const float *a, floa
     {
       float local_opacity = mask[i];
       for(int k = 0; k < bd->bch; k++)
-        b[j + k] =clamp_range_f(
-            a[j+k]*(1.0f-local_opacity)+(a[j+k]*b[j+k])*local_opacity, min[k], max[k]);
+        b[j + k] = clamp_range_f(
+            a[j + k] * (1.0f - local_opacity) + (a[j + k] * b[j + k]) * local_opacity, min[k], max[k]);
 
       b[j + 3] = local_opacity;
     }
@@ -442,8 +442,8 @@ static void _blend_multiply(const _blend_buffer_desc_t *bd, const float *a, floa
     {
       float local_opacity = mask[i];
       for(int k = 0; k < bd->bch; k++)
-        b[j + k] =clamp_range_f(
-            a[j+k]*(1.0f-local_opacity)+(a[j+k]*b[j+k])*local_opacity, min[k], max[k]);
+        b[j + k] = clamp_range_f(
+            a[j + k] * (1.0f - local_opacity) + (a[j + k] * b[j + k]) * local_opacity, min[k], max[k]);
     }
   }
 }
@@ -478,7 +478,7 @@ static void _blend_average(const _blend_buffer_desc_t *bd, const float *a, float
       float local_opacity = mask[i];
       for(int k = 0; k < bd->bch; k++)
         b[j + k] =clamp_range_f(
-            a[j+k]*(1.0f-local_opacity)+(a[j+k]+b[j+k])/2.0f*local_opacity, min[k], max[k]);
+            a[j + k] * (1.0f - local_opacity) + (a[j + k] + b[j + k]) / 2.0f * local_opacity, min[k], max[k]);
 
       b[j + 3] = local_opacity;
     }
@@ -490,7 +490,7 @@ static void _blend_average(const _blend_buffer_desc_t *bd, const float *a, float
       float local_opacity = mask[i];
       for(int k = 0; k < bd->bch; k++)
         b[j + k] =clamp_range_f(
-            a[j+k]*(1.0f-local_opacity)+(a[j+k]+b[j+k])/2.0f*local_opacity, min[k], max[k]);
+            a[j + k] * (1.0f - local_opacity) + (a[j + k] + b[j + k]) / 2.0f * local_opacity, min[k], max[k]);
     }
   }
 }
@@ -525,7 +525,7 @@ static void _blend_add(const _blend_buffer_desc_t *bd, const float *a, float *b,
       float local_opacity = mask[i];
       for(int k = 0; k < bd->bch; k++)
         b[j + k] =clamp_range_f(
-            a[j+k]*(1.0f-local_opacity)+(a[j+k]+b[j+k])*local_opacity, min[k], max[k]);
+            a[j + k] * (1.0f - local_opacity) + (a[j + k] + b[j + k]) * local_opacity, min[k], max[k]);
       b[j + 3] = local_opacity;
     }
   }
@@ -536,7 +536,7 @@ static void _blend_add(const _blend_buffer_desc_t *bd, const float *a, float *b,
       float local_opacity = mask[i];
       for(int k = 0; k < bd->bch; k++)
         b[j + k] =clamp_range_f(
-            a[j+k]*(1.0f-local_opacity)+(a[j+k]+b[j+k])*local_opacity, min[k], max[k]);
+            a[j + k] * (1.0f - local_opacity) + (a[j + k] + b[j + k]) * local_opacity, min[k], max[k]);
     }
   }
 }
@@ -581,7 +581,7 @@ static void _blend_substract(const _blend_buffer_desc_t *bd, const float *a, flo
       float local_opacity = mask[i];
       for(int k = 0; k < bd->bch; k++)
         b[j + k] = clamp_range_f(a[j + k] * (1.0f - local_opacity)
-                                +((b[j + k] + a[j + k])-(fabsf(min[k] + max[k])))*local_opacity, min[k], max[k]);
+                                +((b[j + k] + a[j + k]) - (fabsf(min[k] + max[k]))) * local_opacity, min[k], max[k]);
     }
   }
 }
@@ -626,7 +626,7 @@ static void _blend_difference2(const _blend_buffer_desc_t *bd, const float *a, f
         la = a[j + k] + fabsf(min[k]);
         lb = b[j + k] + fabsf(min[k]);
 
-        b[j + k] =clamp_range_f(la*(1.0f-local_opacity)+fabsf(la-lb)*local_opacity, lmin, lmax)
+        b[j + k] = clamp_range_f(la * (1.0f - local_opacity) + fabsf(la - lb) * local_opacity, lmin, lmax)
                    - fabsf(min[k]);
       }
 
@@ -645,7 +645,7 @@ static void _blend_difference2(const _blend_buffer_desc_t *bd, const float *a, f
         la = a[j + k] + fabsf(min[k]);
         lb = b[j + k] + fabsf(min[k]);
 
-        b[j + k] =clamp_range_f(la*(1.0f-local_opacity)+fabsf(la-lb)*local_opacity, lmin, lmax)
+        b[j + k] = clamp_range_f(la * (1.0f - local_opacity) + fabsf(la - lb) * local_opacity, lmin, lmax)
                    - fabsf(min[k]);
       }
     }
@@ -907,8 +907,8 @@ static void display_channel(const _blend_buffer_desc_t *bd, const float *a, floa
       for(size_t i = 0, j = 0; j < bd->stride; i++, j += bd->ch)
       {
         const float c = (work_profile == NULL)
-                          ? clamp_range_f(0.3f*a[j]+0.59f*a[j+1]+0.11f*a[j+2], 0.0f, 1.0f)
-                          : clamp_range_f(dt_ioppr_get_rgb_matrix_luminance(a+j, work_profile->matrix_in), 0.0f, 1.0f);
+                          ? clamp_range_f(0.3f * a[j] + 0.59f * a[j + 1] + 0.11f * a[j + 2], 0.0f, 1.0f)
+                          : clamp_range_f(dt_ioppr_get_rgb_matrix_luminance(a + j, work_profile->matrix_in), 0.0f, 1.0f);
         for(int k = 0; k < bd->bch; k++) b[j + k] = c;
       }
       break;
@@ -916,8 +916,8 @@ static void display_channel(const _blend_buffer_desc_t *bd, const float *a, floa
       for(size_t i = 0, j = 0; j < bd->stride; i++, j += bd->ch)
       {
         const float c = (work_profile == NULL)
-                          ? clamp_range_f(0.3f*b[j]+0.59f*b[j+1]+0.11f*b[j+2], 0.0f, 1.0f)
-                          : clamp_range_f(dt_ioppr_get_rgb_matrix_luminance(b+j, work_profile->matrix_in), 0.0f, 1.0f);
+                          ? clamp_range_f(0.3f * a[j] + 0.59f * a[j + 1] + 0.11f * a[j + 2], 0.0f, 1.0f)
+                          : clamp_range_f(dt_ioppr_get_rgb_matrix_luminance(b + j, work_profile->matrix_in), 0.0f, 1.0f);
         for(int k = 0; k < bd->bch; k++) b[j + k] = c;
       }
       break;
@@ -935,7 +935,7 @@ static void display_channel(const _blend_buffer_desc_t *bd, const float *a, floa
       {
         float LCH[3];
         dt_Lab_2_LCH(b + j, LCH);
-        const float c =clamp_range_f(LCH[1]/(128.0f*sqrtf(2.0f)), 0.0f, 1.0f);
+        const float c =clamp_range_f(LCH[1] / (128.0f * sqrtf(2.0f)), 0.0f, 1.0f);
         for(int k = 0; k < bd->bch; k++) b[j + k] = c;
       }
       break;
@@ -1004,7 +1004,6 @@ _blend_row_func *dt_develop_choose_blend_func(const unsigned int blend_mode)
     case DEVELOP_BLEND_LAB_COLOR:
       blend = _blend_Lab_color;
       break;
-      break;
     case DEVELOP_BLEND_RGB_R:
       blend = _blend_RGB_R;
       break;
@@ -1016,7 +1015,6 @@ _blend_row_func *dt_develop_choose_blend_func(const unsigned int blend_mode)
       break;
     /* fallback to normal blend */
     case DEVELOP_BLEND_NORMAL2:
-//    case DEVELOP_BLEND_UNBOUNDED:
     default:
       blend = _blend_normal_unbounded;
       break;
@@ -1361,9 +1359,6 @@ void tiling_callback_blendop(struct dt_iop_module_t *self, struct dt_dev_pixelpi
   tiling->yalign = 1;
 }
 
-/** check if content of params is all zero, indicating a non-initialized set of
-   blend parameters
-    which needs special care. */
 gboolean _develop_blend_params_is_all_zero(const void *params, size_t length)
 {
   const char *data = (const char *)params;
@@ -1375,7 +1370,6 @@ gboolean _develop_blend_params_is_all_zero(const void *params, size_t length)
   return TRUE;
 }
 
-/** update blendop params from older versions */
 int dt_develop_blend_legacy_params(dt_iop_module_t *module, const void *const old_params,
                                    const int old_version, void *new_params, const int new_version,
                                    const int length)
