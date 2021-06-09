@@ -1120,7 +1120,8 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
         dt_omp_firstprivate(buffsize, mask, opacity) \
         shared(raster_mask)
 #endif
-        for(size_t i = 0; i < buffsize; i++) mask[i] = (1.0 - raster_mask[i]) * opacity;
+        for(size_t i = 0; i < buffsize; i++)
+          mask[i] = (1.0 - raster_mask[i]) * opacity;
       else
 #ifdef _OPENMP
   #pragma omp parallel for default(none) \
@@ -1325,7 +1326,8 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
       blend(&bd, in, out, m);
 
     if((mask_display & DT_DEV_PIXELPIPE_DISPLAY_MASK) && cst != iop_cs_RAW)
-      for(size_t j = 0; j < (size_t)owidth * 4; j += 4) out[j + 3] = in[j + 3];
+      for(size_t j = 0; j < (size_t)owidth * 4; j += 4)
+        out[j + 3] = in[j + 3];
   }
   // register if _this_ module should expose mask or display channel
   if(request_mask_display & (DT_DEV_PIXELPIPE_DISPLAY_MASK | DT_DEV_PIXELPIPE_DISPLAY_CHANNEL))
@@ -1406,8 +1408,7 @@ int dt_develop_blend_legacy_params_from_so(dt_iop_module_so_t *module_so, const 
   }
   // convert the old blend params to new
   int res = dt_develop_blend_legacy_params(module, old_params, old_version,
-                                           new_params, dt_develop_blend_version(),
-                                           length);
+                                           new_params, dt_develop_blend_version(), length);
   dt_iop_cleanup_module(module);
   free(module);
   return res;
