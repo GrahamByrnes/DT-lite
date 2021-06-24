@@ -360,7 +360,7 @@ static void edit_preset_response(GtkDialog *dialog, gint response_id, dt_gui_pre
     int format = 0;
     for(int k = 0; k < 5; k++)
       format += gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(g->format_btn[k])) * dt_gui_presets_format_flag[k];
-    format ^= DT_PRESETS_FOR_NOT;  
+ 
     DT_DEBUG_SQLITE3_BIND_INT(stmt, 22, format);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -587,7 +587,7 @@ static void edit_preset(const char *name_in, dt_iop_module_t *module)
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(g->focal_length_max), sqlite3_column_double(stmt, 12));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(g->autoapply), sqlite3_column_int(stmt, 13));
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(g->filter), sqlite3_column_int(stmt, 14));
-    const int format = (sqlite3_column_int(stmt, 15)) ^ DT_PRESETS_FOR_NOT;
+    const int format = (sqlite3_column_int(stmt, 15));
     for(k = 0; k < 5; k++)
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(g->format_btn[k]), format & (dt_gui_presets_format_flag[k]));
   }

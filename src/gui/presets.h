@@ -10,8 +10,6 @@ typedef enum dt_gui_presets_format_flag_t
   FOR_NOT_COLOR = 1 << 4
 } dt_gui_presets_format_flag_t;
 
-#define DT_PRESETS_FOR_NOT (FOR_NOT_MONO | FOR_NOT_COLOR);
-
 /** create a db table with presets for all operations. */
 void dt_gui_presets_init();
 

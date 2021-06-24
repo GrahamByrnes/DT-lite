@@ -194,6 +194,7 @@ void dt_image_film_roll(const dt_image_t *img, char *pathname, size_t pathname_l
   }
   else
     g_strlcpy(pathname, _("orphaned image"), pathname_len);
+
   sqlite3_finalize(stmt);
   pathname[pathname_len - 1] = '\0';
 }
@@ -1094,17 +1095,16 @@ static void _image_read_duplicates(const uint32_t id, const char *filename)
     else
     {
       // we need to derive the version number from the filename
-
-      gchar *c3 = xmpfilename + strlen(xmpfilename)
-        - 5; // skip over .xmp extension; position c3 at character before the '.'
+      gchar *c3 = xmpfilename + strlen(xmpfilename) - 5; // skip over .xmp extension; position c3 at character before the '.'
       while(*c3 != '.' && c3 > xmpfilename)
         c3--; // skip over filename extension; position c3 is at character '.'
+    
       gchar *c4 = c3;
-      while(*c4 != '_' && c4 > xmpfilename) c4--; // move to beginning of version number
+      while(*c4 != '_' && c4 > xmpfilename)
+        c4--; // move to beginning of version number
+    
       c4++;
-
       gchar *idfield = g_strndup(c4, c3 - c4);
-
       version = atoi(idfield);
       g_free(idfield);
     }
@@ -1439,9 +1439,7 @@ void dt_image_init(dt_image_t *img)
   img->aspect_ratio = 0.f;
   img->crop_x = img->crop_y = img->crop_width = img->crop_height = 0;
   img->orientation = ORIENTATION_NULL;
-
   img->import_timestamp = img->change_timestamp = img->export_timestamp = img->print_timestamp = -1;
-
   img->legacy_flip.legacy = 0;
   img->legacy_flip.user_flip = 0;
 
@@ -2298,24 +2296,6 @@ char *dt_image_get_text_path(const int32_t imgid)
   dt_image_full_path(imgid, image_path, sizeof(image_path), &from_cache);
 
   return dt_image_get_text_path_from_path(image_path);
-}
-
-float dt_image_get_exposure_bias(const struct dt_image_t *image_storage)
-{
-  // just check that pointers exist and are initialized
-  if((image_storage) && (image_storage->exif_exposure_bias))
-  {
-    // sanity checks because I don't trust exif tags too much
-    if(image_storage->exif_exposure_bias == NAN ||
-       image_storage->exif_exposure_bias != image_storage->exif_exposure_bias ||
-       isnan(image_storage->exif_exposure_bias) ||
-       CLAMP(image_storage->exif_exposure_bias, -5.0f, 5.0f) != image_storage->exif_exposure_bias)
-      return 0.0f; // isnan
-    else
-      return CLAMP(image_storage->exif_exposure_bias, -5.0f, 5.0f);
-  }
-  else
-    return 0.0f;
 }
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
