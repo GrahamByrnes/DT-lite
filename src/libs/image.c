@@ -316,9 +316,7 @@ static void _execute_metadata(dt_lib_module_t *self, const int action)
 static void copy_metadata_callback(GtkWidget *widget, dt_lib_module_t *self)
 {
   dt_lib_image_t *d = (dt_lib_image_t *)self->data;
-
   d->imageid = dt_view_get_image_to_act_on();
-
   _update(self);
 }
 
@@ -563,15 +561,14 @@ typedef struct {
   dt_lib_module_t * self;
 } lua_callback_data;
 
-
 static int lua_button_clicked_cb(lua_State* L)
 {
-  lua_callback_data * data = lua_touserdata(L,1);
-  dt_lua_module_entry_push(L,"lib",data->self->plugin_name);
+  lua_callback_data * data = lua_touserdata(L, 1);
+  dt_lua_module_entry_push(L, "lib", data->self->plugin_name);
   lua_getuservalue(L,-1);
-  lua_getfield(L,-1,"callbacks");
-  lua_getfield(L,-1,data->key);
-  lua_pushstring(L,data->key);
+  lua_getfield(L, -1, "callbacks");
+  lua_getfield(L, -1, data->key);
+  lua_pushstring(L, data->key);
 
   GList *image = dt_collection_get_selected(darktable.collection, -1);
   lua_newtable(L);
@@ -602,7 +599,6 @@ static int lua_register_action(lua_State *L)
   lua_getuservalue(L,-1);
   const char* key = luaL_checkstring(L,1);
   luaL_checktype(L,2,LUA_TFUNCTION);
-
   lua_getfield(L,-1,"callbacks");
   lua_pushstring(L,key);
   lua_pushvalue(L,2);
@@ -610,13 +606,12 @@ static int lua_register_action(lua_State *L)
 
   GtkWidget* button = gtk_button_new_with_label(key);
   const char * tooltip = lua_tostring(L,3);
-  if(tooltip)  {
+  
+  if(tooltip)
     gtk_widget_set_tooltip_text(button, tooltip);
-  }
+
   dt_lib_image_t *d = self->data;
   gtk_grid_attach_next_to(GTK_GRID(d->page1), button, NULL, GTK_POS_BOTTOM, 4, 1);
-
-
   lua_callback_data * data = malloc(sizeof(lua_callback_data));
   data->key = strdup(key);
   data->self = self;
