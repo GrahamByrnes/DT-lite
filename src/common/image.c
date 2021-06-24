@@ -983,7 +983,7 @@ static void _image_read_duplicates(const uint32_t id, const char *filename)
     else
     {
       // we need to derive the version number from the filename
-      gchar *c3 = xmpfilename + strlen(xmpfilename) - 5; // skip over .xmp extension; position c3 at character before the '.'
+      gchar *c3 = xmpfilename + strlen(xmpfilename) - 5; // skip over .xmp, position c3 at character before the '.'
       while(*c3 != '.' && c3 > xmpfilename)
         c3--; // skip over filename extension; position c3 is at character '.'
     
@@ -1120,7 +1120,6 @@ static uint32_t _image_import_internal(const int32_t film_id, const char *filena
   }
 
   sqlite3_finalize(stmt);
-
   // also need to set the no-legacy bit, to make sure we get the right presets (new ones)
   uint32_t flags = dt_conf_get_int("ui_last/import_initial_rating");
   if(flags > 5)
@@ -1142,24 +1141,28 @@ static uint32_t _image_import_internal(const int32_t film_id, const char *filena
   DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 2, imgfname, -1, SQLITE_TRANSIENT);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 3, flags);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 4, time(0));
-
   rc = sqlite3_step(stmt);
-  if(rc != SQLITE_DONE) fprintf(stderr, "sqlite3 error %d\n", rc);
-  sqlite3_finalize(stmt);
 
+  if(rc != SQLITE_DONE)
+    fprintf(stderr, "sqlite3 error %d\n", rc);
+
+  sqlite3_finalize(stmt);
   DT_DEBUG_SQLITE3_PREPARE_V2
     (dt_database_get(darktable.db),
      "SELECT id FROM main.images WHERE film_id = ?1 AND filename = ?2", -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, film_id);
   DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 2, imgfname, -1, SQLITE_STATIC);
-  if(sqlite3_step(stmt) == SQLITE_ROW) id = sqlite3_column_int(stmt, 0);
-  sqlite3_finalize(stmt);
 
+  if(sqlite3_step(stmt) == SQLITE_ROW)
+    id = sqlite3_column_int(stmt, 0);
+
+  sqlite3_finalize(stmt);
   // Try to find out if this should be grouped already.
   gchar *basename = g_strdup(imgfname);
   gchar *cc2 = basename + strlen(basename);
   for(; *cc2 != '.' && cc2 > basename; cc2--)
     ;
+
   *cc2 = '\0';
   gchar *sql_pattern = g_strconcat(basename, ".%", NULL);
   int group_id;
@@ -1844,7 +1847,6 @@ int dt_image_local_copy_set(const int32_t imgid)
   gboolean from_cache = FALSE;
   dt_image_full_path(imgid, srcpath, sizeof(srcpath), &from_cache);
   _image_local_copy_full_path(imgid, destpath, sizeof(destpath));
-
   // check that the src file is readable
   if(!g_file_test(srcpath, G_FILE_TEST_IS_REGULAR))
   {
@@ -1990,7 +1992,6 @@ void dt_image_write_sidecar_file(const int32_t imgid)
       // OTHERWISE: check if the local copy exists
       from_cache = TRUE;
       dt_image_full_path(imgid, filename, sizeof(filename), &from_cache);
-
       //  nothing to do, the original is not accessible and there is no local copy
       if (!from_cache) return;
     }
