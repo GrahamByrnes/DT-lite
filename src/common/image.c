@@ -126,7 +126,7 @@ int dt_image_is_monochrome(const dt_image_t *img)
 
 int dt_image_is_matrix_correction_supported(const dt_image_t *img)
 {
-  return ((img->flags & (DT_IMAGE_RAW | DT_IMAGE_S_RAW )) && !(img->flags & DT_IMAGE_MONOCHROME) );
+  return ((img->flags & (DT_IMAGE_RAW | DT_IMAGE_S_RAW )) && !(img->flags & DT_IMAGE_MONOCHROME));
 }
 
 int dt_image_is_rawprepare_supported(const dt_image_t *img)
@@ -225,8 +225,7 @@ void dt_image_full_path(const int32_t imgid, char *pathname, size_t pathname_len
   sqlite3_stmt *stmt;
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "SELECT folder || '" G_DIR_SEPARATOR_S "' || filename FROM main.images i, main.film_rolls f WHERE "
-                              "i.film_id = f.id and i.id = ?1",
-                              -1, &stmt, NULL);
+                              "i.film_id = f.id and i.id = ?1", -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   
   if(sqlite3_step(stmt) == SQLITE_ROW)
@@ -252,8 +251,7 @@ static void _image_local_copy_full_path(const int32_t imgid, char *pathname, siz
   *pathname = '\0';
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "SELECT folder || '" G_DIR_SEPARATOR_S "' || filename FROM main.images i, main.film_rolls f "
-                              "WHERE i.film_id = f.id AND i.id = ?1",
-                              -1, &stmt, NULL);
+                              "WHERE i.film_id = f.id AND i.id = ?1", -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   if(sqlite3_step(stmt) == SQLITE_ROW)
   {
@@ -350,116 +348,6 @@ void dt_image_set_xmp_rating(dt_image_t *img, const int rating)
     img->flags |= DT_IMAGE_REJECTED;
   else
     img->flags |= (DT_VIEW_RATINGS_MASK & rating);
-}
-
-void dt_image_get_location(const int32_t imgid, dt_image_geoloc_t *geoloc)
-{
-  const dt_image_t *img = dt_image_cache_get(darktable.image_cache, imgid, 'r');
-  geoloc->longitude = img->geoloc.longitude;
-  geoloc->latitude = img->geoloc.latitude;
-  geoloc->elevation = img->geoloc.elevation;
-  dt_image_cache_read_release(darktable.image_cache, img);
-}
-
-typedef struct dt_undo_geotag_t
-{
-  int32_t imgid;
-  dt_image_geoloc_t before;
-  dt_image_geoloc_t after;
-} dt_undo_geotag_t;
-
-static void _set_location(const int32_t imgid, const dt_image_geoloc_t *geoloc)
-{
-  /* fetch image from cache */
-  dt_image_t *image = dt_image_cache_get(darktable.image_cache, imgid, 'w');
-  memcpy(&image->geoloc, geoloc, sizeof(dt_image_geoloc_t));
-  dt_image_cache_write_release(darktable.image_cache, image, DT_IMAGE_CACHE_SAFE);
-}
-
-void _pop_undo(gpointer user_data, const dt_undo_type_t type, dt_undo_data_t data, const dt_undo_action_t action, GList **imgs)
-{
-  if(type == DT_UNDO_GEOTAG)
-  {
-    GList *list = (GList *)data;
-
-    while(list)
-    {
-      dt_undo_geotag_t *undogeotag = (dt_undo_geotag_t *)list->data;
-      const dt_image_geoloc_t *geoloc = (action == DT_ACTION_UNDO) ? &undogeotag->before : &undogeotag->after;
-      _set_location(undogeotag->imgid, geoloc);
-      *imgs = g_list_prepend(*imgs, GINT_TO_POINTER(undogeotag->imgid));
-      list = g_list_next(list);
-    }
-
-    dt_control_signal_raise(darktable.signals, DT_SIGNAL_MOUSE_OVER_IMAGE_CHANGE);
-  }
-}
-
-static void _geotag_undo_data_free(gpointer data)
-{
-  GList *l = (GList *)data;
-  g_list_free_full(l, g_free);
-}
-
-void _image_set_location(GList *imgs, const dt_image_geoloc_t *geoloc, GList **undo, const gboolean undo_on)
-{
-  GList *images = imgs;
-  while(images)
-  {
-    const int32_t imgid = GPOINTER_TO_INT(images->data);
-
-    if(undo_on)
-    {
-      dt_undo_geotag_t *undogeotag = (dt_undo_geotag_t *)malloc(sizeof(dt_undo_geotag_t));
-      undogeotag->imgid = imgid;
-      dt_image_get_location(imgid, &undogeotag->before);
-
-      memcpy(&undogeotag->after, geoloc, sizeof(dt_image_geoloc_t));
-
-      *undo = g_list_append(*undo, undogeotag);
-    }
-
-    _set_location(imgid, geoloc);
-    images = g_list_next(images);
-  }
-}
-
-void dt_image_set_locations(const GList *img, const dt_image_geoloc_t *geoloc, const gboolean undo_on)
-{
-  GList *imgs = g_list_copy((GList *)img);
-  if(imgs)
-  {
-    GList *undo = NULL;
-    if(undo_on)
-      dt_undo_start_group(darktable.undo, DT_UNDO_GEOTAG);
-
-    _image_set_location(imgs, geoloc, &undo, undo_on);
-
-    if(undo_on)
-    {
-      dt_undo_record(darktable.undo, NULL, DT_UNDO_GEOTAG, undo, _pop_undo, _geotag_undo_data_free);
-      dt_undo_end_group(darktable.undo);
-    }
-
-    g_list_free(imgs);
-    dt_control_signal_raise(darktable.signals, DT_SIGNAL_MOUSE_OVER_IMAGE_CHANGE);
-  }
-}
-
-void dt_image_set_location(const int32_t imgid, const dt_image_geoloc_t *geoloc, const gboolean undo_on, const gboolean group_on)
-{
-  GList *imgs = NULL;
-  
-  if(imgid == -1)
-    imgs = g_list_copy((GList *)dt_view_get_images_to_act_on(TRUE, TRUE));
-  else
-    imgs = g_list_append(imgs, GINT_TO_POINTER(imgid));
-    
-  if(group_on)
-    dt_grouping_add_grouped_images(&imgs);
-    
-  dt_image_set_locations(imgs, geoloc, undo_on);
-  g_list_free(imgs);
 }
 
 void dt_image_reset_final_size(const int32_t imgid)

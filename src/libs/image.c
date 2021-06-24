@@ -259,6 +259,7 @@ static void _execute_metadata(dt_lib_module_t *self, const int action)
   const gboolean dttag_flag = dt_conf_get_bool("plugins/lighttable/copy_metadata/tags");
   const int imageid = d->imageid;
   const GList *imgs = dt_view_get_images_to_act_on(FALSE, TRUE);
+
   if(imgs)
   {
     // for all the above actions, we don't use the grpu_on tag, as grouped images have already been added to image
@@ -268,18 +269,22 @@ static void _execute_metadata(dt_lib_module_t *self, const int action)
                                     (dtmetadata_flag ? DT_UNDO_METADATA : 0) |
                                     (geotag_flag ? DT_UNDO_GEOTAG : 0) |
                                     (dttag_flag ? DT_UNDO_TAGS : 0);
-    if(undo_type) dt_undo_start_group(darktable.undo, undo_type);
+
+    if(undo_type)
+      dt_undo_start_group(darktable.undo, undo_type);
 
     if(rating_flag)
     {
       const int stars = (action == DT_MA_CLEAR) ? 0 : dt_ratings_get(imageid);
       dt_ratings_apply_on_list(imgs, stars, TRUE);
     }
+
     if(colors_flag)
     {
       const int colors = (action == DT_MA_CLEAR) ? 0 : dt_colorlabels_get_labels(imageid);
       dt_colorlabels_set_labels(imgs, colors, action != DT_MA_MERGE, TRUE);
     }
+
     if(dtmetadata_flag)
     {
       GList *metadata = (action == DT_MA_CLEAR) ? NULL : dt_metadata_get_list_id(imageid);
@@ -287,16 +292,7 @@ static void _execute_metadata(dt_lib_module_t *self, const int action)
       DT_DEBUG_CONTROL_SIGNAL_RAISE(darktable.signals, DT_SIGNAL_MOUSE_OVER_IMAGE_CHANGE);
       g_list_free_full(metadata, g_free);
     }
-    if(geotag_flag)
-    {
-      dt_image_geoloc_t *geoloc = (dt_image_geoloc_t *)malloc(sizeof(dt_image_geoloc_t));
-      if(action == DT_MA_CLEAR)
-        geoloc->longitude = geoloc->latitude = geoloc->elevation = NAN;
-      else
-        dt_image_get_location(imageid, geoloc);
-      dt_image_set_locations(imgs, geoloc, TRUE);
-      g_free(geoloc);
-    }
+
     if(dttag_flag)
     {
       // affect only user tags (not dt tags)
