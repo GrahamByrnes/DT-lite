@@ -255,7 +255,6 @@ static void _execute_metadata(dt_lib_module_t *self, const int action)
   const gboolean rating_flag = dt_conf_get_bool("plugins/lighttable/copy_metadata/rating");
   const gboolean colors_flag = dt_conf_get_bool("plugins/lighttable/copy_metadata/colors");
   const gboolean dtmetadata_flag = dt_conf_get_bool("plugins/lighttable/copy_metadata/metadata");
-  const gboolean geotag_flag = dt_conf_get_bool("plugins/lighttable/copy_metadata/geotags");
   const gboolean dttag_flag = dt_conf_get_bool("plugins/lighttable/copy_metadata/tags");
   const int imageid = d->imageid;
   const GList *imgs = dt_view_get_images_to_act_on(FALSE, TRUE);
@@ -267,7 +266,6 @@ static void _execute_metadata(dt_lib_module_t *self, const int action)
     const dt_undo_type_t undo_type = (rating_flag ? DT_UNDO_RATINGS : 0) |
                                     (colors_flag ? DT_UNDO_COLORLABELS : 0) |
                                     (dtmetadata_flag ? DT_UNDO_METADATA : 0) |
-                                    (geotag_flag ? DT_UNDO_GEOTAG : 0) |
                                     (dttag_flag ? DT_UNDO_TAGS : 0);
 
     if(undo_type)
@@ -638,6 +636,7 @@ void init(struct dt_lib_module_t *self)
   lua_pop(L,2);
 }
 #endif
+
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
 // kate: tab-indents: off; indent-width 2; replace-tabs on; indent-mode cstyle; remove-trailing-spaces modified;

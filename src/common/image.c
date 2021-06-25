@@ -1741,7 +1741,6 @@ int32_t dt_image_copy_rename(const int32_t imgid, const int32_t filmid, const gc
         DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, imgid);
         sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-
         // get max_version of image duplicates in destination filmroll
         int32_t max_version = -1;
         DT_DEBUG_SQLITE3_PREPARE_V2
@@ -1813,10 +1812,8 @@ int32_t dt_image_copy_rename(const int32_t imgid, const int32_t filmid, const gc
         sqlite3_finalize(stmt);
 
         dt_history_copy_and_paste_on_image(imgid, newid, FALSE, NULL, TRUE, TRUE);
-
         // write xmp file
         dt_image_write_sidecar_file(newid);
-
         dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD, NULL);
       }
 
@@ -1885,7 +1882,6 @@ static int _nb_other_local_copy_for(const int32_t imgid)
 {
   sqlite3_stmt *stmt;
   int result = 1;
-
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "SELECT COUNT(*)"
                               " FROM main.images"
@@ -1899,6 +1895,7 @@ static int _nb_other_local_copy_for(const int32_t imgid)
                               -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, DT_IMAGE_LOCAL_COPY);
+
   if(sqlite3_step(stmt) == SQLITE_ROW)
     result = sqlite3_column_int(stmt, 0);
 
@@ -1982,7 +1979,6 @@ void dt_image_write_sidecar_file(const int32_t imgid)
   if(imgid > 0 && dt_conf_get_bool("write_sidecar_files"))
   {
     char filename[PATH_MAX] = { 0 };
-
     // FIRST: check if the original file is present
     gboolean from_cache = FALSE;
     dt_image_full_path(imgid, filename, sizeof(filename), &from_cache);
@@ -2102,8 +2098,8 @@ void dt_image_local_copy_synch(void)
 void dt_image_add_time_offset(const int32_t imgid, const long int offset)
 {
   const dt_image_t *cimg = dt_image_cache_get(darktable.image_cache, imgid, 'r');
-  if(!cimg) return;
-
+  if(!cimg)
+    return;
   // get the datetime_taken and calculate the new time
   gint year;
   gint month;
@@ -2128,7 +2124,6 @@ void dt_image_add_time_offset(const int32_t imgid, const long int offset)
     dt_image_cache_read_release(darktable.image_cache, cimg);
     return;
   }
-
   // let's add our offset
   GDateTime *datetime_new = g_date_time_add_seconds(datetime_original, offset);
   g_date_time_unref(datetime_original);
@@ -2159,20 +2154,24 @@ char *dt_image_get_text_path_from_path(const char *image_path)
 {
   size_t len = strlen(image_path);
   const char *c = image_path + len;
-  while((c > image_path) && (*c != '.')) c--;
+  while((c > image_path) && (*c != '.'))
+    c--;
+
   len = c - image_path + 1;
-
   char *result = g_strndup(image_path, len + 3);
-
   result[len] = 't';
   result[len + 1] = 'x';
   result[len + 2] = 't';
-  if(g_file_test(result, G_FILE_TEST_EXISTS)) return result;
+  
+  if(g_file_test(result, G_FILE_TEST_EXISTS))
+    return result;
 
   result[len] = 'T';
   result[len + 1] = 'X';
   result[len + 2] = 'T';
-  if(g_file_test(result, G_FILE_TEST_EXISTS)) return result;
+
+  if(g_file_test(result, G_FILE_TEST_EXISTS))
+    return result;
 
   g_free(result);
   return NULL;
