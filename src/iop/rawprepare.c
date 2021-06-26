@@ -139,7 +139,8 @@ static int round_smart(float val, int ref)
   // first, just round it
   int round = (int)roundf(val);
 
-  if((ref & 1) ^ (round & 1)) round++;
+  if((ref & 1) ^ (round & 1))
+    round++;
 
   return round;
 }
@@ -194,11 +195,8 @@ void modify_roi_out(dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, dt_iop
 {
   *roi_out = *roi_in;
   dt_iop_rawprepare_data_t *d = (dt_iop_rawprepare_data_t *)piece->data;
-
   roi_out->x = roi_out->y = 0;
-
   int32_t x = d->x + d->width, y = d->y + d->height;
-
   const float scale = roi_in->scale / piece->iscale;
   roi_out->width -= round_smart((float)x * scale, x);
   roi_out->height -= round_smart((float)y * scale, y);
@@ -209,9 +207,7 @@ void modify_roi_in(dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const d
 {
   *roi_in = *roi_out;
   dt_iop_rawprepare_data_t *d = (dt_iop_rawprepare_data_t *)piece->data;
-
   int32_t x = d->x + d->width, y = d->y + d->height;
-
   const float scale = roi_in->scale / piece->iscale;
   roi_in->width += round_smart((float)x * scale, x);
   roi_in->height += round_smart((float)y * scale, y);
@@ -221,9 +217,7 @@ void output_format(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_pixel
                    dt_iop_buffer_dsc_t *dsc)
 {
   default_output_format(self, pipe, piece, dsc);
-
   dt_iop_rawprepare_data_t *d = (dt_iop_rawprepare_data_t *)piece->data;
-
   dsc->rawprepare.raw_black_level = d->rawprepare.raw_black_level;
   dsc->rawprepare.raw_white_point = d->rawprepare.raw_white_point;
 }
@@ -246,15 +240,12 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
              void *const ovoid, const dt_iop_roi_t *const roi_in, const dt_iop_roi_t *const roi_out)
 {
   const dt_iop_rawprepare_data_t *const d = (dt_iop_rawprepare_data_t *)piece->data;
-
   // fprintf(stderr, "roi in %d %d %d %d\n", roi_in->x, roi_in->y, roi_in->width, roi_in->height);
   // fprintf(stderr, "roi out %d %d %d %d\n", roi_out->x, roi_out->y, roi_out->width, roi_out->height);
-
   const int csx = compute_proper_crop(piece, roi_in, d->x), csy = compute_proper_crop(piece, roi_in, d->y);
 
   if(piece->pipe->dsc.filters && piece->dsc_in.channels == 1 && piece->dsc_in.datatype == TYPE_UINT16)
   { // raw mosaic
-
     const uint16_t *const in = (const uint16_t *const)ivoid;
     float *const out = (float *const)ovoid;
 
@@ -265,23 +256,19 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
     collapse(2)
 #endif
     for(int j = 0; j < roi_out->height; j++)
-    {
       for(int i = 0; i < roi_out->width; i++)
       {
         const size_t pin = (size_t)(roi_in->width * (j + csy) + csx) + i;
         const size_t pout = (size_t)j * roi_out->width + i;
-
         const int id = BL(roi_out, d, j, i);
         out[pout] = (in[pin] - d->sub[id]) / d->div[id];
       }
-    }
 
     piece->pipe->dsc.filters = dt_rawspeed_crop_dcraw_filters(self->dev->image_storage.buf_dsc.filters, csx, csy);
     adjust_xtrans_filters(piece->pipe, csx, csy);
   }
   else if(piece->pipe->dsc.filters && piece->dsc_in.channels == 1 && piece->dsc_in.datatype == TYPE_FLOAT)
   { // raw mosaic, fp, unnormalized
-
     const float *const in = (const float *const)ivoid;
     float *const out = (float *const)ovoid;
 
@@ -292,7 +279,6 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
     collapse(2)
 #endif
     for(int j = 0; j < roi_out->height; j++)
-    {
       for(int i = 0; i < roi_out->width; i++)
       {
         const size_t pin = (size_t)(roi_in->width * (j + csy) + csx) + i;
@@ -301,14 +287,12 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
         const int id = BL(roi_out, d, j, i);
         out[pout] = (in[pin] - d->sub[id]) / d->div[id];
       }
-    }
 
     piece->pipe->dsc.filters = dt_rawspeed_crop_dcraw_filters(self->dev->image_storage.buf_dsc.filters, csx, csy);
     adjust_xtrans_filters(piece->pipe, csx, csy);
   }
   else
   { // pre-downsampled buffer that needs black/white scaling
-
     const float *const in = (const float *const)ivoid;
     float *const out = (float *const)ovoid;
     const float sub = d->sub[0], div = d->div[0];
@@ -319,21 +303,17 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
     schedule(static) collapse(3)
 #endif
     for(int j = 0; j < roi_out->height; j++)
-    {
       for(int i = 0; i < roi_out->width; i++)
-      {
         for(int c = 0; c < 4; c++)
         {
           const size_t pin = (size_t)4 * (roi_in->width * (j + csy) + csx + i) + c;
           const size_t pout = (size_t)4 * (j * roi_out->width + i) + c;
-
           out[pout] = (in[pin] - sub) / div;
         }
-      }
-    }
   }
 
-  for(int k = 0; k < 4; k++) piece->pipe->dsc.processed_maximum[k] = 1.0f;
+  for(int k = 0; k < 4; k++)
+    piece->pipe->dsc.processed_maximum[k] = 1.0f;
 }
 
 static int image_is_normalized(const dt_image_t *const image)
@@ -342,15 +322,14 @@ static int image_is_normalized(const dt_image_t *const image)
   if((image->flags & DT_IMAGE_HDR) == DT_IMAGE_HDR)
   {
     union {
-        float f;
-        uint32_t u;
+      float f;
+      uint32_t u;
     } normalized;
-    normalized.f = 1.0f;
 
+    normalized.f = 1.0f;
     // dng spec is just broken here.
     return image->raw_white_point == normalized.u;
   }
-
   // else, assume normalized
   return image->buf_dsc.channels == 1 && image->buf_dsc.datatype == TYPE_FLOAT;
 }
@@ -398,9 +377,8 @@ void commit_params(dt_iop_module_t *self, dt_iop_params_t *params, dt_dev_pixelp
     const float white = (float)p->raw_white_point / normalizer;
     float black = 0;
     for(int i = 0; i < 4; i++)
-    {
       black += p->raw_black_level_separate[i] / normalizer;
-    }
+
     black /= 4.0f;
 
     for(int i = 0; i < 4; i++)
@@ -412,16 +390,16 @@ void commit_params(dt_iop_module_t *self, dt_iop_params_t *params, dt_dev_pixelp
 
   float black = 0.0f;
   for(uint8_t i = 0; i < 4; i++)
-  {
     black += (float)p->raw_black_level_separate[i];
-  }
+
   d->rawprepare.raw_black_level = (uint16_t)(black / 4.0f);
   d->rawprepare.raw_white_point = p->raw_white_point;
 
   if(image_set_rawcrops(pipe->image.id, d->x + d->width, d->y + d->height))
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_METADATA_UPDATE);
 
-  if(!(dt_image_is_rawprepare_supported(&piece->pipe->image)) || image_is_normalized(&piece->pipe->image)) piece->enabled = 0;
+  if(!(dt_image_is_rawprepare_supported(&piece->pipe->image)) || image_is_normalized(&piece->pipe->image))
+    piece->enabled = 0;
 }
 
 void init_pipe(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_pixelpipe_iop_t *piece)
@@ -439,12 +417,10 @@ void cleanup_pipe(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_pixelp
 void reload_defaults(dt_iop_module_t *self)
 {
   dt_iop_rawprepare_params_t tmp = { { { 0 } } };
-
   // we might be called from presets update infrastructure => there is no image
   if(!self->dev) goto end;
 
   const dt_image_t *const image = &(self->dev->image_storage);
-
   tmp = (dt_iop_rawprepare_params_t){.crop.named.x = image->crop_x,
                                      .crop.named.y = image->crop_y,
                                      .crop.named.width = image->crop_width,
@@ -468,6 +444,7 @@ void init(dt_iop_module_t *self)
   self->default_params = calloc(1, sizeof(dt_iop_rawprepare_params_t));
   self->hide_enable_button = 1;
   self->default_enabled = 0;
+
   if(self->dev)
   { // just being extra careful here, because there is a case when old presets
     // are upgraded and temporary modules are constructed for this, with a 0x0 dev
@@ -516,15 +493,12 @@ static void callback(GtkWidget *widget, gpointer *user_data)
 
   for(int i = 0; i < 4; i++)
     p->raw_black_level_separate[i] = dt_bauhaus_slider_get(g->black_level_separate[i]);
+
   p->raw_white_point = dt_bauhaus_slider_get(g->white_point);
 
   if(dt_conf_get_bool("plugins/darkroom/rawprepare/allow_editing_crop"))
-  {
     for(int i = 0; i < 4; i++)
-    {
       p->crop.array[i] = dt_bauhaus_slider_get(g->crop[i]);
-    }
-  }
 
   dt_dev_add_history_item(darktable.develop, self, TRUE);
 }
@@ -532,16 +506,13 @@ static void callback(GtkWidget *widget, gpointer *user_data)
 void gui_init(dt_iop_module_t *self)
 {
   self->gui_data = malloc(sizeof(dt_iop_rawprepare_gui_data_t));
-
   dt_iop_rawprepare_gui_data_t *g = (dt_iop_rawprepare_gui_data_t *)self->gui_data;
   dt_iop_rawprepare_params_t *p = (dt_iop_rawprepare_params_t *)self->params;
-
   g->box_raw = self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, DT_BAUHAUS_SPACE);
 
   for(int i = 0; i < 4; i++)
   {
     gchar *label = g_strdup_printf(_("black level %i"), i);
-
     g->black_level_separate[i]
         = dt_bauhaus_slider_new_with_range(self, 0, UINT16_MAX, 1, p->raw_black_level_separate[i], 0);
     dt_bauhaus_widget_set_label(g->black_level_separate[i], NULL, label);
@@ -561,23 +532,17 @@ void gui_init(dt_iop_module_t *self)
   g_signal_connect(G_OBJECT(g->white_point), "value-changed", G_CALLBACK(callback), self);
 
   if(dt_conf_get_bool("plugins/darkroom/rawprepare/allow_editing_crop"))
-  {
     for(int i = 0; i < 4; i++)
-    {
       g->crop[i] = dt_bauhaus_slider_new_with_range(self, 0, UINT16_MAX, 1, p->crop.array[i], 0);
       dt_bauhaus_widget_set_label(g->crop[i], NULL, gettext(crop_labels[i].label));
       gtk_widget_set_tooltip_text(g->crop[i], gettext(crop_labels[i].tooltip));
       gtk_box_pack_start(GTK_BOX(g->box_raw), g->crop[i], FALSE, FALSE, 0);
       dt_bauhaus_slider_set_soft_max(g->crop[i], 256);
       g_signal_connect(G_OBJECT(g->crop[i]), "value-changed", G_CALLBACK(callback), self);
-    }
-  }
 
   // start building top level widget
   self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, DT_BAUHAUS_SPACE);
-
   gtk_box_pack_start(GTK_BOX(self->widget), g->box_raw, FALSE, FALSE, 0);
-
   g->label_non_raw
       = gtk_label_new(_("raw black/white point correction\nonly works for the sensors that need it."));
   gtk_widget_set_halign(g->label_non_raw, GTK_ALIGN_START);
