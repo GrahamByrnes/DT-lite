@@ -533,13 +533,14 @@ void gui_init(dt_iop_module_t *self)
 
   if(dt_conf_get_bool("plugins/darkroom/rawprepare/allow_editing_crop"))
     for(int i = 0; i < 4; i++)
+    {
       g->crop[i] = dt_bauhaus_slider_new_with_range(self, 0, UINT16_MAX, 1, p->crop.array[i], 0);
       dt_bauhaus_widget_set_label(g->crop[i], NULL, gettext(crop_labels[i].label));
       gtk_widget_set_tooltip_text(g->crop[i], gettext(crop_labels[i].tooltip));
       gtk_box_pack_start(GTK_BOX(g->box_raw), g->crop[i], FALSE, FALSE, 0);
       dt_bauhaus_slider_set_soft_max(g->crop[i], 256);
       g_signal_connect(G_OBJECT(g->crop[i]), "value-changed", G_CALLBACK(callback), self);
-
+    }
   // start building top level widget
   self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, DT_BAUHAUS_SPACE);
   gtk_box_pack_start(GTK_BOX(self->widget), g->box_raw, FALSE, FALSE, 0);
