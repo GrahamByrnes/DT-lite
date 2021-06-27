@@ -43,17 +43,15 @@ typedef struct dt_conf_dreggn_t
 static inline char *dt_conf_get_var(const char *name)
 {
   char *str;
-
   dt_pthread_mutex_lock(&darktable.conf->mutex);
-
   str = (char *)g_hash_table_lookup(darktable.conf->override_entries, name);
   if(str) goto fin;
 
   str = (char *)g_hash_table_lookup(darktable.conf->table, name);
   if(str) goto fin;
-
   // not found, try defaults
   str = (char *)g_hash_table_lookup(darktable.conf->defaults, name);
+
   if(str)
   {
     char *str_new = g_strdup(str);
@@ -61,7 +59,6 @@ static inline char *dt_conf_get_var(const char *name)
     str = str_new;
     goto fin;
   }
-
   // FIXME: why insert garbage?
   // still no luck? insert garbage:
   str = (char *)g_malloc0(sizeof(int32_t));
@@ -77,60 +74,66 @@ fin:
 static int dt_conf_set_if_not_overridden(const char *name, char *str)
 {
   dt_pthread_mutex_lock(&darktable.conf->mutex);
-
   char *over = (char *)g_hash_table_lookup(darktable.conf->override_entries, name);
   const int is_overridden = (over && !strcmp(str, over));
+  
   if(!is_overridden)
-  {
     g_hash_table_insert(darktable.conf->table, g_strdup(name), str);
-  }
 
   dt_pthread_mutex_unlock(&darktable.conf->mutex);
-
   return is_overridden;
 }
 
 void dt_conf_set_int(const char *name, int val)
 {
   char *str = g_strdup_printf("%d", val);
-  if(dt_conf_set_if_not_overridden(name, str)) g_free(str);
+  if(dt_conf_set_if_not_overridden(name, str))
+    g_free(str);
 }
 
 void dt_conf_set_int64(const char *name, int64_t val)
 {
   char *str = g_strdup_printf("%" PRId64, val);
-  if(dt_conf_set_if_not_overridden(name, str)) g_free(str);
+  if(dt_conf_set_if_not_overridden(name, str))
+    g_free(str);
 }
 
 void dt_conf_set_float(const char *name, float val)
 {
   char *str = (char *)g_malloc(G_ASCII_DTOSTR_BUF_SIZE);
   g_ascii_dtostr(str, G_ASCII_DTOSTR_BUF_SIZE, val);
-  if(dt_conf_set_if_not_overridden(name, str)) g_free(str);
+  if(dt_conf_set_if_not_overridden(name, str))
+    g_free(str);
 }
 
 void dt_conf_set_bool(const char *name, int val)
 {
   char *str = g_strdup_printf("%s", val ? "TRUE" : "FALSE");
-  if(dt_conf_set_if_not_overridden(name, str)) g_free(str);
+  if(dt_conf_set_if_not_overridden(name, str))
+    g_free(str);
 }
 
 void dt_conf_set_string(const char *name, const char *val)
 {
   char *str = g_strdup(val);
-  if(dt_conf_set_if_not_overridden(name, str)) g_free(str);
+  if(dt_conf_set_if_not_overridden(name, str))
+    g_free(str);
 }
 
 int dt_conf_get_int(const char *name)
 {
   const char *str = dt_conf_get_var(name);
   float new_value = dt_calculator_solve(1, str);
-  if(isnan(new_value)) new_value = 0.0;
   int val;
+  
+  if(isnan(new_value))
+    new_value = 0.0;
+
   if(new_value > 0)
     val = new_value + 0.5;
   else
     val = new_value - 0.5;
+
   return val;
 }
 
@@ -138,12 +141,16 @@ int64_t dt_conf_get_int64(const char *name)
 {
   const char *str = dt_conf_get_var(name);
   float new_value = dt_calculator_solve(1, str);
-  if(isnan(new_value)) new_value = 0.0;
   int64_t val;
+  
+  if(isnan(new_value))
+    new_value = 0.0;
+
   if(new_value > 0)
     val = new_value + 0.5;
   else
     val = new_value - 0.5;
+
   return val;
 }
 
@@ -151,7 +158,9 @@ float dt_conf_get_float(const char *name)
 {
   const char *str = dt_conf_get_var(name);
   float val = dt_calculator_solve(1, str);
-  if(isnan(val)) val = 0.0;
+  if(isnan(val))
+    val = 0.0;
+
   return val;
 }
 
@@ -175,11 +184,8 @@ void dt_conf_init(dt_conf_t *cf, const char *filename, GSList *override_entries)
   cf->override_entries = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   dt_pthread_mutex_init(&darktable.conf->mutex, NULL);
   FILE *f = 0;
-
 #define LINE_SIZE 1023
-
   char line[LINE_SIZE + 1];
-
   int read = 0;
   int defaults = 0;
   for(int i = 0; i < 2; i++)
@@ -189,6 +195,7 @@ void dt_conf_init(dt_conf_t *cf, const char *filename, GSList *override_entries)
     {
       g_strlcpy(darktable.conf->filename, filename, sizeof(darktable.conf->filename));
       f = g_fopen(filename, "rb");
+
       if(!f)
       {
         // remember we init to default rc and try again
@@ -196,6 +203,7 @@ void dt_conf_init(dt_conf_t *cf, const char *filename, GSList *override_entries)
         continue;
       }
     }
+
     if(i)
     {
       char buf[PATH_MAX] = { 0 }, defaultrc[PATH_MAX] = { 0 };
@@ -203,7 +211,9 @@ void dt_conf_init(dt_conf_t *cf, const char *filename, GSList *override_entries)
       snprintf(defaultrc, sizeof(defaultrc), "%s/darktablerc", buf);
       f = g_fopen(defaultrc, "rb");
     }
+
     if(!f) return;
+
     while(!feof(f))
     {
       read = fscanf(f, "%" STR(LINE_SIZE) "[^\r\n]\r\n", line);
@@ -211,7 +221,9 @@ void dt_conf_init(dt_conf_t *cf, const char *filename, GSList *override_entries)
       {
         char *c = line;
         char *end = line + strlen(line);
-        while(*c != '=' && c < end) c++;
+        while(*c != '=' && c < end)
+          c++;
+
         if(*c == '=')
         {
           *c = '\0';
@@ -222,7 +234,6 @@ void dt_conf_init(dt_conf_t *cf, const char *filename, GSList *override_entries)
     }
     fclose(f);
   }
-
   // for the very first time after a fresh install
   // execute performance configuration no matter what
   if(defaults)
@@ -256,7 +267,6 @@ void dt_conf_cleanup(dt_conf_t *cf)
   {
     GList *keys = g_hash_table_get_keys(cf->table);
     GList *sorted = g_list_sort(keys, (GCompareFunc)g_strcmp0);
-
     GList *iter = sorted;
 
     while(iter)
