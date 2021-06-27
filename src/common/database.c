@@ -41,7 +41,6 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
 // whenever _create_*_schema() gets changed you HAVE to bump this version and add an update path to
 // _upgrade_*_schema_step()!
 #define CURRENT_DATABASE_VERSION_LIBRARY 30
@@ -50,16 +49,12 @@
 typedef struct dt_database_t
 {
   gboolean lock_acquired;
-
   /* data database filename */
   gchar *dbfilename_data, *lockfile_data;
-
   /* library database filename */
   gchar *dbfilename_library, *lockfile_library;
-
   /* ondisk DB */
   sqlite3 *handle;
-
   gchar *error_message, *error_dbfilename;
   int error_other_pid;
 } dt_database_t;
@@ -87,7 +82,6 @@ static gboolean _migrate_schema(dt_database_t *db, int version)
     return FALSE;
 
   sqlite3_exec(db->handle, "BEGIN TRANSACTION", NULL, NULL, NULL);
-
   // remove stuff that is either no longer needed or that got renamed
   _SQLITE3_EXEC(db->handle, "DROP TABLE IF EXISTS main.lock", NULL, NULL, NULL);
   _SQLITE3_EXEC(db->handle, "DROP TABLE IF EXISTS main.settings", NULL, NULL, NULL); // yes, we do this in many
@@ -99,7 +93,6 @@ static gboolean _migrate_schema(dt_database_t *db, int version)
   _SQLITE3_EXEC(db->handle, "DROP TABLE IF EXISTS main.mipmaps", NULL, NULL, NULL);
   _SQLITE3_EXEC(db->handle, "DROP TABLE IF EXISTS main.mipmap_timestamps", NULL, NULL, NULL);
   _SQLITE3_EXEC(db->handle, "DROP TABLE IF EXISTS main.dt_migration_table", NULL, NULL, NULL);
-
   // using _create_library_schema() and filling that with the old data doesn't work since we always want to generate
   // version 1 tables
   ////////////////////////////// db_info
@@ -288,11 +281,9 @@ static gboolean _migrate_schema(dt_database_t *db, int version)
       last_op_version = op_version;
       i = 0;
     }
-
     // find the next free amended version of name
     sqlite3_prepare_v2(db->handle, "SELECT name FROM main.presets  WHERE name = ?1 || ' (' || ?2 || ')' AND "
-                                   "operation = ?3 AND op_version = ?4",
-                       -1, &innerstmt, NULL);
+                                   "operation = ?3 AND op_version = ?4", -1, &innerstmt, NULL);
     while(1)
     {
       sqlite3_bind_text(innerstmt, 1, name, -1, SQLITE_TRANSIENT);
@@ -304,19 +295,21 @@ static gboolean _migrate_schema(dt_database_t *db, int version)
       sqlite3_clear_bindings(innerstmt);
       i++;
     }
-    sqlite3_finalize(innerstmt);
 
+    sqlite3_finalize(innerstmt);
     // rename preset
     const char *query = "UPDATE main.presets SET name = name || ' (' || ?1 || ')' WHERE rowid = ?2";
     sqlite3_prepare_v2(db->handle, query, -1, &innerstmt, NULL);
     sqlite3_bind_int(innerstmt, 1, i);
     sqlite3_bind_int(innerstmt, 2, rowid);
+
     if(sqlite3_step(innerstmt) != SQLITE_DONE)
     {
       all_ok = FALSE;
       failing_query = query;
       goto end;
     }
+
     sqlite3_finalize(innerstmt);
   }
   sqlite3_finalize(stmt);
@@ -331,13 +324,12 @@ static gboolean _migrate_schema(dt_database_t *db, int version)
   _SQLITE3_EXEC(db->handle, "UPDATE main.presets SET multi_priority = 0 WHERE multi_priority IS NULL", NULL, NULL,
                 NULL);
   _SQLITE3_EXEC(db->handle, "UPDATE main.presets SET multi_name = ' ' WHERE multi_name IS NULL", NULL, NULL, NULL);
-
-
   // There are systems where absolute paths don't start with '/' (like Windows).
   // Since the bug which introduced absolute paths to the db was fixed before a
   // Windows build was available this shouldn't matter though.
   sqlite3_prepare_v2(db->handle, "SELECT id, filename FROM main.images WHERE filename LIKE '/%'", -1, &stmt, NULL);
   sqlite3_prepare_v2(db->handle, "UPDATE main.images SET filename = ?1 WHERE id = ?2", -1, &innerstmt, NULL);
+
   while(sqlite3_step(stmt) == SQLITE_ROW)
   {
     int id = sqlite3_column_int(stmt, 0);
@@ -350,9 +342,9 @@ static gboolean _migrate_schema(dt_database_t *db, int version)
     sqlite3_clear_bindings(innerstmt);
     g_free(filename);
   }
+
   sqlite3_finalize(stmt);
   sqlite3_finalize(innerstmt);
-
   // We used to insert datetime_taken entries with '-' as date separators. Since that doesn't work well with
   // the regular ':' when parsing
   // or sorting we changed it to ':'. This takes care to change what we have as leftovers
@@ -436,11 +428,9 @@ static int _upgrade_library_schema_step(dt_database_t *db, int version)
   else if(version == 29)
   {
     sqlite3_exec(db->handle, "BEGIN TRANSACTION", NULL, NULL, NULL);
-
     // add position in tagged_images table
     TRY_EXEC("ALTER TABLE main.tagged_images ADD COLUMN position INTEGER",
              "[init] can't add `position' column to tagged_images table in database\n");
-
     TRY_EXEC("CREATE INDEX IF NOT EXISTS main.tagged_images_imgid_index ON tagged_images (imgid)",
              "[init] can't create image index on tagged_images\n");
     TRY_EXEC("CREATE INDEX IF NOT EXISTS main.tagged_images_position_index ON tagged_images (position)",
@@ -449,7 +439,6 @@ static int _upgrade_library_schema_step(dt_database_t *db, int version)
              "[init] can't populate position on tagged_images\n");
 
     // remove caption and description fields from images table
-
     TRY_EXEC("CREATE TABLE main.i (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id INTEGER, film_id INTEGER, "
              "width INTEGER, height INTEGER, filename VARCHAR, maker VARCHAR, model VARCHAR, "
              "lens VARCHAR, exposure REAL, aperture REAL, iso REAL, focal_length REAL, "
@@ -496,8 +485,8 @@ static int _upgrade_library_schema_step(dt_database_t *db, int version)
     new_version = version; // should be the fallback so that calling code sees that we are in an infinite loop
 
   // write the new version to db
-  sqlite3_prepare_v2(db->handle, "INSERT OR REPLACE INTO main.db_info (key, value) VALUES ('version', ?1)", -1, &stmt,
-                     NULL);
+  sqlite3_prepare_v2(db->handle, "INSERT OR REPLACE INTO main.db_info (key, value) VALUES ('version', ?1)",
+                     -1, &stmt, NULL);
   sqlite3_bind_int(stmt, 1, new_version);
   sqlite3_step(stmt);
   sqlite3_finalize(stmt);
@@ -513,7 +502,6 @@ static int _upgrade_data_schema_step(dt_database_t *db, int version)
 
   if(version == CURRENT_DATABASE_VERSION_DATA)
     return version;
-
   else if(version == 0)
   {
     // this can't happen, we started with 1, but it's a good example how this function works
