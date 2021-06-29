@@ -418,14 +418,7 @@ static int _upgrade_library_schema_step(dt_database_t *db, int version)
 
   if(version == CURRENT_DATABASE_VERSION_LIBRARY)
     return version;
-  else if(version == 0)
-  {
-    // this can't happen, we started with 1, but it's a good example how this function works
-    // <do some magic to the db>
-    new_version = 29; // the version we transformed the db to. this way it might be possible to roll back or
-                     // add fast paths
-  }
-  else if(version == 29)
+  else if(version <= 29)
   {
     sqlite3_exec(db->handle, "BEGIN TRANSACTION", NULL, NULL, NULL);
     // add position in tagged_images table
@@ -502,14 +495,7 @@ static int _upgrade_data_schema_step(dt_database_t *db, int version)
 
   if(version == CURRENT_DATABASE_VERSION_DATA)
     return version;
-  else if(version == 0)
-  {
-    // this can't happen, we started with 1, but it's a good example how this function works
-    // <do some magic to the db>
-    new_version = 5; // the version we transformed the db to. this way it might be possible to roll back or
-    // add fast paths
-  }
-  else if(version == 5)
+  else if(version <= 5)
   {
     sqlite3_exec(db->handle, "BEGIN TRANSACTION", NULL, NULL, NULL);
     // make style.id a PRIMARY KEY and add iop_list
