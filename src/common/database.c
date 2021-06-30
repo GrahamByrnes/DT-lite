@@ -475,14 +475,12 @@ static int _upgrade_library_schema_step(dt_database_t *db, int version)
   }
   else
     new_version = version; // should be the fallback so that calling code sees that we are in an infinite loop
-
   // write the new version to db
   sqlite3_prepare_v2(db->handle, "INSERT OR REPLACE INTO main.db_info (key, value) VALUES ('version', ?1)",
                      -1, &stmt, NULL);
   sqlite3_bind_int(stmt, 1, new_version);
   sqlite3_step(stmt);
   sqlite3_finalize(stmt);
-
   return new_version;
 }
 
@@ -772,58 +770,6 @@ static void _sanitize_db(dt_database_t *db)
                NULL, NULL, NULL);
 
 }
-
-// in library we keep the names of the tags used in tagged_images. however, using that table at runtime results
-// in some overhead not necessary so instead we just use the used_tags table to update tagged_images on startup
-#define TRY_EXEC(_query, _message)                                                 \
-  do                                                                               \
-  {                                                                                \
-    if(sqlite3_exec(db->handle, _query, NULL, NULL, NULL) != SQLITE_OK)            \
-    {                                                                              \
-      fprintf(stderr, _message);                                                   \
-      fprintf(stderr, "[init]   %s\n", sqlite3_errmsg(db->handle));                \
-      FINALIZE;                                                                    \
-      sqlite3_exec(db->handle, "ROLLBACK TRANSACTION", NULL, NULL, NULL);          \
-      return FALSE;                                                                \
-    }                                                                              \
-  } while(0)
-
-#define TRY_STEP(_stmt, _expected, _message)                                       \
-  do                                                                               \
-  {                                                                                \
-    if(sqlite3_step(_stmt) != _expected)                                           \
-    {                                                                              \
-      fprintf(stderr, _message);                                                   \
-      fprintf(stderr, "[init]   %s\n", sqlite3_errmsg(db->handle));                \
-      FINALIZE;                                                                    \
-      sqlite3_exec(db->handle, "ROLLBACK TRANSACTION", NULL, NULL, NULL);          \
-      return FALSE;                                                                \
-    }                                                                              \
-  } while(0)
-
-#define TRY_PREPARE(_stmt, _query, _message)                                       \
-  do                                                                               \
-  {                                                                                \
-    if(sqlite3_prepare_v2(db->handle, _query, -1, &_stmt, NULL) != SQLITE_OK)      \
-    {                                                                              \
-      fprintf(stderr, _message);                                                   \
-      fprintf(stderr, "[init]   %s\n", sqlite3_errmsg(db->handle));                \
-      FINALIZE;                                                                    \
-      sqlite3_exec(db->handle, "ROLLBACK TRANSACTION", NULL, NULL, NULL);          \
-      return FALSE;                                                                \
-    }                                                                              \
-  } while(0)
-
-#define FINALIZE                                                                   \
-  do                                                                               \
-  {                                                                                \
-    sqlite3_finalize(stmt); stmt = NULL; /* NULL so that finalize becomes a NOP */ \
-  } while(0)
-
-#undef TRY_EXEC
-#undef TRY_STEP
-#undef TRY_PREPARE
-#undef FINALIZE
 
 void dt_database_show_error(const dt_database_t *db)
 {
