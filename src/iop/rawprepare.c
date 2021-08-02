@@ -81,14 +81,6 @@ typedef struct dt_iop_rawprepare_data_t
   } rawprepare;
 } dt_iop_rawprepare_data_t;
 
-typedef struct dt_iop_rawprepare_global_data_t
-{
-  int kernel_rawprepare_1f;
-  int kernel_rawprepare_1f_unnormalized;
-  int kernel_rawprepare_4f;
-} dt_iop_rawprepare_global_data_t;
-
-
 const char *name()
 {
   return C_("modulename", "raw black/white point");
