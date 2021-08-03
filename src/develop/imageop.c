@@ -23,7 +23,6 @@
 #include "common/dtpthread.h"
 #include "common/imageio_rawspeed.h"
 #include "common/interpolation.h"
-#include "common/iop_group.h"
 #include "common/module.h"
 #include "common/history.h"
 #ifdef HAVE_CONFIG_H
@@ -46,7 +45,6 @@
 #include "gui/gtk.h"
 #include "gui/presets.h"
 #include "gui/color_picker_proxy.h"
-#include "libs/modulegroups.h"
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
 #endif
@@ -111,7 +109,7 @@ static void dt_iop_modify_roi_out(struct dt_iop_module_t *self, struct dt_dev_pi
 /* default group for modules which do not implement the default_group() function */
 static int default_group(void)
 {
-  return IOP_GROUP_BASIC;
+  return 0;
 }
 
 /* default flags for modules which does not implement the flags() function */
@@ -945,10 +943,8 @@ dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_param
     // invalidate buffers and force redraw of darkroom
     dt_dev_invalidate_all(module->dev);
   }
-
   /* update ui to new parameters */
   dt_iop_gui_update(module);
-
   dt_dev_modulegroups_update_visibility(darktable.develop);
 
   return module;
@@ -1192,17 +1188,7 @@ gboolean dt_iop_is_hidden(dt_iop_module_t *module)
 
 gboolean dt_iop_shown_in_group(dt_iop_module_t *module, uint32_t group)
 {
-  uint32_t additional_flags = 0;
-
-  if(group == DT_MODULEGROUP_NONE) return TRUE;
-
-  /* add special group flag for module in active pipe */
-  if(module->enabled) additional_flags |= IOP_SPECIAL_GROUP_ACTIVE_PIPE;
-
-  /* add special group flag for favorite */
-  if(module->so->state == dt_iop_state_FAVORITE) additional_flags |= IOP_SPECIAL_GROUP_USER_DEFINED;
-
-  return dt_dev_modulegroups_test(module->dev, group, dt_iop_get_group(module) | additional_flags);
+  return TRUE;
 }
 
 static void _iop_panel_label(GtkWidget *lab, dt_iop_module_t *module)
@@ -2216,7 +2202,7 @@ int get_module_flags(const char *op)
   }
   return 0;
 }
-
+/*
 static gboolean show_module_callback(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
                                      GdkModifierType modifier, gpointer data)
 
@@ -2256,7 +2242,7 @@ static gboolean show_module_callback(GtkAccelGroup *accel_group, GObject *accele
   }
 
   return TRUE;
-}
+}*/
 
 static gboolean request_module_focus_callback(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
                                      GdkModifierType modifier, gpointer data)
@@ -2298,8 +2284,8 @@ void dt_iop_connect_common_accels(dt_iop_module_t *module)
   GClosure *closure = NULL;
   if(module->flags() & IOP_FLAGS_DEPRECATED) return;
   // Connecting the (optional) module show accelerator
-  closure = g_cclosure_new(G_CALLBACK(show_module_callback), module, NULL);
-  dt_accel_connect_iop(module, "show module", closure);
+//  closure = g_cclosure_new(G_CALLBACK(show_module_callback), module, NULL);
+//  dt_accel_connect_iop(module, "show module", closure);           /* **** */
 
   // Connecting the (optional) module gui focus accelerator
   closure = g_cclosure_new(G_CALLBACK(request_module_focus_callback), module, NULL);

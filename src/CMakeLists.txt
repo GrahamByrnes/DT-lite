@@ -72,7 +72,6 @@ FILE(GLOB SOURCE_FILES
   "common/resource_limits.c"
   "common/undo.c"
   "common/usermanual_url.c"
-  "common/iop_group.c"
   "common/iop_order.c"
   "common/iop_profile.c"
   "control/conf.c"

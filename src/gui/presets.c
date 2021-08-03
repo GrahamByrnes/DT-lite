@@ -27,7 +27,6 @@
 #include "gui/accelerators.h"
 #include "gui/gtk.h"
 #include "gui/presets.h"
-#include "libs/modulegroups.h"
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
 #endif
@@ -780,8 +779,6 @@ static void menuitem_favourite_toggled(GtkCheckMenuItem *checkmenuitem, gpointer
     state = dt_iop_state_FAVORITE;
 
   dt_iop_gui_set_state(module, state);
-  if(state == dt_iop_state_FAVORITE)
-    dt_dev_modulegroups_set(darktable.develop, DT_MODULEGROUP_FAVORITES);
 }
 
 void dt_gui_favorite_presets_menu_show()

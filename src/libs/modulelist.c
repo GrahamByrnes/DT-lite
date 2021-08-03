@@ -28,7 +28,6 @@
 #include "gui/gtk.h"
 #include "libs/lib.h"
 #include "libs/lib_api.h"
-#include "libs/modulegroups.h"
 
 DT_MODULE(1)
 
@@ -118,6 +117,7 @@ enum
   COL_DESCRIPTION,
   NUM_COLS
 };
+
 static void image_renderer_function(GtkTreeViewColumn *col, GtkCellRenderer *renderer, GtkTreeModel *model,
                                     GtkTreeIter *iter, gpointer user_data)
 {
@@ -318,14 +318,8 @@ static void _lib_modulelist_row_changed_callback(GtkTreeView *treeview, gpointer
     gtk_tree_model_get_iter(model, &iter, path);
     gtk_tree_path_free(path);
     gtk_tree_model_get(model, &iter, COL_MODULE, &module, -1);
-
     dt_iop_so_gui_set_state(module, (module->state + 1) % dt_iop_state_LAST);
-
-    if(module->state == dt_iop_state_FAVORITE)
-      dt_dev_modulegroups_set(darktable.develop, DT_MODULEGROUP_FAVORITES);
-
     update_selection(self);
-
     // rebuild the accelerators 
     dt_iop_connect_accels_multi(module);
   }
@@ -348,6 +342,7 @@ static char *gen_params(char state, int *size, char *names)
 {
   int len = 0;
   char *params = NULL;
+
   for(GList *iter = g_list_first(darktable.iop); iter; iter = g_list_next(iter))
   {
     dt_iop_module_so_t *module = (dt_iop_module_so_t *)iter->data;
@@ -356,6 +351,7 @@ static char *gen_params(char state, int *size, char *names)
     int op_len = strlen(module->op) + 1;
     int new_len = len + 1 + op_len;
     char *tmp = realloc(params, new_len);
+
     if(!tmp)
     {
       free(params);
@@ -364,9 +360,8 @@ static char *gen_params(char state, int *size, char *names)
       break;
     }
     else
-    {
       params = tmp;
-    }
+
     memcpy(params + len, module->op, op_len);
     char *pattern = g_strdup_printf("|%s|", module->op);
     params[new_len - 1] = (names==NULL ? state : strstr(names, pattern)!=NULL);
@@ -441,8 +436,8 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
     }
     pos += op_len + 2;
   }
+  
   update_selection(self);
-
   return pos != size;
 }
 
