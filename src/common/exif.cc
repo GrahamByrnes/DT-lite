@@ -2699,8 +2699,6 @@ int dt_exif_xmp_read(dt_image_t *img, const char *filename, const int history_on
       const bool is_a_dt_xmp = (ns_pos != std::string::npos);
       _exif_decode_xmp_data(img, xmpData, is_a_dt_xmp ? version : -1, false);
     }
-
-
     // convert legacy flip bits (will not be written anymore, convert to flip history item here):
     if((pos = xmpData.findKey(Exiv2::XmpKey("Xmp.darktable.raw_params"))) != xmpData.end())
     {

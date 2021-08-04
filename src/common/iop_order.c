@@ -64,7 +64,7 @@ const char *dt_iop_order_string(const dt_iop_order_t order)
     return iop_order_string[order];
 }
 
-// note legacy_order & v30_order have the original iop-order double that is
+// note v30_order has the original iop-order double that is
 // used only for the initial database migration.
 //
 // in the new code only the iop-order as int is used to order the module on the GUI.
@@ -283,6 +283,9 @@ dt_iop_order_t dt_ioppr_get_iop_order_list_kind(GList *iop_order_list)
   while(l)
   {
     const dt_iop_order_entry_t *const restrict entry = (dt_iop_order_entry_t *)l->data;
+    fprintf(stderr, "V30 entry=%s, entry=%s, compare %d\n", 
+                   v30_order[k].operation, entry->operation, strcmp(v30_order[k].operation, entry->operation)); /* **** */
+
     if(strcmp(v30_order[k].operation, entry->operation))
     {
       ok = FALSE;
@@ -299,7 +302,7 @@ dt_iop_order_t dt_ioppr_get_iop_order_list_kind(GList *iop_order_list)
     k++;
     l = g_list_next(l);
   }
-
+  fprintf(stderr, "is ok ? %d\n", ok); /* **** */
   if(ok)
     return DT_IOP_ORDER_V30;
 

@@ -558,6 +558,7 @@ restart:
     dt_pthread_mutex_unlock(&dev->pipe_mutex);
     return;
   }
+
   dev->pipe->input_timestamp = dev->timestamp;
   // dt_dev_pixelpipe_change() will clear the changed value
   pipe_changed = dev->pipe->changed;
@@ -581,17 +582,19 @@ restart:
   scale = dt_dev_get_zoom_scale(dev, zoom, 1.0f, 0) * darktable.gui->ppd;
   window_width = dev->width * darktable.gui->ppd;
   window_height = dev->height * darktable.gui->ppd;
+
   if(closeup)
   {
     window_width /= 1<<closeup;
     window_height /= 1<<closeup;
   }
+
   const int wd = MIN(window_width, dev->pipe->processed_width * scale);
   const int ht = MIN(window_height, dev->pipe->processed_height * scale);
   x = MAX(0, scale * dev->pipe->processed_width  * (.5 + zoom_x) - wd / 2);
   y = MAX(0, scale * dev->pipe->processed_height * (.5 + zoom_y) - ht / 2);
-
   dt_get_times(&start);
+
   if(dt_dev_pixelpipe_process(dev->pipe, dev, x, y, wd, ht, scale))
   {
     // interrupted because image changed?
@@ -612,7 +615,8 @@ restart:
   dt_dev_average_delay_update(&start, &dev->average_delay);
 
   // maybe we got zoomed/panned in the meantime?
-  if(dev->pipe->changed != DT_DEV_PIPE_UNCHANGED) goto restart;
+  if(dev->pipe->changed != DT_DEV_PIPE_UNCHANGED)
+    goto restart;
 
   // cool, we got a new image!
   dev->pipe->backbuf_scale = scale;
@@ -652,7 +656,6 @@ void dt_dev_reload_image(dt_develop_t *dev, const int32_t imgid)
 {
   _dt_dev_load_raw(dev, imgid);
   dev->image_force_reload = dev->image_loading = dev->preview_loading = dev->preview2_loading = TRUE;
-
   dev->pipe->changed |= DT_DEV_PIPE_SYNCH;
   dt_dev_invalidate(dev); // only invalidate image, preview will follow once it's loaded.
 }
@@ -684,7 +687,8 @@ float dt_dev_get_zoom_scale(dt_develop_t *dev, dt_dev_zoom_t zoom, int closeup_f
       if(preview) zoom_scale *= ps;
       break;
   }
-  if (preview) zoom_scale /= dev->preview_downsampling;
+  if (preview)
+    zoom_scale /= dev->preview_downsampling;
 
   return zoom_scale;
 }
@@ -692,7 +696,6 @@ float dt_dev_get_zoom_scale(dt_develop_t *dev, dt_dev_zoom_t zoom, int closeup_f
 void dt_dev_load_image(dt_develop_t *dev, const int32_t imgid)
 {
   dt_lock_image(imgid);
-
   _dt_dev_load_raw(dev, imgid);
 
   if(dev->pipe)
@@ -700,19 +703,16 @@ void dt_dev_load_image(dt_develop_t *dev, const int32_t imgid)
     dev->pipe->processed_width = 0;
     dev->pipe->processed_height = 0;
   }
-  dev->image_loading = dev->first_load = dev->preview_loading = dev->preview2_loading = TRUE;
 
+  dev->image_loading = dev->first_load = dev->preview_loading = dev->preview2_loading = TRUE;
   dev->image_status = dev->preview_status = dev->preview2_status = DT_DEV_PIXELPIPE_DIRTY;
 
   // we need a global lock as the dev->iop set must not be changed until read history is terminated
   dt_pthread_mutex_lock(&darktable.dev_threadsafe);
   dev->iop = dt_iop_load_modules(dev);
-
   dt_dev_read_history(dev);
   dt_pthread_mutex_unlock(&darktable.dev_threadsafe);
-
   dev->first_load = FALSE;
-
   // Loading an image means we do some developing and so remove the darktable|problem|history-compress tag
   dt_history_set_compress_problem(imgid, FALSE);
 
@@ -781,8 +781,10 @@ int dt_dev_write_history_item(const int imgid, dt_dev_history_item_t *h, int32_t
   while(forms)
   {
     dt_masks_form_t *form = (dt_masks_form_t *)forms->data;
+
     if (form)
       dt_masks_write_masks_history_item(imgid, num, form);
+
     forms = g_list_next(forms);
   }
 
@@ -815,9 +817,9 @@ static void _dev_add_history_item_ext(dt_develop_t *dev, dt_iop_module_t *module
     dev->history_end--;
 
   dev->history_end += kept_module;
-
   history = g_list_nth(dev->history, dev->history_end - 1);
   dt_dev_history_item_t *hist = history ? (dt_dev_history_item_t *)(history->data) : 0;
+
   if(!history // if no history yet, push new item for sure.
      || module != hist->module
      || module->instance != hist->module->instance             // add new item for different op
@@ -833,20 +835,17 @@ static void _dev_add_history_item_ext(dt_develop_t *dev, dt_iop_module_t *module
     // if(history) printf("because item %d - %s is different operation.\n", dev->history_end-1,
     // ((dt_dev_history_item_t *)history->data)->module->op);
     dev->history_end++;
-
     hist = (dt_dev_history_item_t *)calloc(1, sizeof(dt_dev_history_item_t));
     if(enable)
     {
       module->enabled = TRUE;
       if(!no_image)
-      {
         if(module->off)
         {
           ++darktable.gui->reset;
           dt_iop_gui_set_enable_button(module);
           --darktable.gui->reset;
         }
-      }
     }
     g_strlcpy(hist->op_name, module->op, sizeof(hist->op_name));
     hist->focus_hash = dev->focus_hash;
@@ -860,6 +859,7 @@ static void _dev_add_history_item_ext(dt_develop_t *dev, dt_iop_module_t *module
     hist->blend_params = malloc(sizeof(dt_develop_blend_params_t));
     memcpy(hist->params, module->params, module->params_size);
     memcpy(hist->blend_params, module->blend_params, sizeof(dt_develop_blend_params_t));
+
     if(include_masks)
       hist->forms = dt_masks_dup_forms_deep(dev->forms, NULL);
     else
@@ -933,9 +933,7 @@ void dt_dev_add_history_item(dt_develop_t *dev, dt_iop_module_t *module, gboolea
   dt_pthread_mutex_lock(&dev->history_mutex);
 
   if(dev->gui_attached)
-  {
     _dev_add_history_item_ext(dev, module, enable, FALSE, FALSE);
-  }
 #if 0
   {
     // debug:
@@ -957,10 +955,8 @@ void dt_dev_add_history_item(dt_develop_t *dev, dt_iop_module_t *module, gboolea
   guint tagid = 0;
   dt_tag_new("darktable|changed", &tagid);
   const gboolean tag_change = dt_tag_attach(tagid, imgid, FALSE, FALSE);
-
   /* register export timestamp in cache */
   dt_image_cache_set_change_timestamp(darktable.image_cache, imgid);
-
   // invalidate buffers and force redraw of darkroom
   dt_dev_invalidate_all(dev);
   dt_pthread_mutex_unlock(&dev->history_mutex);
@@ -970,7 +966,6 @@ void dt_dev_add_history_item(dt_develop_t *dev, dt_iop_module_t *module, gboolea
     /* signal that history has changed */
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE);
     if(tag_change) dt_control_signal_raise(darktable.signals, DT_SIGNAL_TAG_CHANGED);
-
     /* redraw */
     dt_control_queue_redraw_center();
   }
@@ -980,7 +975,6 @@ void dt_dev_add_masks_history_item_ext(dt_develop_t *dev, dt_iop_module_t *_modu
 {
   dt_iop_module_t *module = _module;
   gboolean enable = _enable;
-
   // no module means that is called from the mask manager, so find the iop
   if(module == NULL)
   {
@@ -997,10 +991,9 @@ void dt_dev_add_masks_history_item_ext(dt_develop_t *dev, dt_iop_module_t *_modu
     }
     enable = FALSE;
   }
+
   if(module)
-  {
     _dev_add_history_item_ext(dev, module, enable, no_image, TRUE);
-  }
   else
     fprintf(stderr, "[dt_dev_add_masks_history_item_ext] can't find mask manager module\n");
 }
@@ -1017,23 +1010,15 @@ void dt_dev_add_masks_history_item(dt_develop_t *dev, dt_iop_module_t *module, g
   dt_pthread_mutex_lock(&dev->history_mutex);
 
   if(dev->gui_attached)
-  {
     dt_dev_add_masks_history_item_ext(dev, module, enable, FALSE);
-  }
-
   // invalidate buffers and force redraw of darkroom
   dt_dev_invalidate_all(dev);
   dt_pthread_mutex_unlock(&dev->history_mutex);
 
   if(dev->gui_attached)
   {
-    /* signal that history has changed */
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE);
-
-    /* recreate mask list */
     dt_dev_masks_list_change(dev);
-
-    /* redraw */
     dt_control_queue_redraw_center();
   }
 }
@@ -1050,14 +1035,12 @@ void dt_dev_free_history_item(gpointer data)
 void dt_dev_reload_history_items(dt_develop_t *dev)
 {
   dev->focus_hash = 0;
-
   dt_lock_image(dev->image_storage.id);
-
   dt_ioppr_set_default_iop_order(dev, dev->image_storage.id);
   dt_dev_pop_history_items(dev, 0);
-
   // remove unused history items:
   GList *history = g_list_nth(dev->history, dev->history_end);
+
   while(history)
   {
     GList *next = g_list_next(history);
@@ -1066,13 +1049,15 @@ void dt_dev_reload_history_items(dt_develop_t *dev)
     dev->history = g_list_delete_link(dev->history, history);
     history = next;
   }
-  dt_dev_read_history(dev);
 
+  dt_dev_read_history(dev);
   // we have to add new module instances first
   GList *modules = dev->iop;
+
   while(modules)
   {
     dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
+
     if(module->multi_priority > 0)
     {
       if(!dt_iop_is_hidden(module) && !module->expander)
@@ -1113,15 +1098,11 @@ void dt_dev_reload_history_items(dt_develop_t *dev)
   }
 
   dt_dev_pop_history_items(dev, dev->history_end);
-
   dt_ioppr_resync_iop_list(dev);
-
   // set the module list order
   dt_dev_reorder_gui_module_list(dev);
-
   // we update show params for multi-instances for each other instances
   dt_dev_modules_update_multishow(dev);
-
   dt_unlock_image(dev->image_storage.id);
 }
 
@@ -1130,7 +1111,6 @@ void dt_dev_pop_history_items_ext(dt_develop_t *dev, int32_t cnt)
   dt_ioppr_check_iop_order(dev, 0, "dt_dev_pop_history_items_ext begin");
   const int end_prev = dev->history_end;
   dev->history_end = cnt;
-
   // reset gui params for all modules
   GList *modules = dev->iop;
   while(modules)
@@ -1143,15 +1123,14 @@ void dt_dev_pop_history_items_ext(dt_develop_t *dev, int32_t cnt)
     if(module->multi_priority == 0)
       module->iop_order = dt_ioppr_get_iop_order(dev->iop_order_list, module->op, module->multi_priority);
     else
-    {
       module->iop_order = INT_MAX;
-    }
+
     modules = g_list_next(modules);
   }
-
   // go through history and set gui params
   GList *forms = NULL;
   GList *history = dev->history;
+
   for(int i = 0; i < cnt && history; i++)
   {
     dt_dev_history_item_t *hist = (dt_dev_history_item_t *)(history->data);
@@ -1161,25 +1140,26 @@ void dt_dev_pop_history_items_ext(dt_develop_t *dev, int32_t cnt)
     hist->module->iop_order = hist->iop_order;
     hist->module->enabled = hist->enabled;
     g_strlcpy(hist->module->multi_name, hist->multi_name, sizeof(hist->module->multi_name));
-    if(hist->forms) forms = hist->forms;
+
+    if(hist->forms)
+      forms = hist->forms;
 
     history = g_list_next(history);
   }
 
   dt_ioppr_resync_modules_order(dev);
-
   dt_ioppr_check_duplicate_iop_order(&dev->iop, dev->history);
-
   dt_ioppr_check_iop_order(dev, 0, "dt_dev_pop_history_items_ext end");
-
   // check if masks have changed
   int masks_changed = 0;
+
   if(cnt < end_prev)
     history = g_list_nth(dev->history, cnt);
   else if(cnt > end_prev)
     history = g_list_nth(dev->history, end_prev);
   else
     history = NULL;
+
   for(int i = MIN(cnt, end_prev); i < MAX(cnt, end_prev) && history && !masks_changed; i++)
   {
     dt_dev_history_item_t *hist = (dt_dev_history_item_t *)(history->data);
@@ -1198,13 +1178,11 @@ void dt_dev_pop_history_items(dt_develop_t *dev, int32_t cnt)
   dt_pthread_mutex_lock(&dev->history_mutex);
   ++darktable.gui->reset;
   GList *dev_iop = g_list_copy(dev->iop);
-
   dt_dev_pop_history_items_ext(dev, cnt);
-
   darktable.develop->history_updating = TRUE;
-
   // update all gui modules
   GList *modules = dev->iop;
+
   while(modules)
   {
     dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
@@ -1213,9 +1191,9 @@ void dt_dev_pop_history_items(dt_develop_t *dev, int32_t cnt)
   }
 
   darktable.develop->history_updating = FALSE;
-
   // check if the order of modules has changed
   int dev_iop_changed = (g_list_length(dev_iop) != g_list_length(dev->iop));
+
   if(!dev_iop_changed)
   {
     modules = g_list_first(dev->iop);
@@ -1256,9 +1234,7 @@ void dt_dev_pop_history_items(dt_develop_t *dev, int32_t cnt)
   --darktable.gui->reset;
   dt_dev_invalidate_all(dev);
   dt_pthread_mutex_unlock(&dev->history_mutex);
-
   dt_dev_masks_list_change(dev);
-
   dt_control_queue_redraw_center();
 }
 
@@ -1282,24 +1258,26 @@ void dt_dev_write_history_ext(dt_develop_t *dev, const int imgid)
 {
   sqlite3_stmt *stmt;
   dt_lock_image(imgid);
-
   _cleanup_history(imgid);
-
   // write history entries
-
   GList *history = dev->history;
+
   if (DT_IOP_ORDER_INFO)
     fprintf(stderr,"\n^^^^ Writing history image: %i, iop version: %i",imgid,dev->iop_order_version);
+
   for(int i = 0; history; i++)
   {
     dt_dev_history_item_t *hist = (dt_dev_history_item_t *)(history->data);
     (void)dt_dev_write_history_item(imgid, hist, i);
+
     if (DT_IOP_ORDER_INFO)
     {
       fprintf(stderr,"\n%20s, num %i, order %d, v(%i), multiprio %i",
               hist->module->op,i,hist->iop_order,hist->module->version(),hist->multi_priority);
-      if (hist->enabled) fprintf(stderr,", enabled");
+      if (hist->enabled)
+        fprintf(stderr,", enabled");
     }
+
     history = g_list_next(history);
   }
   if (DT_IOP_ORDER_INFO)
@@ -1413,13 +1391,21 @@ static gboolean _dev_auto_apply_presets(dt_develop_t *dev)
   // query for all modules at once:
   sqlite3_stmt *stmt;
   int iformat = 0;
-  if(dt_image_is_rawprepare_supported(image)) iformat |= FOR_RAW;
-  else iformat |= FOR_LDR;
-  if(dt_image_is_hdr(image)) iformat |= FOR_HDR;
+
+  if(dt_image_is_rawprepare_supported(image))
+    iformat |= FOR_RAW;
+  else
+    iformat |= FOR_LDR;
+
+  if(dt_image_is_hdr(image))
+    iformat |= FOR_HDR;
 
   int excluded = 0;
-  if(dt_image_monochrome_flags(image)) excluded |= FOR_NOT_MONO;
-  else excluded |= FOR_NOT_COLOR;
+  
+  if(dt_image_monochrome_flags(image))
+    excluded |= FOR_NOT_MONO;
+  else
+    excluded |= FOR_NOT_COLOR;
   
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), query, -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
@@ -1478,9 +1464,7 @@ static gboolean _dev_auto_apply_presets(dt_develop_t *dev)
   }
 
   sqlite3_finalize(stmt);
-
   image->flags |= DT_IMAGE_AUTO_PRESETS_APPLIED | DT_IMAGE_NO_LEGACY_PRESETS;
-
   // make sure these end up in the image_cache; as the history is not correct right now
   // we don't write the sidecar here but later in dt_dev_read_history_ext
   dt_image_cache_write_release(darktable.image_cache, image, DT_IMAGE_CACHE_RELAXED);
@@ -1530,11 +1514,9 @@ static void _dev_merge_history(dt_develop_t *dev, const int imgid)
     // if there is anything..
     const int cnt = sqlite3_column_int(stmt, 0);
     sqlite3_finalize(stmt);
-
     // workaround a sqlite3 "feature". The above statement to insert items into memory.history is complex and in
     // this case sqlite does not give rowid a linear increment. But the following code really expect that the rowid in
     // this table starts from 0 and increment one by one. So in the following code we rewrite the num values.
-
     if(cnt > 0)
     {
       // get all rowids
@@ -1655,6 +1637,7 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "SELECT history_end FROM main.images WHERE id = ?1",
                               -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
+
   if(sqlite3_step(stmt) == SQLITE_ROW) // seriously, this should never fail
     if(sqlite3_column_type(stmt, 0) != SQLITE_NULL)
       history_end_current = sqlite3_column_int(stmt, 0);
@@ -1670,6 +1653,7 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
                               -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   dev->history_end = 0;
+
   while(sqlite3_step(stmt) == SQLITE_ROW)
   {
     // db record:
@@ -1692,9 +1676,11 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
     const int iop_order = dt_ioppr_get_iop_order(dev->iop_order_list, opname, multi_priority);
     hist->module = NULL;
     dt_iop_module_t *find_op = NULL;
+
     for(GList *modules = dev->iop; modules; modules = g_list_next(modules))
     {
       dt_iop_module_t *module = (dt_iop_module_t *)modules->data;
+
       if(!strcmp(module->op, opname))
       {
         if(module->multi_priority == multi_priority)
@@ -1719,11 +1705,8 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
       {
         dt_iop_update_multi_priority(new_module, multi_priority);
         new_module->iop_order = iop_order;
-
         g_strlcpy(new_module->multi_name, multi_name, sizeof(new_module->multi_name));
-
         dev->iop = g_list_append(dev->iop, new_module);
-
         new_module->instance = find_op->instance;
         hist->module = new_module;
       }
