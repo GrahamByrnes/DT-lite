@@ -30,10 +30,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DT_IOP_ORDER_VERSION 5
-
-#define DT_IOP_ORDER_INFO (darktable.unmuted & DT_DEBUG_IOPORDER)
-
 static void _ioppr_reset_iop_order(GList *iop_order_list);
 
 /** Note :
@@ -157,10 +153,7 @@ static GList *_insert_before(GList *iop_order_list, const char *module, const ch
 
 dt_iop_order_t dt_ioppr_get_iop_order_version(const int32_t imgid)
 {
-  char *workflow = dt_conf_get_string("plugins/darkroom/workflow");
-  dt_iop_order_t iop_order_version = strcmp(workflow, "display-referred") == 0; 
-    //  ? DT_IOP_ORDER_LEGACY : DT_IOP_ORDER_V30;
-  g_free(workflow);
+  dt_iop_order_t iop_order_version = DT_IOP_ORDER_V30;
   // check current iop order version
   sqlite3_stmt *stmt;
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "SELECT version FROM main.module_order WHERE imgid = ?1",
@@ -286,6 +279,7 @@ dt_iop_order_t dt_ioppr_get_iop_order_list_kind(GList *iop_order_list)
   int k = 0;
   GList *l = iop_order_list;
   gboolean ok = TRUE;
+
   while(l)
   {
     const dt_iop_order_entry_t *const restrict entry = (dt_iop_order_entry_t *)l->data;
@@ -1782,7 +1776,6 @@ GList *dt_ioppr_deserialize_text_iop_order_list(const char *buf)
 GList *dt_ioppr_deserialize_iop_order_list(const char *buf, size_t size)
 {
   GList *iop_order_list = NULL;
-
   // parse all modules
   while(size)
   {
@@ -1823,5 +1816,3 @@ GList *dt_ioppr_deserialize_iop_order_list(const char *buf, size_t size)
   g_list_free_full(iop_order_list, free);
   return NULL;
 }
-
-#undef DT_IOP_ORDER_INFO

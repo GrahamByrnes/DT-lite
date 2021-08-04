@@ -60,7 +60,7 @@ void update(dt_lib_module_t *self)
   dt_lib_ioporder_t *d = (dt_lib_ioporder_t *)self->data;
   const dt_iop_order_t kind = dt_ioppr_get_iop_order_list_kind(darktable.develop->iop_order_list);
 
-  if(kind == DT_IOP_ORDER_CUSTOM)
+  if(kind < DT_IOP_ORDER_V30)
   {
     gchar *iop_order_list = dt_ioppr_serialize_text_iop_order_list(darktable.develop->iop_order_list);
     gboolean found = FALSE;
@@ -103,11 +103,6 @@ void update(dt_lib_module_t *self)
       d->current_mode = DT_IOP_ORDER_CUSTOM;
       gtk_label_set_text(GTK_LABEL(d->widget), _(dt_iop_order_string(DT_IOP_ORDER_CUSTOM)));
     }
-  }
-  else if(kind == DT_IOP_ORDER_LEGACY)
-  {
-    d->current_mode = kind;
-    gtk_label_set_text(GTK_LABEL(d->widget), _(dt_iop_order_string(DT_IOP_ORDER_LEGACY)));
   }
   else if(kind == DT_IOP_ORDER_V30)
   {
@@ -185,12 +180,6 @@ void init_presets(dt_lib_module_t *self)
   size_t size = 0;
   char *params = NULL;
   GList *list;
-
-  list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_LEGACY);
-  params = dt_ioppr_serialize_iop_order_list(list, &size);
-  dt_lib_presets_add(_("legacy"), self->plugin_name, self->version(), (const char *)params, (int32_t)size);
-  free(params);
-
   list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
   params = dt_ioppr_serialize_iop_order_list(list, &size);
   dt_lib_presets_add(_("v3.0 (default)"), self->plugin_name, self->version(), (const char *)params, (int32_t)size);
