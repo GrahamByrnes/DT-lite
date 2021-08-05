@@ -554,11 +554,9 @@ static void _pop_undo(gpointer user_data, dt_undo_type_t type, dt_undo_data_t da
       pipe_remove = 1;
       iop_temp = g_list_sort(iop_temp, dt_sort_iop_by_order);
     }
-
     // check if this undo a delete module and re-create it
     if(_create_deleted_modules(&iop_temp, history_temp))
       pipe_remove = 1;
-
     // check if this is a redo of a delete module or an undo of an add module
     if(_check_deleted_instances(dev, &iop_temp, history_temp))
       pipe_remove = 1;
@@ -686,11 +684,9 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
                                  hitem->module->default_enabled, hitem->module->hide_enable_button, selected,
                                  hitem->module->flags() & IOP_FLAGS_DEPRECATED);
     g_free(label);
-
     gtk_box_pack_start(GTK_BOX(d->history_box), widget, TRUE, TRUE, 0);
     gtk_box_reorder_child(GTK_BOX(d->history_box), widget, 0);
     num++;
-
     history = g_list_next(history);
   }
   /* show all widgets */
