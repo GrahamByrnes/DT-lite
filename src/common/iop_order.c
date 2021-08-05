@@ -283,26 +283,23 @@ dt_iop_order_t dt_ioppr_get_iop_order_list_kind(GList *iop_order_list)
   while(l)
   {
     const dt_iop_order_entry_t *const restrict entry = (dt_iop_order_entry_t *)l->data;
-    fprintf(stderr, "V30 entry=%s, entry=%s, compare %d\n", 
-                   v30_order[k].operation, entry->operation, strcmp(v30_order[k].operation, entry->operation)); /* **** */
 
     if(strcmp(v30_order[k].operation, entry->operation))
-    {
       ok = FALSE;
-      break;
-    }
     else
     {
+      ok = TRUE;
       // skip all the other instance of same module if any
-      while(g_list_next(l)
-            && !strcmp(v30_order[k].operation, ((dt_iop_order_entry_t *)(g_list_next(l)->data))->operation))
+      while(g_list_next(l) && !strcmp(v30_order[k].operation,
+            ((dt_iop_order_entry_t *)(g_list_next(l)->data))->operation))
         l = g_list_next(l);
     }
 
     k++;
-    l = g_list_next(l);
+    if(ok)
+      l = g_list_next(l);
   }
-  fprintf(stderr, "is ok ? %d\n", ok); /* **** */
+
   if(ok)
     return DT_IOP_ORDER_V30;
 

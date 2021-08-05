@@ -60,11 +60,9 @@ void update(dt_lib_module_t *self)
   dt_lib_ioporder_t *d = (dt_lib_ioporder_t *)self->data;
   const dt_iop_order_t kind = dt_ioppr_get_iop_order_list_kind(darktable.develop->iop_order_list);
 
-  fprintf(stderr, "iop order kind=%d\n", kind);   /* *** */
   if(kind < DT_IOP_ORDER_V30)
   {
-    gchar *iop_order_list = dt_ioppr_serialize_text_iop_order_list(darktable.develop->iop_order_list); /* **** */
-    fprintf(stderr, "iop order list=%s\n", iop_order_list);   /* *** */
+    gchar *iop_order_list = dt_ioppr_serialize_text_iop_order_list(darktable.develop->iop_order_list);
     gboolean found = FALSE;
     int index = 0;
     sqlite3_stmt *stmt;
@@ -110,8 +108,7 @@ void update(dt_lib_module_t *self)
   {
     d->current_mode = kind;
     gtk_label_set_text(GTK_LABEL(d->widget), _(dt_iop_order_string(DT_IOP_ORDER_V30)));
-    gchar *iop_order_list = dt_ioppr_serialize_text_iop_order_list(darktable.develop->iop_order_list); /* **** */
-    fprintf(stderr, "iop order list=%s\n", iop_order_list);   /* *** */
+    gchar *iop_order_list = dt_ioppr_serialize_text_iop_order_list(darktable.develop->iop_order_list);
   }
 }
 

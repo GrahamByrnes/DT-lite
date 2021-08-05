@@ -453,17 +453,9 @@ static void _lib_duplicate_init_callback(gpointer instance, dt_lib_module_t *sel
     d->thumbs = g_list_append(d->thumbs, thumb);
     count++;
   }
+
   sqlite3_finalize (stmt);
-
   gtk_widget_show(d->duplicate_box);
-
-  // we have a single image, do not allow it to be removed so hide last bt
-  /*if(count==1)
-  {
-    gtk_widget_set_sensitive(bt, FALSE);  
-    gtk_widget_set_visible(bt, FALSE);
-  }*/  /* ****** */
-
   // and reset the final size of the current image
   if(dev->image_storage.id >= 0)
   {
