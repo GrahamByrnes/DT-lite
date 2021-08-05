@@ -108,7 +108,6 @@ void update(dt_lib_module_t *self)
   {
     d->current_mode = kind;
     gtk_label_set_text(GTK_LABEL(d->widget), _(dt_iop_order_string(DT_IOP_ORDER_V30)));
-    gchar *iop_order_list = dt_ioppr_serialize_text_iop_order_list(darktable.develop->iop_order_list);
   }
 }
 
