@@ -174,7 +174,7 @@ void gui_cleanup(dt_lib_module_t *self)
 
 static GtkWidget *_lib_history_create_button(dt_lib_module_t *self, int num, const char *label,
                                              gboolean enabled, gboolean default_enabled, gboolean always_on,
-                                             gboolean selected, gboolean deprecated)
+                                             gboolean selected)
 {
   /* create label */
   GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -633,7 +633,7 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
   /* add default which always should be */
   int num = -1;
   GtkWidget *widget =
-    _lib_history_create_button(self, num, _("original"), FALSE, FALSE, TRUE, darktable.develop->history_end == 0, FALSE);
+    _lib_history_create_button(self, num, _("original"), FALSE, FALSE, TRUE, darktable.develop->history_end == 0);
   gtk_box_pack_start(GTK_BOX(d->history_box), widget, FALSE, FALSE, 0);
   num++;
   d->record_history_level -= 1;
@@ -673,8 +673,7 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
     const gboolean selected = (num == darktable.develop->history_end - 1); /* *** */
     widget =
       _lib_history_create_button(self, num, label, (hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)),
-                                 hitem->module->default_enabled, hitem->module->hide_enable_button, selected,
-                                 hitem->module->flags() & IOP_FLAGS_DEPRECATED);
+                                 hitem->module->default_enabled, hitem->module->hide_enable_button, selected);
     g_free(label);
     gtk_box_pack_start(GTK_BOX(d->history_box), widget, TRUE, TRUE, 0);
     gtk_box_reorder_child(GTK_BOX(d->history_box), widget, 0);
