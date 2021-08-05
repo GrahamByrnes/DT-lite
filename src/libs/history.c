@@ -173,7 +173,8 @@ void gui_cleanup(dt_lib_module_t *self)
 }
 
 static GtkWidget *_lib_history_create_button(dt_lib_module_t *self, int num, const char *label,
-                                             gboolean enabled, gboolean default_enabled, gboolean always_on, gboolean selected, gboolean deprecated)
+                                             gboolean enabled, gboolean default_enabled, gboolean always_on,
+                                             gboolean selected, gboolean deprecated)
 {
   /* create label */
   GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -205,17 +206,8 @@ static GtkWidget *_lib_history_create_button(dt_lib_module_t *self, int num, con
   }
   else
   {
-    if(deprecated)
-    {
-      onoff = dtgtk_button_new(dtgtk_cairo_paint_switch_deprecated, CPF_STYLE_FLAT | CPF_BG_TRANSPARENT, NULL);
-      gtk_widget_set_name(onoff, "history-switch-deprecated");
-      gtk_widget_set_tooltip_text(onoff, _("deprecated module"));
-    }
-    else
-    {
-      onoff = dtgtk_button_new(dtgtk_cairo_paint_switch, CPF_STYLE_FLAT | CPF_BG_TRANSPARENT, NULL);
-      gtk_widget_set_name(onoff, enabled ? "history-switch-enabled" : "history-switch");
-    }
+    onoff = dtgtk_button_new(dtgtk_cairo_paint_switch, CPF_STYLE_FLAT | CPF_BG_TRANSPARENT, NULL);
+    gtk_widget_set_name(onoff, enabled ? "history-switch-enabled" : "history-switch");
     gtk_widget_set_name(widget, enabled ? "history-button-enabled" : "history-button");
     dtgtk_button_set_active(DTGTK_BUTTON(onoff), enabled);
   }
