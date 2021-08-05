@@ -672,13 +672,13 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
   {
     const dt_dev_history_item_t *hitem = (dt_dev_history_item_t *)(history->data);
     gchar *label;
-
+    
     if(!hitem->multi_name[0] || strcmp(hitem->multi_name, "0") == 0)
       label = g_strdup_printf("%s", hitem->module->name());
     else
       label = g_strdup_printf("%s %s", hitem->module->name(), hitem->multi_name);
 
-    const gboolean selected = (num == darktable.develop->history_end - 1);
+    const gboolean selected = (num == darktable.develop->history_end - 1); /* *** */
     widget =
       _lib_history_create_button(self, num, label, (hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)),
                                  hitem->module->default_enabled, hitem->module->hide_enable_button, selected,
@@ -711,14 +711,13 @@ static void _lib_history_truncate(gboolean compress)
     dt_history_compress_on_image(imgid);
   else
     dt_history_truncate_on_image(imgid, darktable.develop->history_end);
-
-  sqlite3_stmt *stmt;
   // load new history and write it back to ensure that all history are properly numbered without a gap
   dt_dev_reload_history_items(darktable.develop);
   dt_dev_write_history(darktable.develop);
   dt_image_synch_xmp(imgid);
   // then we can get the item to select in the new clean-up history retrieve the position of the module
   // corresponding to the history end.
+  sqlite3_stmt *stmt;
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "SELECT IFNULL(MAX(num)+1, 0) FROM main.history "
                                                              "WHERE imgid=?1", -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
