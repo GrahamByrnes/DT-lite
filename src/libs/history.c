@@ -630,8 +630,8 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
   gtk_container_foreach(GTK_CONTAINER(d->history_box), (GtkCallback)gtk_widget_destroy, 0);
   // add default which always should be "original"
   int num = -1;
-  GtkWidget *widget =
-    _lib_history_create_button(self, num, _("original"), FALSE, FALSE, TRUE, darktable.develop->history_end == 0);
+  GtkWidget *widget = _lib_history_create_button(self, num, _("original"), FALSE, FALSE,
+                                                 TRUE, darktable.develop->history_end == 0);
   gtk_box_pack_start(GTK_BOX(d->history_box), widget, FALSE, FALSE, 0);
   num++;
   d->record_history_level -= 1;
@@ -787,7 +787,6 @@ static void _lib_history_button_clicked_callback(GtkWidget *widget, gpointer use
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_WILL_CHANGE,
                           dt_history_duplicate(darktable.develop->history), darktable.develop->history_end,
                           dt_ioppr_iop_order_copy_deep(darktable.develop->iop_order_list));
-
   /* revert to given history item. */
   const int num = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "history-number"));
   dt_dev_pop_history_items(darktable.develop, num);
