@@ -46,7 +46,7 @@ void dt_history_item_free(gpointer data)
   g_free(item);
 }
 
-static void remove_preset_flag(const int imgid)
+static void _remove_preset_flag(const int imgid)
 {
   dt_image_t *image = dt_image_cache_get(darktable.image_cache, imgid, 'w');
   // clear flag
@@ -103,8 +103,7 @@ void dt_history_delete_on_image_ext(int32_t imgid, gboolean undo)
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   sqlite3_step(stmt);
   sqlite3_finalize(stmt);
-
-  remove_preset_flag(imgid);
+  _remove_preset_flag(imgid);
   /* if current image in develop reload history */
   if(dt_dev_is_current_image(darktable.develop, imgid))
     dt_dev_reload_history_items(darktable.develop);
@@ -181,13 +180,11 @@ int dt_history_load_and_apply_on_list(gchar *filename, const GList *list)
 {
   int res = 0;
   dt_undo_start_group(darktable.undo, DT_UNDO_LT_HISTORY);
-  GList *l = (GList *)list;
-
-  while(l)
+  for(GList *l = (GList *)list; l; l = g_list_next(l))
   {
     const int imgid = GPOINTER_TO_INT(l->data);
-    if(dt_history_load_and_apply(imgid, filename, 1)) res = 1;
-    l = g_list_next(l);
+    if(dt_history_load_and_apply(imgid, filename, 1))
+      res = 1;
   }
 
   dt_undo_end_group(darktable.undo);
@@ -198,8 +195,7 @@ int dt_history_load_and_apply_on_list(gchar *filename, const GList *list)
 static dt_dev_history_item_t *_search_history_by_module(dt_develop_t *dev, dt_iop_module_t *module)
 {
   dt_dev_history_item_t *hist_mod = NULL;
-  GList *history = g_list_first(dev->history);
-  while(history)
+  for(GList *history = dev->history; history; history = g_list_next(history))
   {
     dt_dev_history_item_t *hist = (dt_dev_history_item_t *)(history->data);
 
@@ -208,7 +204,6 @@ static dt_dev_history_item_t *_search_history_by_module(dt_develop_t *dev, dt_io
       hist_mod = hist;
       break;
     }
-    history = g_list_next(history);
   }
 
   return hist_mod;
@@ -218,8 +213,7 @@ static dt_dev_history_item_t *_search_history_by_module(dt_develop_t *dev, dt_io
 static dt_dev_history_item_t *_search_history_by_op(dt_develop_t *dev, dt_iop_module_t *module)
 {
   dt_dev_history_item_t *hist_mod = NULL;
-  GList *history = g_list_first(dev->history);
-  while(history)
+  for(GList *history = dev->history; history; history = g_list_next(history))
   {
     dt_dev_history_item_t *hist = (dt_dev_history_item_t *)(history->data);
 
@@ -228,7 +222,6 @@ static dt_dev_history_item_t *_search_history_by_op(dt_develop_t *dev, dt_iop_mo
       hist_mod = hist;
       break;
     }
-    history = g_list_next(history);
   }
   return hist_mod;
 }
@@ -238,8 +231,7 @@ static dt_dev_history_item_t *_search_history_by_op(dt_develop_t *dev, dt_iop_mo
 static dt_iop_module_t *_search_list_iop_by_module(GList *modules_list, dt_iop_module_t *module)
 {
   dt_iop_module_t *mod_ret = NULL;
-  GList *modules = g_list_first(modules_list);
-  while(modules)
+  for(GList *modules = modules_list; modules; modules = g_list_next(modules))
   {
     dt_iop_module_t *mod = (dt_iop_module_t *)(modules->data);
 
@@ -248,7 +240,6 @@ static dt_iop_module_t *_search_list_iop_by_module(GList *modules_list, dt_iop_m
       mod_ret = mod;
       break;
     }
-    modules = g_list_next(modules);
   }
   return mod_ret;
 }
@@ -273,12 +264,10 @@ static void _fill_used_forms(GList *forms_list, int formid, int *used, int nb)
 
   if(form && (form->type & DT_MASKS_GROUP))
   {
-    GList *grpts = g_list_first(form->points);
-    while(grpts)
+    for(GList *grpts = form->points; grpts; grpts = g_list_next(grpts))
     {
       dt_masks_point_group_t *grpt = (dt_masks_point_group_t *)grpts->data;
       _fill_used_forms(forms_list, grpt->formid, used, nb);
-      grpts = g_list_next(grpts);
     }
   }
 }
@@ -307,8 +296,7 @@ int dt_history_merge_module_into_history(dt_develop_t *dev_dest, dt_develop_t *d
   if(module_added && mod_replace == NULL && !append)
   { // we haven't found a module to replace
     // check if there's a module with the same (operation, multi_name) on dev->iop
-    GList *modules_dest = g_list_first(dev_dest->iop);
-    while(modules_dest)
+    for(GList *modules_dest = dev_dest->iop; modules_dest; modules_dest = g_list_next(modules_dest))
     {
       dt_iop_module_t *mod_dest = (dt_iop_module_t *)modules_dest->data;
 
@@ -322,7 +310,6 @@ int dt_history_merge_module_into_history(dt_develop_t *dev_dest, dt_develop_t *d
           break;
         }
       }
-      modules_dest = g_list_next(modules_dest);
     }
   }
 
@@ -382,8 +369,7 @@ int dt_history_merge_module_into_history(dt_develop_t *dev_dest, dt_develop_t *d
   {
     dt_iop_module_t *module_duplicate = NULL;
     // check if there's a module with the same iop_order
-    GList *modules_dest = g_list_first(dev_dest->iop);
-    while(modules_dest)
+    for( GList *modules_dest = dev_dest->iop; modules_dest; modules_dest = g_list_next(modules_dest))
     {
       dt_iop_module_t *mod = (dt_iop_module_t *)(modules_dest->data);
 
@@ -394,8 +380,6 @@ int dt_history_merge_module_into_history(dt_develop_t *dev_dest, dt_develop_t *d
       }
       if(mod->iop_order == mod_src->iop_order && mod != module)
         module_duplicate = mod;
-
-      modules_dest = g_list_next(modules_dest);
     }
 
     // do some checking...
@@ -510,8 +494,7 @@ static int _history_copy_and_paste_on_image_merge(int32_t imgid, int32_t dest_im
   {
     if (DT_IOP_ORDER_INFO) fprintf(stderr," selected ops");
     // copy only selected history entries
-    GList *l = g_list_last(ops);
-    while(l)
+    for(const GList *l = g_list_last(ops); l; l = g_list_previous(l))
     {
       const unsigned int num = GPOINTER_TO_UINT(l->data);
       const dt_dev_history_item_t *hist = g_list_nth_data(dev_src->history, num);
@@ -524,8 +507,6 @@ static int _history_copy_and_paste_on_image_merge(int32_t imgid, int32_t dest_im
 
           mod_list = g_list_append(mod_list, hist->module);
         }
-
-      l = g_list_previous(l);
     }
   }
   else
@@ -533,8 +514,7 @@ static int _history_copy_and_paste_on_image_merge(int32_t imgid, int32_t dest_im
     if (DT_IOP_ORDER_INFO)
       fprintf(stderr," all modules");
     // we will copy all modules
-    GList *modules_src = g_list_first(dev_src->iop);
-    while(modules_src)
+    for(GList *modules_src = dev_src->iop; modules_src; modules_src = g_list_next(modules_src))
     {
       dt_iop_module_t *mod_src = (dt_iop_module_t *)(modules_src->data);
       // copy from history only if
@@ -546,8 +526,6 @@ static int _history_copy_and_paste_on_image_merge(int32_t imgid, int32_t dest_im
       {
         mod_list = g_list_append(mod_list, mod_src);
       }
-
-      modules_src = g_list_next(modules_src);
     }
   }
   if (DT_IOP_ORDER_INFO) fprintf(stderr,"\nvvvvv\n");
@@ -555,12 +533,10 @@ static int _history_copy_and_paste_on_image_merge(int32_t imgid, int32_t dest_im
   // update iop-order list to have entries for the new modules
   dt_ioppr_update_for_modules(dev_dest, mod_list, FALSE);
 
-  GList *l = mod_list;
-  while(l)
+  for(GList *l = mod_list; l; l = g_list_next(l))
   {
     dt_iop_module_t *mod = (dt_iop_module_t *)l->data;
     dt_history_merge_module_into_history(dev_dest, dev_src, mod, &modules_used, FALSE);
-    l = g_list_next(l);
   }
   // update iop-order list to have entries for the new modules
   dt_ioppr_update_for_modules(dev_dest, mod_list, FALSE);
@@ -607,8 +583,7 @@ static int _history_copy_and_paste_on_image_overwrite(const int32_t imgid, const
     gchar *skip_modules = NULL;
     if(!copy_full)
     {
-      GList *modules = darktable.iop;
-      while(modules)
+      for(GList *modules = darktable.iop; modules; modules = g_list_next(modules))
       {
         dt_iop_module_so_t *module = (dt_iop_module_so_t *)modules->data;
 
@@ -619,7 +594,6 @@ static int _history_copy_and_paste_on_image_overwrite(const int32_t imgid, const
        
           skip_modules = dt_util_dstrcat(skip_modules, "'%s'", module->op);
         }
-        modules = g_list_next(modules);
       }
     }
 

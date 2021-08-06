@@ -32,7 +32,6 @@ void dt_history_snapshot_undo_create(int32_t imgid, int *snap_id, int *history_e
   // create history & mask snapshots for imgid, return the snapshot id
   sqlite3_stmt *stmt;
   gboolean all_ok = TRUE;
-
   dt_lock_image(imgid);
 
   // get current history end
@@ -43,6 +42,7 @@ void dt_history_snapshot_undo_create(int32_t imgid, int *snap_id, int *history_e
 
   if (sqlite3_step(stmt) == SQLITE_ROW)
     *history_end = sqlite3_column_int(stmt, 0);
+
   sqlite3_finalize(stmt);
 
   // get max snapshot
@@ -54,12 +54,25 @@ void dt_history_snapshot_undo_create(int32_t imgid, int *snap_id, int *history_e
 
   if (sqlite3_step(stmt) == SQLITE_ROW)
     *snap_id = sqlite3_column_int(stmt, 0) + 1;
+
   sqlite3_finalize(stmt);
 
   sqlite3_exec(dt_database_get(darktable.db), "BEGIN TRANSACTION", NULL, NULL, NULL);
 
-  // copy current state into undo_history
+  if(*history_end == 0)
+  {
+    // insert a dummy undo_histroy to ensure proper snap_id later
+    DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
+                                "INSERT INTO memory.undo_history"
+                                "  VALUES (?1, ?2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)"
+                                , -1, &stmt, NULL);
+    DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, *snap_id);
+    DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, imgid);
+    all_ok = all_ok && (sqlite3_step(stmt) == SQLITE_DONE);
 
+    goto end_create;
+  }
+  // copy current state into undo_history
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "INSERT INTO memory.undo_history"
                               "  SELECT ?1, imgid, num, module, operation, op_params, enabled, "
@@ -70,9 +83,7 @@ void dt_history_snapshot_undo_create(int32_t imgid, int *snap_id, int *history_e
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, imgid);
   all_ok = all_ok && (sqlite3_step(stmt) == SQLITE_DONE);
   sqlite3_finalize(stmt);
-
   // copy current state into undo_masks_history
-
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "INSERT INTO memory.undo_masks_history"
                               "  SELECT ?1, imgid, num, formid, form, name, version,"
@@ -83,9 +94,7 @@ void dt_history_snapshot_undo_create(int32_t imgid, int *snap_id, int *history_e
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, imgid);
   all_ok = all_ok && (sqlite3_step(stmt) == SQLITE_DONE);
   sqlite3_finalize(stmt);
-
   // copy the module order
-
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "INSERT INTO memory.undo_module_order"
                               "  SELECT ?1, imgid, version, iop_list"
@@ -94,6 +103,8 @@ void dt_history_snapshot_undo_create(int32_t imgid, int *snap_id, int *history_e
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, *snap_id);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, imgid);
   all_ok = all_ok && (sqlite3_step(stmt) == SQLITE_DONE);
+  
+  end_create:
   sqlite3_finalize(stmt);
 
   if(all_ok)
@@ -109,11 +120,9 @@ static void _history_snapshot_undo_restore(int32_t imgid, int snap_id, int histo
   // restore the given snapshot for imgid
   sqlite3_stmt *stmt;
   gboolean all_ok = TRUE;
-
   dt_lock_image(imgid);
 
   sqlite3_exec(dt_database_get(darktable.db), "BEGIN TRANSACTION", NULL, NULL, NULL);
-
   dt_history_delete_on_image_ext(imgid, FALSE);
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_TAG_CHANGED);
 
@@ -218,13 +227,9 @@ void dt_history_snapshot_undo_pop(gpointer user_data, dt_undo_type_t type, dt_un
     dt_undo_lt_history_t *hist = (dt_undo_lt_history_t *)data;
 
     if(action == DT_ACTION_UNDO)
-    {
       _history_snapshot_undo_restore(hist->imgid, hist->before, hist->before_history_end);
-    }
     else
-    {
       _history_snapshot_undo_restore(hist->imgid, hist->after, hist->after_history_end);
-    }
 
     *imgs = g_list_append(*imgs, GINT_TO_POINTER(hist->imgid));
   }

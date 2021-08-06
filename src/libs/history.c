@@ -283,9 +283,8 @@ static void _add_module_expander(GList *iop_list, dt_iop_module_t *module)
 static dt_dev_history_item_t *_search_history_by_module(GList *history_list, dt_iop_module_t *module)
 {
   dt_dev_history_item_t *hist_ret = NULL;
-  GList *history = g_list_first(history_list);
-
-  while(history)
+  
+  for(GList *history = history_list; history; history = g_list_next(history))
   {
     dt_dev_history_item_t *hist_item = (dt_dev_history_item_t *)history->data;
 
@@ -294,8 +293,6 @@ static dt_dev_history_item_t *_search_history_by_module(GList *history_list, dt_
       hist_ret = hist_item;
       break;
     }
-
-    history = g_list_next(history);
   }
   return hist_ret;
 }
@@ -407,9 +404,7 @@ static int _check_deleted_instances(dt_develop_t *dev, GList **_iop_list, GList 
 static void _reorder_gui_module_list(dt_develop_t *dev)
 {
   int pos_module = 0;
-  GList *modules = g_list_last(dev->iop);
-
-  while(modules)
+  for(const GList *modules = g_list_last(dev->iop); modules; modules = g_list_previous(modules))
   {
     dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
     GtkWidget *expander = module->expander;
@@ -417,17 +412,13 @@ static void _reorder_gui_module_list(dt_develop_t *dev)
     if(expander)
       gtk_box_reorder_child(dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER),
                             expander, pos_module++);
-
-    modules = g_list_previous(modules);
   }
 }
 
 static int _rebuild_multi_priority(GList *history_list)
 {
   int changed = 0;
-  GList *history = g_list_first(history_list);
-
-  while(history)
+  for(const GList *history = history_list; history; history = g_list_next(history))
   {
     dt_dev_history_item_t *hitem = (dt_dev_history_item_t *)history->data;
     // if multi_priority is different in history and dev->iop
@@ -437,9 +428,8 @@ static int _rebuild_multi_priority(GList *history_list)
       dt_iop_update_multi_priority(hitem->module, hitem->multi_priority);
       changed = 1;
     }
-
-    history = g_list_next(history);
   }
+
   return changed;
 }
 
