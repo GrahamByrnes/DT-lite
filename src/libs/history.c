@@ -211,7 +211,7 @@ static GtkWidget *_lib_history_create_button(dt_lib_module_t *self, int num, con
     gtk_widget_set_name(widget, enabled ? "history-button-enabled" : "history-button");
     dtgtk_button_set_active(DTGTK_BUTTON(onoff), enabled);
   }
-
+     
   gtk_widget_set_sensitive (onoff, FALSE);
   g_object_set_data(G_OBJECT(widget), "history_number", GINT_TO_POINTER(num + 1));
   g_object_set_data(G_OBJECT(widget), "label", (gpointer)label);
@@ -321,15 +321,16 @@ static int _check_deleted_instances(dt_develop_t *dev, GList **_iop_list, GList 
     if(mod->multi_priority == 0)
     {
       GList *modules_next = g_list_next(modules);
+
       if(modules_next)
       {
         dt_iop_module_t *mod_next = (dt_iop_module_t *)modules_next->data;
+
         if(strcmp(mod_next->op, mod->op) == 0 && mod_next->multi_priority == 0)
         {
           // is the same one, check which one must be deleted
           const int mod_in_history = (_search_history_by_module(history_list, mod) != NULL);
           const int mod_next_in_history = (_search_history_by_module(history_list, mod_next) != NULL);
-
           // current is in history and next is not, delete next
           if(mod_in_history && !mod_next_in_history)
           {
@@ -373,9 +374,7 @@ static int _check_deleted_instances(dt_develop_t *dev, GList **_iop_list, GList 
       // we remove the plugin effectively
       if(!dt_iop_is_hidden(mod))
       {
-        // we just hide the module to avoid lots of gtk critical warnings
         gtk_widget_hide(mod->expander);
-        // this is copied from dt_iop_gui_delete_callback(), not sure why the above sentence...
         gtk_widget_destroy(mod->widget);
         dt_iop_gui_cleanup_module(mod);
       }
@@ -416,8 +415,8 @@ static void _reorder_gui_module_list(dt_develop_t *dev)
     GtkWidget *expander = module->expander;
 
     if(expander)
-      gtk_box_reorder_child(dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER), expander,
-                            pos_module++);
+      gtk_box_reorder_child(dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER),
+                            expander, pos_module++);
 
     modules = g_list_previous(modules);
   }
@@ -488,7 +487,7 @@ static int _create_deleted_modules(GList **_iop_list, GList *history_list)
       module->iop_order = hitem->iop_order;
       // we insert this module into dev->iop
       iop_list = g_list_insert_sorted(iop_list, module, dt_sort_iop_by_order);
-      // add the expander, dt_dev_reload_history_items() don't work well without one
+      // add the expander, dt_dev_reload_history_items() won't work well without one
       _add_module_expander(iop_list, module);
       // if not already done, set the module to all others same instance
       if(!done)
@@ -612,8 +611,7 @@ static void _lib_history_will_change_callback(gpointer instance, GList *history,
 
   if(lib->record_undo && (lib->record_history_level == 0))
   {
-    // history is about to change, we want here ot record a snapshot of the history for the undo
-    // record previous history
+    // history is about to change, we want to record a snapshot of the history for the undo
     g_list_free_full(lib->previous_snapshot, free);
     g_list_free_full(lib->previous_iop_order_list, free);
     lib->previous_snapshot = history;
@@ -628,9 +626,9 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
 {
   dt_lib_module_t *self = (dt_lib_module_t *)user_data;
   dt_lib_history_t *d = (dt_lib_history_t *)self->data;
-  /* first destroy all buttons in list */
+  // first destroy all buttons in list
   gtk_container_foreach(GTK_CONTAINER(d->history_box), (GtkCallback)gtk_widget_destroy, 0);
-  /* add default which always should be */
+  // add default which always should be "original"
   int num = -1;
   GtkWidget *widget =
     _lib_history_create_button(self, num, _("original"), FALSE, FALSE, TRUE, darktable.develop->history_end == 0);
@@ -640,7 +638,7 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
 
   if (d->record_undo == TRUE && (d->record_history_level == 0))
   {
-    /* record undo/redo history snapshot */
+    // record undo/redo history snapshot
     dt_undo_history_t *hist = malloc(sizeof(dt_undo_history_t));
     hist->before_snapshot = dt_history_duplicate(d->previous_snapshot);
     hist->before_end = d->previous_history_end;
@@ -655,9 +653,9 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
   }
   else
     d->record_undo = TRUE;
-  /* lock history mutex */
+  // lock history mutex 
   dt_pthread_mutex_lock(&darktable.develop->history_mutex);
-  /* iterate over history items and add them to list*/
+  // iterate over history items and add them to list
   GList *history = g_list_first(darktable.develop->history);
 
   while(history)
@@ -670,17 +668,23 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
     else
       label = g_strdup_printf("%s %s", hitem->module->name(), hitem->multi_name);
 
-    const gboolean selected = (num == darktable.develop->history_end - 1); /* *** */
-    widget =
-      _lib_history_create_button(self, num, label, (hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)),
-                                 hitem->module->default_enabled, hitem->module->hide_enable_button, selected);
+    const gboolean selected = (num == darktable.develop->history_end - 1);
+
+    if(hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)) /* *** */
+    {
+      widget =  _lib_history_create_button(self, num, label,
+                                          (hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)),
+                                          hitem->module->default_enabled, hitem->module->hide_enable_button,
+                                          selected);
+      gtk_box_pack_start(GTK_BOX(d->history_box), widget, TRUE, TRUE, 0);
+      gtk_box_reorder_child(GTK_BOX(d->history_box), widget, 0);
+    }
+
     g_free(label);
-    gtk_box_pack_start(GTK_BOX(d->history_box), widget, TRUE, TRUE, 0);
-    gtk_box_reorder_child(GTK_BOX(d->history_box), widget, 0);
     num++;
     history = g_list_next(history);
   }
-  /* show all widgets */
+  // show all widgets
   gtk_widget_show_all(d->history_box);
   dt_pthread_mutex_unlock(&darktable.develop->history_mutex);
 }
@@ -702,6 +706,7 @@ static void _lib_history_truncate(gboolean compress)
     dt_history_compress_on_image(imgid);
   else
     dt_history_truncate_on_image(imgid, darktable.develop->history_end);
+
   // load new history and write it back to ensure that all history are properly numbered without a gap
   dt_dev_reload_history_items(darktable.develop);
   dt_dev_write_history(darktable.develop);
