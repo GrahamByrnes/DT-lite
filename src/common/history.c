@@ -911,12 +911,6 @@ void dt_history_compress_on_image(const int32_t imgid)
     dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
 
   dt_lock_image(imgid);
-  
-  /*  
-  const dt_dev_history_item_t *hitem = (dt_dev_history_item_t *)(history->data);
-
-    if(hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)) *** */
-
   sqlite3_stmt *stmt;
   // get history_end for image
   int my_history_end = 0;
@@ -953,7 +947,7 @@ void dt_history_compress_on_image(const int32_t imgid)
       manager_position = TRUE;
 
   sqlite3_finalize(stmt);
-  // compress history, keep disabled modules as documented
+  // compress history
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "DELETE FROM main.history"
                               " WHERE imgid = ?1 AND num NOT IN"
@@ -981,6 +975,12 @@ void dt_history_compress_on_image(const int32_t imgid)
                               "                   WHERE imgid = ?1 AND num < ?2)", -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, my_history_end);
+  sqlite3_step(stmt);
+  sqlite3_finalize(stmt);
+  // this removes not enabled iops
+  DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
+                              "DELETE FROM main.history  WHERE imgid=?1 AND enabled=0", -1, &stmt, NULL);
+  DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   sqlite3_step(stmt);
   sqlite3_finalize(stmt);
   // if there are masks create a mask manager entry, so we need to count them
@@ -1018,7 +1018,6 @@ void dt_history_compress_on_image(const int32_t imgid)
       sqlite3_step(stmt);
       sqlite3_finalize(stmt);
     }
-
     // create a mask manager entry in history as first entry
     DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                                 "INSERT INTO main.history (imgid, num, operation, op_params, module, enabled, "
@@ -1030,7 +1029,7 @@ void dt_history_compress_on_image(const int32_t imgid)
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
   }
-
+  
   dt_unlock_image(imgid);
   dt_history_hash_write_from_history(imgid, DT_HISTORY_HASH_CURRENT);
   DT_DEBUG_SQLITE3_EXEC(dt_database_get(darktable.db), "COMMIT", NULL, NULL, NULL);
