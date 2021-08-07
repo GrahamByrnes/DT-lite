@@ -74,13 +74,14 @@ static void compress_button_clicked(GtkWidget *widget, gpointer user_data)
 {
   const GtkWidget *win = dt_ui_main_window(darktable.gui->ui);
   const GList *imgs = dt_view_get_images_to_act_on(TRUE, TRUE);
+
   if(g_list_length((GList *)imgs) < 1) return;
 
   const int missing = dt_history_compress_on_list(imgs);
-
   dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD,
                              g_list_copy((GList *)imgs));
   dt_control_queue_redraw_center();
+
   if (missing)
   {
     GtkWidget *dialog = gtk_message_dialog_new(
@@ -100,14 +101,12 @@ static void compress_button_clicked(GtkWidget *widget, gpointer user_data)
 static void discard_button_clicked(GtkWidget *widget, gpointer user_data)
 {
   gint res = GTK_RESPONSE_YES;
-
   const GList *imgs = dt_view_get_images_to_act_on(TRUE, TRUE);
   GList *imgs_copy = g_list_copy((GList *)imgs);
 
   if(dt_conf_get_bool("ask_before_discard"))
   {
     const GtkWidget *win = dt_ui_main_window(darktable.gui->ui);
-
     const int number = g_list_length((GList *)imgs_copy);
 
     if (number == 0) return;
@@ -119,7 +118,6 @@ static void discard_button_clicked(GtkWidget *widget, gpointer user_data)
 #ifdef GDK_WINDOWING_QUARTZ
     dt_osx_disallow_fullscreen(dialog);
 #endif
-
     gtk_window_set_title(GTK_WINDOW(dialog), _("delete images' history?"));
     res = gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
@@ -128,7 +126,6 @@ static void discard_button_clicked(GtkWidget *widget, gpointer user_data)
   if(res == GTK_RESPONSE_YES)
   {
     dt_history_delete_on_list(imgs_copy, TRUE);
-
     dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD,
                                g_list_copy((GList *)imgs_copy));
     dt_control_queue_redraw_center();
@@ -172,7 +169,6 @@ void gui_init(dt_lib_module_t *self)
 
   self->widget = gtk_grid_new();
   GtkGrid *grid = GTK_GRID(self->widget);
-  dt_gui_add_help_link(self->widget, dt_get_help_url(self->plugin_name));
   gtk_grid_set_column_homogeneous(grid, TRUE);
   int line = 0;
 
@@ -185,7 +181,6 @@ void gui_init(dt_lib_module_t *self)
   ellipsize_button(discard);
   d->discard_button = discard;
   gtk_widget_set_tooltip_text(discard, _("discard history stack of\nall selected images"));
-  dt_gui_add_help_link(discard, "history_stack.html#history_stack_usage");
   gtk_grid_attach(grid, discard, 3, line++, 3, 1);
 
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_SELECTION_CHANGED,
