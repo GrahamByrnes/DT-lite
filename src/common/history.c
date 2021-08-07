@@ -905,7 +905,18 @@ static int dt_history_end_attop(const int32_t imgid)
 */
 void dt_history_compress_on_image(const int32_t imgid)
 {
+  GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
+
+  if(iop_order_list)
+    dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
+
   dt_lock_image(imgid);
+  
+  /*  
+  const dt_dev_history_item_t *hitem = (dt_dev_history_item_t *)(history->data);
+
+    if(hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)) /* *** */
+
   sqlite3_stmt *stmt;
   // get history_end for image
   int my_history_end = 0;
@@ -924,11 +935,6 @@ void dt_history_compress_on_image(const int32_t imgid)
     dt_unlock_image(imgid);
     return;
   }
-
-  GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
-
-  if(iop_order_list)
-    dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
 
   int masks_count = 0;
   const char *op_mask_manager = "mask_manager";
@@ -981,7 +987,10 @@ void dt_history_compress_on_image(const int32_t imgid)
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
     "SELECT COUNT(*) FROM main.masks_history WHERE imgid = ?1", -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
-  if(sqlite3_step(stmt) == SQLITE_ROW) masks_count = sqlite3_column_int(stmt, 0);
+  
+  if(sqlite3_step(stmt) == SQLITE_ROW)
+    masks_count = sqlite3_column_int(stmt, 0);
+
   sqlite3_finalize(stmt);
 
   if(masks_count > 0)
@@ -1035,6 +1044,11 @@ void dt_history_compress_on_image(const int32_t imgid)
 */
 void dt_history_truncate_on_image(const int32_t imgid, const int32_t history_end)
 {
+  GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
+
+  if(iop_order_list)
+    dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
+
   dt_lock_image(imgid);
   sqlite3_stmt *stmt;
 
@@ -1044,11 +1058,6 @@ void dt_history_truncate_on_image(const int32_t imgid, const int32_t history_end
     dt_unlock_image(imgid);
     return;
   }
-
-  GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
-
-  if(iop_order_list)
-    dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
 
   DT_DEBUG_SQLITE3_EXEC(dt_database_get(darktable.db), "BEGIN", NULL, NULL, NULL);
   // delete end of history
