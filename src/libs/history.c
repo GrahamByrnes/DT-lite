@@ -62,20 +62,16 @@ typedef struct dt_lib_history_t
   GList *previous_iop_order_list;
 } dt_lib_history_t;
 
-/* 3 widgets in each history line */
+// 3 widgets in each history line
 #define HIST_WIDGET_NUMBER 0
 #define HIST_WIDGET_MODULE 1
 #define HIST_WIDGET_STATUS 2
 
-/* compress history stack */
-static gboolean _lib_compress_stack_accel(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
-                                          GdkModifierType modifier, gpointer data);
-static gboolean _lib_truncate_stack_accel(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
-                                          GdkModifierType modifier, gpointer data);
+// compress history stack
 static void _lib_history_compress_clicked_callback(GtkWidget *widget, GdkEventButton *e, gpointer user_data);
 static void _lib_history_button_clicked_callback(GtkWidget *widget, gpointer user_data);
 static void _lib_history_create_style_button_clicked_callback(GtkWidget *widget, gpointer user_data);
-/* signal callback for history change */
+// signal callback for history change
 static void _lib_history_will_change_callback(gpointer instance, GList *history, int history_end,
                                               GList *iop_order_list, gpointer user_data);
 static void _lib_history_change_callback(gpointer instance, gpointer user_data);
@@ -102,28 +98,10 @@ int position()
   return 900;
 }
 
-void init_key_accels(dt_lib_module_t *self)
-{
-  dt_accel_register_lib(self, NC_("accel", "create style from history"), 0, 0);
-  dt_accel_register_lib(self, NC_("accel", "compress history stack"), 0, 0);
-  dt_accel_register_lib(self, NC_("accel", "truncate history stack"), 0, 0);
-}
-
-void connect_key_accels(dt_lib_module_t *self)
-{
-  dt_lib_history_t *d = (dt_lib_history_t *)self->data;
-  dt_accel_connect_button_lib(self, "create style from history", d->create_button);
-  GClosure *closure;
-  closure = g_cclosure_new(G_CALLBACK(_lib_compress_stack_accel), (gpointer)self, NULL);
-  dt_accel_connect_lib(self, "compress history stack", closure);
-  closure = g_cclosure_new(G_CALLBACK(_lib_truncate_stack_accel), (gpointer)self, NULL);
-  dt_accel_connect_lib(self, "truncate history stack", closure);
-}
-
 #define ellipsize_button(button) gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(button))), PANGO_ELLIPSIZE_END);
 void gui_init(dt_lib_module_t *self)
 {
-  /* initialize ui widgets */
+  // initialize ui widgets
   dt_lib_history_t *d = (dt_lib_history_t *)g_malloc0(sizeof(dt_lib_history_t));
   self->data = (void *)d;
   d->record_undo = TRUE;
@@ -142,20 +120,20 @@ void gui_init(dt_lib_module_t *self)
   gtk_widget_set_tooltip_text(d->compress_button,
                _("create a minimal history stack which produces the same image\nctrl-click to truncate history to the selected item"));
   g_signal_connect(G_OBJECT(d->compress_button), "button-press-event", G_CALLBACK(_lib_history_compress_clicked_callback), self);
-  /* add toolbar button for creating style */
+  // add toolbar button for creating style
   d->create_button = dtgtk_button_new(dtgtk_cairo_paint_styles, CPF_NONE, NULL);
   g_signal_connect(G_OBJECT(d->create_button), "clicked",
                    G_CALLBACK(_lib_history_create_style_button_clicked_callback), NULL);
   gtk_widget_set_name(d->create_button, "non-flat");
   gtk_widget_set_tooltip_text(d->create_button, _("create a style from the current history stack"));
-  /* add buttons to buttonbox */
+  // add buttons to buttonbox
   gtk_box_pack_start(GTK_BOX(hhbox), d->compress_button, TRUE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(hhbox), d->create_button, FALSE, FALSE, 0);
-  /* add history list and buttonbox to widget */
+  // add history list and buttonbox to widget
   gtk_box_pack_start(GTK_BOX(self->widget), d->history_box, FALSE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(self->widget), hhbox, FALSE, FALSE, 0);
   gtk_widget_show_all(self->widget);
-  /* connect to history change signal for updating the history view */
+  // connect to history change signal for updating the history view
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_WILL_CHANGE,
                             G_CALLBACK(_lib_history_will_change_callback), self);
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE,
@@ -489,6 +467,7 @@ static int _create_deleted_modules(GList **_iop_list, GList *history_list)
 
       hitem->module = module;
     }
+
     l = next;
   }
 
@@ -721,20 +700,6 @@ static void _lib_history_truncate(gboolean compress)
   dt_dev_reload_history_items(darktable.develop);
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE);
   dt_dev_modulegroups_set(darktable.develop, dt_dev_modulegroups_get(darktable.develop));
-}
-
-static gboolean _lib_compress_stack_accel(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
-                                          GdkModifierType modifier, gpointer data)
-{
-  _lib_history_truncate(TRUE);
-  return TRUE;
-}
-
-static gboolean _lib_truncate_stack_accel(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
-                                          GdkModifierType modifier, gpointer data)
-{
-  _lib_history_truncate(FALSE);
-  return TRUE;
 }
 
 static void _lib_history_compress_clicked_callback(GtkWidget *widget, GdkEventButton *e, gpointer user_data)
