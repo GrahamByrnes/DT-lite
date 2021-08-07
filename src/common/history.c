@@ -915,7 +915,7 @@ void dt_history_compress_on_image(const int32_t imgid)
   /*  
   const dt_dev_history_item_t *hitem = (dt_dev_history_item_t *)(history->data);
 
-    if(hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)) /* *** */
+    if(hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)) *** */
 
   sqlite3_stmt *stmt;
   // get history_end for image

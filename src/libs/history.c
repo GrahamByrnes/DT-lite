@@ -267,11 +267,9 @@ static void _history_invalidate_cb(gpointer user_data, dt_undo_type_t type, dt_u
 static void _add_module_expander(GList *iop_list, dt_iop_module_t *module)
 {
   // dt_dev_reload_history_items won't do this for base instances
-  // and it will call gui_init() for the rest
-  // so we do it here
+  // and it will call gui_init() for the rest so we do it here
   if(!dt_iop_is_hidden(module) && !module->expander)
   {
-      /* add module to right panel */
       GtkWidget *expander = dt_iop_gui_get_expander(module);
       dt_ui_container_add_widget(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER, expander);
       dt_iop_gui_set_expanded(module, TRUE, FALSE);
@@ -660,7 +658,7 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
 
     const gboolean selected = (num == darktable.develop->history_end - 1);
 
-    if(hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)) /* *** */
+    if(hitem->enabled) /* *** */
     {
       widget =  _lib_history_create_button(self, num, label,
                                           (hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)),
