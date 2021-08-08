@@ -60,20 +60,6 @@ typedef enum dt_iop_module_header_icons_t
   IOP_MODULE_LAST
 } dt_iop_module_header_icons_t;
 
-/** module group */
-typedef enum dt_iop_group_t
-{
-  IOP_GROUP_NONE = 0,
-  IOP_GROUP_BASIC = 1 << 0,
-  IOP_GROUP_TONE = 1 << 1,
-  IOP_GROUP_COLOR = 1 << 2,
-  IOP_GROUP_CORRECT = 1 << 3,
-  IOP_GROUP_EFFECT = 1 << 4,
-  IOP_SPECIAL_GROUP_ACTIVE_PIPE = 1 << 5,
-  IOP_SPECIAL_GROUP_USER_DEFINED = 1 << 6
-} dt_iop_group_t;
-#define IOP_GROUP_ALL (IOP_GROUP_BASIC | IOP_GROUP_COLOR | IOP_GROUP_CORRECT | IOP_GROUP_EFFECT)
-
 /** module tags */
 typedef enum dt_iop_tags_t
 {
