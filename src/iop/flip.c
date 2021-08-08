@@ -73,11 +73,6 @@ const char *name()
   return _("orientation");
 }
 
-int default_group()
-{
-  return IOP_GROUP_BASIC;
-}
-
 int operation_tags()
 {
   return IOP_TAG_DISTORT;

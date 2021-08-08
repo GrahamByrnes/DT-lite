@@ -100,11 +100,6 @@ const char *name()
   return _("exposure");
 }
 
-int default_group()
-{
-  return IOP_GROUP_BASIC;
-}
-
 int flags()
 {
   return IOP_FLAGS_ALLOW_TILING | IOP_FLAGS_SUPPORTS_BLENDING;

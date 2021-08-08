@@ -54,11 +54,6 @@ const char *name()
   return _("spot removal");
 }
 
-int default_group()
-{
-  return IOP_GROUP_CORRECT;
-}
-
 int flags()
 {
   return IOP_FLAGS_SUPPORTS_BLENDING | IOP_FLAGS_NO_MASKS;

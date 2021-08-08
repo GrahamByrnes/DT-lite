@@ -142,11 +142,6 @@ const char *description()
            "outputs non-linear RGB.");
 }
 
-int default_group()
-{
-  return IOP_GROUP_BASIC;
-}
-
 int flags()
 {
   return IOP_FLAGS_SUPPORTS_BLENDING | IOP_FLAGS_ALLOW_TILING;

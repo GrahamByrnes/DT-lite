@@ -67,11 +67,6 @@ const char *name()
   return _("hot pixels");
 }
 
-int default_group()
-{
-  return IOP_GROUP_CORRECT;
-}
-
 int flags()
 {
   return IOP_FLAGS_SUPPORTS_BLENDING | IOP_FLAGS_ONE_INSTANCE;

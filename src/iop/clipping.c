@@ -207,11 +207,6 @@ const char *name()
   return _("crop and rotate");
 }
 
-int default_group()
-{
-  return IOP_GROUP_BASIC;
-}
-
 int flags()
 {
   return IOP_FLAGS_ALLOW_TILING | IOP_FLAGS_TILING_FULL_ROI | IOP_FLAGS_ONE_INSTANCE | IOP_FLAGS_ALLOW_FAST_PIPE;

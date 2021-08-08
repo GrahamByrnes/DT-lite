@@ -42,11 +42,6 @@ const char *name()
   return C_("modulename", "display encoding");
 }
 
-int default_group()
-{
-  return IOP_GROUP_COLOR;
-}
-
 int flags()
 {
   return IOP_FLAGS_HIDDEN | IOP_FLAGS_ONE_INSTANCE | IOP_FLAGS_FENCE | IOP_FLAGS_UNSAFE_COPY;

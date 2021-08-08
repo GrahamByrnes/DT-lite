@@ -43,11 +43,6 @@ int flags()
   return IOP_FLAGS_ALLOW_TILING | IOP_FLAGS_HIDDEN | IOP_FLAGS_TILING_FULL_ROI | IOP_FLAGS_ONE_INSTANCE | IOP_FLAGS_NO_HISTORY_STACK | IOP_FLAGS_FENCE;
 }
 
-int default_group()
-{
-  return IOP_GROUP_BASIC;
-}
-
 int default_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_pixelpipe_iop_t *piece)
 {
   return iop_cs_rgb;

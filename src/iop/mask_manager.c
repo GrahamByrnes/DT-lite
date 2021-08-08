@@ -45,11 +45,6 @@ const char *name()
   return _("mask manager");
 }
 
-int groups()
-{
-  return IOP_GROUP_BASIC;
-}
-
 int flags()
 {
   return IOP_FLAGS_HIDDEN | IOP_FLAGS_ONE_INSTANCE | IOP_FLAGS_UNSAFE_COPY;

@@ -140,11 +140,6 @@ const char *name()
   return _("tone curve");
 }
 
-int default_group()
-{
-  return IOP_GROUP_TONE;
-}
-
 int flags()
 {
   return IOP_FLAGS_SUPPORTS_BLENDING | IOP_FLAGS_ALLOW_TILING;

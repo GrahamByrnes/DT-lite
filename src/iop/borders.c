@@ -122,11 +122,6 @@ const char *name()
   return _("framing");
 }
 
-int default_group()
-{
-  return IOP_GROUP_EFFECT;
-}
-
 int operation_tags()
 {
   return IOP_TAG_DISTORT | IOP_TAG_DECORATION;

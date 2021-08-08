@@ -61,11 +61,6 @@ int flags()
     | IOP_FLAGS_UNSAFE_COPY;
 }
 
-int default_group()
-{
-  return IOP_GROUP_CORRECT;
-}
-
 int operation_tags()
 {
   return IOP_TAG_DISTORT;

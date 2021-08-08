@@ -104,11 +104,6 @@ const char *name()
   return C_("modulename", "white balance");
 }
 
-int default_group()
-{
-  return IOP_GROUP_BASIC;
-}
-
 int flags()
 {
   return IOP_FLAGS_ALLOW_TILING | IOP_FLAGS_ONE_INSTANCE | IOP_FLAGS_UNSAFE_COPY;

@@ -146,11 +146,6 @@ const char *name()
   return _("lens correction");
 }
 
-int default_group()
-{
-  return IOP_GROUP_CORRECT;
-}
-
 int operation_tags()
 {
   return IOP_TAG_DISTORT;

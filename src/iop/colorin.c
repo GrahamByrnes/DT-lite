@@ -119,11 +119,6 @@ const char *name()
   return _("input color profile");
 }
 
-int default_group()
-{
-  return IOP_GROUP_COLOR;
-}
-
 int flags()
 {
   return IOP_FLAGS_ALLOW_TILING | IOP_FLAGS_ONE_INSTANCE;
