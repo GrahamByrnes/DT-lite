@@ -761,7 +761,7 @@ dt_iop_module_t *dt_iop_gui_get_next_visible_module(dt_iop_module_t *module)
   }
   return next;
 }
-
+/*
 static void dt_iop_gui_movedown_callback(GtkButton *button, dt_iop_module_t *module)
 {
   dt_ioppr_check_iop_order(module->dev, 0, "dt_iop_gui_movedown_callback begin");
@@ -805,8 +805,8 @@ static void dt_iop_gui_movedown_callback(GtkButton *button, dt_iop_module_t *mod
 
   // invalidate buffers and force redraw of darkroom
   dt_dev_invalidate_all(prev->dev);
-}
-
+}*/
+/*
 static void dt_iop_gui_moveup_callback(GtkButton *button, dt_iop_module_t *module)
 {
   dt_ioppr_check_iop_order(module->dev, 0, "dt_iop_gui_moveup_callback begin");
@@ -850,7 +850,7 @@ static void dt_iop_gui_moveup_callback(GtkButton *button, dt_iop_module_t *modul
   // invalidate buffers and force redraw of darkroom
   dt_dev_invalidate_all(next->dev);
 }
-
+*/
 dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_params)
 {
   // make sure the duplicated module appears in the history
@@ -1076,7 +1076,7 @@ static void dt_iop_gui_multiinstance_callback(GtkButton *button, GdkEventButton 
   g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(dt_iop_gui_duplicate_callback), module);
   gtk_widget_set_sensitive(item, module->multi_show_new);
   gtk_menu_shell_append(menu, item);
-
+/*
   item = gtk_menu_item_new_with_label(_("move up"));
   // gtk_widget_set_tooltip_text(item, _("move this instance up"));
   g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(dt_iop_gui_moveup_callback), module);
@@ -1088,7 +1088,7 @@ static void dt_iop_gui_multiinstance_callback(GtkButton *button, GdkEventButton 
   g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(dt_iop_gui_movedown_callback), module);
   gtk_widget_set_sensitive(item, module->multi_show_down);
   gtk_menu_shell_append(menu, item);
-
+*/
   item = gtk_menu_item_new_with_label(_("delete"));
   // gtk_widget_set_tooltip_text(item, _("delete this instance"));
   g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(dt_iop_gui_delete_callback), module);
@@ -2050,7 +2050,7 @@ GtkWidget *dt_iop_gui_get_expander(dt_iop_module_t *module)
   hw[IOP_MODULE_INSTANCE] = dtgtk_button_new(dtgtk_cairo_paint_multiinstance, CPF_STYLE_FLAT, NULL);
   module->multimenu_button = GTK_WIDGET(hw[IOP_MODULE_INSTANCE]);
   gtk_widget_set_tooltip_text(GTK_WIDGET(hw[IOP_MODULE_INSTANCE]),
-                              _("multiple instances actions\nmiddle-click creates new instance"));
+                              _("multiple instances actions\nleft-click creates new instance"));
   g_signal_connect(G_OBJECT(hw[IOP_MODULE_INSTANCE]), "button-press-event", G_CALLBACK(dt_iop_gui_multiinstance_callback),
                    module);
 
@@ -2071,7 +2071,7 @@ GtkWidget *dt_iop_gui_get_expander(dt_iop_module_t *module)
   if (module->flags() & IOP_FLAGS_ONE_INSTANCE)
     gtk_widget_set_tooltip_text(GTK_WIDGET(hw[IOP_MODULE_PRESETS]), _("presets"));
   else
-    gtk_widget_set_tooltip_text(GTK_WIDGET(hw[IOP_MODULE_PRESETS]), _("presets\nmiddle-click to apply on new instance"));
+    gtk_widget_set_tooltip_text(GTK_WIDGET(hw[IOP_MODULE_PRESETS]), _("presets\nleft-click to apply on new instance"));
   g_signal_connect(G_OBJECT(hw[IOP_MODULE_PRESETS]), "button-press-event", G_CALLBACK(popup_callback), module);
   gtk_widget_set_name(GTK_WIDGET(hw[IOP_MODULE_PRESETS]), "module-preset-button");
 
