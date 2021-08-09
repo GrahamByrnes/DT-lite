@@ -353,10 +353,6 @@ static void _blendop_masks_mode_callback(const unsigned int mask_mode, dt_iop_gu
     gtk_widget_hide(GTK_WIDGET(data->blendif_box));
 
   dt_dev_add_history_item(darktable.develop, data->module, TRUE);
-
-  if(dt_conf_get_bool("accel/prefer_unmasked"))
-    // rebuild the accelerators
-    dt_iop_connect_accels_multi(data->module->so);
 }
 
 static void _blendop_masks_combine_callback(GtkWidget *combo, dt_iop_gui_blend_data_t *data)

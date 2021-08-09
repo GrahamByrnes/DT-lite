@@ -2305,8 +2305,6 @@ static void _on_drag_data_received(GtkWidget *widget, GdkDragContext *dc, gint x
     module_src->dev->pipe->cache_obsolete = 1;
     module_src->dev->preview_pipe->cache_obsolete = 1;
     module_src->dev->preview2_pipe->cache_obsolete = 1;
-    // rebuild the accelerators
-    dt_iop_connect_accels_multi(module_src->so);
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_MODULE_MOVED);
     // invalidate buffers and force redraw of darkroom
     dt_dev_invalidate_all(module_src->dev);
