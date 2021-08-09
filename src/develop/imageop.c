@@ -2327,16 +2327,6 @@ dt_iop_module_t *dt_iop_get_module_accel_curr(dt_iop_module_so_t *module)
   return mod;
 }
 
-void dt_iop_connect_accels_all()
-{
-  GList *iop_mods = g_list_last(darktable.develop->iop);
-  while(iop_mods)
-  {
-    dt_iop_module_t *mod = (dt_iop_module_t *)iop_mods->data;
-    iop_mods = g_list_previous(iop_mods);
-  }
-}
-
 dt_iop_module_t *dt_iop_get_module_by_instance_name(GList *modules, const char *operation, const char *multi_name)
 {
   dt_iop_module_t *mod_ret = NULL;

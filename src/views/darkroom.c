@@ -927,9 +927,6 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   // just make sure at this stage we have only history info into the undo, all automatic
   // tagging should be ignored.
   dt_undo_clear(darktable.undo, DT_UNDO_TAGS);
-
-  //connect iop accelerators
-  dt_iop_connect_accels_all();
 }
 
 static void _view_darkroom_filmstrip_activate_callback(gpointer instance, int32_t imgid, gpointer user_data)
@@ -990,9 +987,6 @@ static void _darkroom_ui_apply_style_activate_callback(gchar *name)
   dt_styles_apply_to_image(name, FALSE, darktable.develop->image_storage.id);
   dt_dev_reload_image(darktable.develop, darktable.develop->image_storage.id);
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_TAG_CHANGED);
-
-  // rebuild the accelerators (style might have changed order)
-  dt_iop_connect_accels_all();
 }
 
 static void _darkroom_ui_apply_style_popupmenu(GtkWidget *w, gpointer user_data)
@@ -2492,8 +2486,6 @@ void enter(dt_view_t *self)
   dt_undo_clear(darktable.undo, DT_UNDO_TAGS);
   // update accels_window
   darktable.view_manager->accels_window.prevent_refresh = FALSE;
-  //connect iop accelerators
-  dt_iop_connect_accels_all();
 }
 
 void leave(dt_view_t *self)

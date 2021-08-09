@@ -645,9 +645,6 @@ dt_iop_module_t *dt_iop_gui_get_next_visible_module(dt_iop_module_t *module);
 // initializes memory.darktable_iop_names
 void dt_iop_set_darktable_iop_table();
 
-/** adds keyboard accels for all modules in the pipe */
-void dt_iop_connect_accels_all();
-
 /** get the module that accelerators are attached to for the current so */
 dt_iop_module_t *dt_iop_get_module_accel_curr(dt_iop_module_so_t *module);
 
