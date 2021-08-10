@@ -344,8 +344,6 @@ int dt_iop_load_module_so(void *m, const char *libname, const char *op)
     module->gui_post_expose = NULL;
   if(!g_module_symbol(module->module, "gui_focus", (gpointer) & (module->gui_focus)))
     module->gui_focus = NULL;
-  if(!g_module_symbol(module->module, "init_key_accels", (gpointer) & (module->init_key_accels)))
-    module->init_key_accels = NULL;
   if(!g_module_symbol(module->module, "connect_key_accels", (gpointer) & (module->connect_key_accels)))
     module->connect_key_accels = NULL;
 
@@ -699,7 +697,6 @@ static void dt_iop_gui_delete_callback(GtkButton *button, dt_iop_module_t *modul
       history = g_list_next(history);
     }
   }
-
   // we save the current state of history (with the new multi_priorities)
   if(dev->gui_attached)
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE);
@@ -1341,27 +1338,6 @@ static void init_presets(dt_iop_module_so_t *module_so)
   sqlite3_finalize(stmt);
 }
 
-static void init_key_accels(dt_iop_module_so_t *module)
-{
-  // Calling the accelerator initialization callback, if present
-  if(module->init_key_accels) (module->init_key_accels)(module);
-  /** load shortcuts for presets **/
-  sqlite3_stmt *stmt;
-  DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
-                              "SELECT name FROM data.presets WHERE operation=?1 ORDER BY writeprotect DESC, rowid",
-                              -1, &stmt, NULL);
-  DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, module->op, -1, SQLITE_TRANSIENT);
-
-  while(sqlite3_step(stmt) == SQLITE_ROW)
-  {
-    char path[1024];
-    snprintf(path, sizeof(path), "%s/%s", _("preset"), (const char *)sqlite3_column_text(stmt, 0));
-    dt_accel_register_iop(module, FALSE, NC_("accel", path), 0, 0);
-  }
-
-  sqlite3_finalize(stmt);
-}
-
 static void dt_iop_init_module_so(void *m)
 {
   dt_iop_module_so_t *module = (dt_iop_module_so_t *)m;
@@ -1369,9 +1345,6 @@ static void dt_iop_init_module_so(void *m)
   // do not init accelerators if there is no gui
   if(darktable.gui)
   {
-    // Calling the accelerator initialization callback, if present
-    init_key_accels(module);
-
     if(module->flags() & IOP_FLAGS_SUPPORTS_BLENDING)
       dt_accel_register_slider_iop(module, FALSE, NC_("accel", "fusion"));
 
