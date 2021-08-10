@@ -559,7 +559,7 @@ int dt_iop_load_module_by_so(dt_iop_module_t *module, dt_iop_module_so_t *so, dt
       snprintf(option, sizeof(option), "plugins/darkroom/%s/favorite", module->op);
       if(dt_conf_get_bool(option)) state = dt_iop_state_FAVORITE;
     }
-    dt_iop_gui_set_state(module, state);
+    dt_iop_so_gui_set_state(module->so, state);
   }
 
   module->global_data = so->data;
@@ -2243,12 +2243,6 @@ void dt_iop_so_gui_set_state(dt_iop_module_so_t *module, dt_iop_module_state_t s
 
   if(vm->proxy.more_module.module)
     vm->proxy.more_module.update(vm->proxy.more_module.module);
-  // dt_view_manager_reset(vm);
-}
-
-void dt_iop_gui_set_state(dt_iop_module_t *module, dt_iop_module_state_t state)
-{
-  dt_iop_so_gui_set_state(module->so, state);
 }
 
 void dt_iop_update_multi_priority(dt_iop_module_t *module, int new_priority)
