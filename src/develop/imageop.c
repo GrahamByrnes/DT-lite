@@ -629,7 +629,6 @@ static void dt_iop_gui_delete_callback(GtkButton *button, dt_iop_module_t *modul
     }
     modules = g_list_next(modules);
   }
-
   if(!next) return; // what happened ???
 
   if(dev->gui_attached)
@@ -676,7 +675,6 @@ static void dt_iop_gui_delete_callback(GtkButton *button, dt_iop_module_t *modul
         first = hist->module;
         break;
       }
-
       history = g_list_next(history);
     }
 
@@ -691,9 +689,7 @@ static void dt_iop_gui_delete_callback(GtkButton *button, dt_iop_module_t *modul
     {
       dt_dev_history_item_t *hist = (dt_dev_history_item_t *)(history->data);
 
-      if(hist->module == first)
-        hist->multi_priority = 0;
-
+      if(hist->module == first) hist->multi_priority = 0;
       history = g_list_next(history);
     }
   }
@@ -726,6 +722,7 @@ dt_iop_module_t *dt_iop_gui_get_previous_visible_module(dt_iop_module_t *module)
 {
   dt_iop_module_t *prev = NULL;
   GList *modules = g_list_first(module->dev->iop);
+
   while(modules)
   {
     dt_iop_module_t *mod = (dt_iop_module_t *)modules->data;
@@ -795,7 +792,6 @@ dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_param
       pos_module = pos;
     else if(mod == base)
       pos_base = pos;
-
     modules = g_list_next(modules);
     pos++;
   }
@@ -1747,6 +1743,7 @@ void dt_iop_gui_set_expanded(dt_iop_module_t *module, gboolean expanded, gboolea
     while(iop)
     {
       dt_iop_module_t *m = (dt_iop_module_t *)iop->data;
+
       if(m != module)
       {
         all_other_closed = all_other_closed && !m->expanded;
@@ -2012,6 +2009,7 @@ dt_iop_module_t *dt_iop_get_module_from_list(GList *iop_list, const char *op)
   while(modules)
   {
     dt_iop_module_t *mod = (dt_iop_module_t *)modules->data;
+
     if(strcmp(mod->op, op) == 0)
     {
       result = mod;
@@ -2077,10 +2075,6 @@ void dt_iop_connect_common_accels(dt_iop_module_t *module)
   
   if(module->flags() & IOP_FLAGS_DEPRECATED)
     return;
-  // Connecting the (optional) module show accelerator
-  //  closure = g_cclosure_new(G_CALLBACK(show_module_callback), module, NULL);
-  //  dt_accel_connect_iop(module, "show module", closure);           /* **** */
-
   // Connecting the (optional) module gui focus accelerator
   closure = g_cclosure_new(G_CALLBACK(request_module_focus_callback), module, NULL);
   dt_accel_connect_iop(module, "focus module", closure);
@@ -2283,6 +2277,7 @@ gboolean dt_iop_is_raster_mask_used(dt_iop_module_t *module, int id)
 dt_iop_module_t *dt_iop_get_module_by_op_priority(GList *modules, const char *operation, const int multi_priority)
 {
   dt_iop_module_t *mod_ret = NULL;
+  
   GList *m = g_list_first(modules);
 
   while(m)
