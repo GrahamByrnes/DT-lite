@@ -495,14 +495,12 @@ gboolean dt_gui_get_scroll_unit_deltas(const GdkEventScroll *event, int *delta_x
       break;
     // is trackpad (or touch) scroll
     case GDK_SCROLL_SMOOTH:
-#if GTK_CHECK_VERSION(3, 20, 0)
       // stop events reset accumulated delta
       if(event->is_stop)
       {
         acc_x = acc_y = 0.0;
         break;
       }
-#endif
       // accumulate trackpad/touch scrolls until they make a unit
       // scroll, and only then tell caller that there is a scroll to
       // handle
@@ -1340,28 +1338,22 @@ int dt_gui_gtk_init(dt_gui_gtk_t *gui)
   // let's try to support pressure sensitive input devices like tablets for mask drawing
   dt_print(DT_DEBUG_INPUT, "[input device] Input devices found:\n\n");
 
-#if GTK_CHECK_VERSION(3, 20, 0)
   GList *input_devices
       = gdk_seat_get_slaves(gdk_display_get_default_seat(gdk_display_get_default()), GDK_SEAT_CAPABILITY_ALL);
-#else
-  GList *input_devices = gdk_device_manager_list_devices(gdk_display_get_device_manager(gdk_display_get_default()),
-                                                         GDK_DEVICE_TYPE_MASTER);
-#endif
+      
   for(GList *l = input_devices; l != NULL; l = g_list_next(l))
   {
     GdkDevice *device = (GdkDevice *)l->data;
     GdkInputSource source = gdk_device_get_source(device);
     gint n_axes = (source == GDK_SOURCE_KEYBOARD ? 0 : gdk_device_get_n_axes(device));
-
     dt_print(DT_DEBUG_INPUT, "%s (%s), source: %s, mode: %s, %d axes, %d keys\n", gdk_device_get_name(device),
              (source != GDK_SOURCE_KEYBOARD) && gdk_device_get_has_cursor(device) ? "with cursor" : "no cursor",
              get_source_name(source), get_mode_name(gdk_device_get_mode(device)), n_axes,
              source != GDK_SOURCE_KEYBOARD ? gdk_device_get_n_keys(device) : 0);
 
     for(int i = 0; i < n_axes; i++)
-    {
       dt_print(DT_DEBUG_INPUT, "  %s\n", get_axis_name(gdk_device_get_axis_use(device, i)));
-    }
+
     dt_print(DT_DEBUG_INPUT, "\n");
   }
   g_list_free(input_devices);
@@ -2157,19 +2149,11 @@ static gboolean _panel_handle_button_callback(GtkWidget *w, GdkEventButton *e, g
     if(e->type == GDK_BUTTON_PRESS)
     {
       /* store current  mousepointer position */
-#if GTK_CHECK_VERSION(3, 20, 0)
       gdk_window_get_device_position(e->window,
                                      gdk_seat_get_pointer(gdk_display_get_default_seat(gdk_window_get_display(
                                          gtk_widget_get_window(dt_ui_main_window(darktable.gui->ui))))),
                                      &darktable.gui->widgets.panel_handle_x,
                                      &darktable.gui->widgets.panel_handle_y, 0);
-#else
-      gdk_window_get_device_position(
-          gtk_widget_get_window(dt_ui_main_window(darktable.gui->ui)),
-          gdk_device_manager_get_client_pointer(gdk_display_get_device_manager(
-              gdk_window_get_display(gtk_widget_get_window(dt_ui_main_window(darktable.gui->ui))))),
-          &darktable.gui->widgets.panel_handle_x, &darktable.gui->widgets.panel_handle_y, NULL);
-#endif
 
       darktable.gui->widgets.panel_handle_dragging = TRUE;
     }
@@ -2205,19 +2189,10 @@ static gboolean _panel_handle_motion_callback(GtkWidget *w, GdkEventButton *e, g
   if(darktable.gui->widgets.panel_handle_dragging)
   {
     gint x, y, sx, sy;
-#if GTK_CHECK_VERSION(3, 20, 0)
     gdk_window_get_device_position(e->window,
                                    gdk_seat_get_pointer(gdk_display_get_default_seat(gdk_window_get_display(
                                        gtk_widget_get_window(dt_ui_main_window(darktable.gui->ui))))),
                                    &x, &y, 0);
-#else
-    gdk_window_get_device_position(
-        gtk_widget_get_window(dt_ui_main_window(darktable.gui->ui)),
-        gdk_device_manager_get_client_pointer(gdk_display_get_device_manager(
-            gdk_window_get_display(gtk_widget_get_window(dt_ui_main_window(darktable.gui->ui))))),
-        &x, &y, NULL);
-#endif
-
     gtk_widget_get_size_request(widget, &sx, &sy);
 
     // conf entry to store the new size

@@ -386,16 +386,9 @@ static gboolean _lib_navigation_motion_notify_callback(GtkWidget *widget, GdkEve
   gtk_widget_get_allocation(widget, &allocation);
   _lib_navigation_set_position(self, event->x, event->y, allocation.width, allocation.height);
   gint x, y; // notify gtk for motion_hint.
-#if GTK_CHECK_VERSION(3, 20, 0)
   gdk_window_get_device_position(event->window,
       gdk_seat_get_pointer(gdk_display_get_default_seat(
           gdk_window_get_display(event->window))), &x, &y, 0);
-#else
-  gdk_window_get_device_position(event->window,
-                                 gdk_device_manager_get_client_pointer(
-                                     gdk_display_get_device_manager(gdk_window_get_display(event->window))),
-                                 &x, &y, NULL);
-#endif
   return TRUE;
 }
 
@@ -527,12 +520,7 @@ static gboolean _lib_navigation_button_press_callback(GtkWidget *widget, GdkEven
     gtk_menu_shell_append(menu, item);
 
     gtk_widget_show_all(GTK_WIDGET(menu));
-
-#if GTK_CHECK_VERSION(3, 22, 0)
     gtk_menu_popup_at_pointer(GTK_MENU(menu), (GdkEvent *)event);
-#else
-    gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
-#endif
 
     return TRUE;
   }

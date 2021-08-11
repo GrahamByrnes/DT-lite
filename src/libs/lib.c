@@ -789,29 +789,6 @@ static void dt_lib_gui_reset_callback(GtkButton *button, gpointer user_data)
   module->gui_reset(module);
 }
 
-#if !GTK_CHECK_VERSION(3, 22, 0)
-static void _preset_popup_posistion(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data)
-{
-  gint w;
-  gint ww;
-  GtkRequisition requisition = { 0 };
-
-  w = gdk_window_get_width(gtk_widget_get_window(GTK_WIDGET(data)));
-  ww = gdk_window_get_width(gtk_widget_get_window(dt_ui_main_window(darktable.gui->ui)));
-
-  gdk_window_get_origin(gtk_widget_get_window(GTK_WIDGET(data)), x, y);
-
-  gtk_widget_get_preferred_size(GTK_WIDGET(menu), &requisition, NULL);
-
-  /* align left panel popupmenu to right edge */
-  if(*x < ww / 2) (*x) += w - requisition.width;
-
-  GtkAllocation allocation_data;
-  gtk_widget_get_allocation(GTK_WIDGET(data), &allocation_data);
-  (*y) += allocation_data.height;
-}
-#endif
-
 static void popup_callback(GtkButton *button, GdkEventButton *event, dt_lib_module_t *module)
 {
   if(event->button != 1 && event->button != 2) return;
@@ -829,11 +806,9 @@ static void popup_callback(GtkButton *button, GdkEventButton *event, dt_lib_modu
     // fprintf(stderr, "something went wrong: &params=%p, size=%i\n", mi->params, mi->params_size);
     mi->params_size = 0;
   }
+
   dt_lib_presets_popup_menu_show(mi);
-
   gtk_widget_show_all(GTK_WIDGET(darktable.gui->presets_popup_menu));
-
-#if GTK_CHECK_VERSION(3, 22, 0)
   GdkGravity widget_gravity, menu_gravity;
   widget_gravity = GDK_GRAVITY_SOUTH_EAST;
   menu_gravity = GDK_GRAVITY_NORTH_EAST;
@@ -841,12 +816,6 @@ static void popup_callback(GtkButton *button, GdkEventButton *event, dt_lib_modu
   gtk_menu_popup_at_widget(darktable.gui->presets_popup_menu,
                            dtgtk_expander_get_header(DTGTK_EXPANDER(module->expander)), widget_gravity,
                            menu_gravity, NULL);
-#else
-  gtk_menu_popup(darktable.gui->presets_popup_menu, NULL, NULL, _preset_popup_posistion, button, 0,
-                 gtk_get_current_event_time());
-  gtk_menu_reposition(GTK_MENU(darktable.gui->presets_popup_menu));
-#endif
-
   dtgtk_button_set_active(DTGTK_BUTTON(button), FALSE);
 }
 

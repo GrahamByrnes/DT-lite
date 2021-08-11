@@ -394,9 +394,7 @@ void gui_init(dt_lib_module_t *self)
   gtk_box_pack_start(GTK_BOX(self->widget), d->overlays_button, FALSE, FALSE, 0);
   d->over_popup = gtk_popover_new(d->overlays_button);
   gtk_widget_set_size_request(d->over_popup, 350, -1);
-#if GTK_CHECK_VERSION(3, 16, 0)
   g_object_set(G_OBJECT(d->over_popup), "transitions-enabled", FALSE, NULL);
-#endif
   g_signal_connect_swapped(G_OBJECT(d->overlays_button), "button-press-event", G_CALLBACK(_overlays_show_popup),
                            self);
   // we register size of overlay icon to keep in sync thumbtable overlays

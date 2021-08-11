@@ -287,7 +287,8 @@ int dt_iop_load_module_so(void *m, const char *libname, const char *op)
   
   int (*version)();
   
-  if(!g_module_symbol(module->module, "dt_module_dt_version", (gpointer) & (version))) goto error;
+  if(!g_module_symbol(module->module, "dt_module_dt_version", (gpointer) & (version)))
+    goto error;
 
   if(version() != dt_version())
   {
@@ -571,7 +572,9 @@ int dt_iop_load_module_by_so(dt_iop_module_t *module, dt_iop_module_so_t *so, dt
     {
       state = dt_iop_state_ACTIVE;
       snprintf(option, sizeof(option), "plugins/darkroom/%s/favorite", module->op);
-      if(dt_conf_get_bool(option)) state = dt_iop_state_FAVORITE;
+
+      if(dt_conf_get_bool(option))
+        state = dt_iop_state_FAVORITE;
     }
 
     dt_iop_so_gui_set_state(module->so, state);
@@ -990,11 +993,7 @@ static void dt_iop_gui_multiinstance_callback(GtkButton *button, GdkEventButton 
   gtk_menu_shell_append(menu, item);
   gtk_widget_show_all(GTK_WIDGET(menu));
   // popup
-#if GTK_CHECK_VERSION(3, 22, 0)
   gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
-#else
-  gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, 0, gtk_get_current_event_time());
-#endif
   // make sure the button is deactivated now that the menu is opened
   dtgtk_button_set_active(DTGTK_BUTTON(button), FALSE);
 }
@@ -1591,28 +1590,15 @@ static void dt_iop_gui_reset_callback(GtkButton *button, dt_iop_module_t *module
     dt_masks_form_t *grp = dt_masks_get_from_id(darktable.develop, module->blend_params->mask_id);
     if(grp) dt_masks_form_remove(module, NULL, grp);
   }
-  /* reset to default params */
+  // reset to default params
   memcpy(module->params, module->default_params, module->params_size);
   dt_iop_commit_blend_params(module, module->default_blendop_params);
-  /* reset ui to its defaults */
+  // reset ui to its defaults
   dt_iop_gui_reset(module);
-  /* update ui to default params*/
+  // update ui to default params
   dt_iop_gui_update(module);
   dt_dev_add_history_item(module->dev, module, TRUE);
 }
-
-#if !GTK_CHECK_VERSION(3, 22, 0)
-static void _preset_popup_position(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer data)
-{
-  GtkRequisition requisition = { 0 };
-  gdk_window_get_origin(gtk_widget_get_window(GTK_WIDGET(data)), x, y);
-  gtk_widget_get_preferred_size(GTK_WIDGET(menu), &requisition, NULL);
-
-  GtkAllocation allocation;
-  gtk_widget_get_allocation(GTK_WIDGET(data), &allocation);
-  (*y) += allocation.height;
-}
-#endif
 
 static void popup_callback(GtkButton *button, GdkEventButton *event, dt_iop_module_t *module)
 {
@@ -1621,20 +1607,13 @@ static void popup_callback(GtkButton *button, GdkEventButton *event, dt_iop_modu
     dt_gui_presets_popup_menu_show_for_module(module);
     gtk_widget_show_all(GTK_WIDGET(darktable.gui->presets_popup_menu));
 
-#if GTK_CHECK_VERSION(3, 22, 0)
     gtk_menu_popup_at_widget(darktable.gui->presets_popup_menu,
                              dtgtk_expander_get_header(DTGTK_EXPANDER(module->expander)), GDK_GRAVITY_SOUTH_EAST,
                              GDK_GRAVITY_NORTH_EAST, NULL);
-#else
-    gtk_menu_popup(darktable.gui->presets_popup_menu, NULL, NULL, _preset_popup_position, button, 0,
-                   gtk_get_current_event_time());
-    gtk_menu_reposition(GTK_MENU(darktable.gui->presets_popup_menu));
-#endif
   }
 
   dtgtk_button_set_active(DTGTK_BUTTON(button), FALSE);
 }
-
 
 void dt_iop_request_focus(dt_iop_module_t *module)
 {
@@ -1784,12 +1763,7 @@ static gboolean _iop_plugin_body_button_press(GtkWidget *w, GdkEventButton *e, g
   {
     dt_gui_presets_popup_menu_show_for_module(module);
     gtk_widget_show_all(GTK_WIDGET(darktable.gui->presets_popup_menu));
-
-#if GTK_CHECK_VERSION(3, 22, 0)
     gtk_menu_popup_at_pointer(darktable.gui->presets_popup_menu, (GdkEvent *)e);
-#else
-    gtk_menu_popup(darktable.gui->presets_popup_menu, NULL, NULL, NULL, NULL, e->button, e->time);
-#endif
 
     return TRUE;
   }
@@ -1834,12 +1808,7 @@ static gboolean _iop_plugin_header_button_press(GtkWidget *w, GdkEventButton *e,
   {
     dt_gui_presets_popup_menu_show_for_module(module);
     gtk_widget_show_all(GTK_WIDGET(darktable.gui->presets_popup_menu));
-
-#if GTK_CHECK_VERSION(3, 22, 0)
     gtk_menu_popup_at_pointer(darktable.gui->presets_popup_menu, (GdkEvent *)e);
-#else
-    gtk_menu_popup(darktable.gui->presets_popup_menu, NULL, NULL, NULL, NULL, e->button, e->time);
-#endif
 
     return TRUE;
   }
