@@ -788,7 +788,6 @@ void dt_gui_favorite_presets_menu_show()
     do
     {
       dt_iop_module_t *iop = (dt_iop_module_t *)modules->data;
-
       /* check if module is favorite */
       if(iop->so->state == dt_iop_state_FAVORITE)
       {

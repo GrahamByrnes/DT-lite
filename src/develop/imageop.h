@@ -627,9 +627,6 @@ int get_module_flags(const char *op);
 /** returns the localized plugin name for a given op name. must not be freed. */
 gchar *dt_iop_get_localized_name(const gchar *op);
 
-/** Connects common accelerators to an iop module */
-void dt_iop_connect_common_accels(dt_iop_module_t *module);
-
 /** set multi_priority and update raster mask links */
 void dt_iop_update_multi_priority(dt_iop_module_t *module, int new_priority);
 
@@ -643,9 +640,6 @@ dt_iop_module_t *dt_iop_gui_get_next_visible_module(dt_iop_module_t *module);
 
 // initializes memory.darktable_iop_names
 void dt_iop_set_darktable_iop_table();
-
-/** get the module that accelerators are attached to for the current so */
-dt_iop_module_t *dt_iop_get_module_accel_curr(dt_iop_module_so_t *module);
 
 /** count instances of a module **/
 int dt_iop_count_instances(dt_iop_module_so_t *module);
