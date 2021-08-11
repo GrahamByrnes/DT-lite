@@ -340,23 +340,6 @@ typedef struct dt_view_manager_t
     {
       struct dt_lib_module_t *module;
     } timeline;
-
-
-/* map view proxy object */
-#ifdef HAVE_MAP
-    struct
-    {
-      struct dt_view_t *view;
-      void (*center_on_location)(const dt_view_t *view, gdouble lon, gdouble lat, double zoom);
-      void (*center_on_bbox)(const dt_view_t *view, gdouble lon1, gdouble lat1, gdouble lon2, gdouble lat2);
-      void (*show_osd)(const dt_view_t *view, gboolean enabled);
-      void (*set_map_source)(const dt_view_t *view, OsmGpsMapSource_t map_source);
-      GObject *(*add_marker)(const dt_view_t *view, dt_geo_map_display_t type, GList *points);
-      gboolean (*remove_marker)(const dt_view_t *view, dt_geo_map_display_t type, GObject *marker);
-    } map;
-#endif
-
-    /* map view proxy object */
 #ifdef HAVE_PRINT
     struct
     {
