@@ -1151,8 +1151,7 @@ static void init_presets(dt_iop_module_so_t *module_so)
 {
   if(module_so->init_presets)
     module_so->init_presets(module_so);
-  // this seems like a reasonable place to check for and update legacy
-  // presets.
+  // this seems like a reasonable place to check for and update legacy presets.
   int32_t module_version = module_so->version();
   sqlite3_stmt *stmt;
   DT_DEBUG_SQLITE3_PREPARE_V2(
@@ -1176,7 +1175,6 @@ static void init_presets(dt_iop_module_so_t *module_so)
       // this preset doesn't have a version.  go digging through the database
       // to find a history entry that matches the preset params, and get
       // the module version from that.
-
       sqlite3_stmt *stmt2;
       DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                                   "SELECT module FROM main.history WHERE operation = ?1 AND op_params = ?2", -1,
@@ -1260,10 +1258,8 @@ static void init_presets(dt_iop_module_so_t *module_so)
       DT_DEBUG_SQLITE3_BIND_BLOB(stmt2, 2, new_params, new_params_size, SQLITE_TRANSIENT);
       DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 3, module->op, -1, SQLITE_TRANSIENT);
       DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 4, name, -1, SQLITE_TRANSIENT);
-
       sqlite3_step(stmt2);
       sqlite3_finalize(stmt2);
-
       free(new_params);
       dt_iop_cleanup_module(module);
       free(module);
@@ -1298,7 +1294,6 @@ static void init_presets(dt_iop_module_so_t *module_so)
       }
 
       void *new_blend_params = malloc(sizeof(dt_develop_blend_params_t));
-
       // convert the old blend params to new
       if(old_blend_params
          && dt_develop_blend_legacy_params(module, old_blend_params, old_blend_params_version,
@@ -1321,10 +1316,8 @@ static void init_presets(dt_iop_module_so_t *module_so)
                                  SQLITE_TRANSIENT);
       DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 3, module->op, -1, SQLITE_TRANSIENT);
       DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 4, name, -1, SQLITE_TRANSIENT);
-
       sqlite3_step(stmt2);
       sqlite3_finalize(stmt2);
-
       free(new_blend_params);
       dt_iop_cleanup_module(module);
       free(module);
@@ -2090,8 +2083,8 @@ void dt_iop_so_gui_set_state(dt_iop_module_so_t *module, dt_iop_module_state_t s
   {
     if(!darktable.gui->reset)
     {
-    int once = 0;
-    mods = g_list_first(darktable.develop->iop);
+      int once = 0;
+      mods = g_list_first(darktable.develop->iop);
 
       while(mods)
       {
