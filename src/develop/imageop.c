@@ -1071,11 +1071,6 @@ gboolean dt_iop_is_hidden(dt_iop_module_t *module)
   return dt_iop_so_is_hidden(module->so);
 }
 
-gboolean dt_iop_shown_in_group(dt_iop_module_t *module, uint32_t group)
-{
-  return TRUE;
-}
-
 static void _iop_panel_label(GtkWidget *lab, dt_iop_module_t *module)
 {
   gtk_widget_set_name(lab, "iop-panel-label");
@@ -1330,22 +1325,6 @@ static void dt_iop_init_module_so(void *m)
 {
   dt_iop_module_so_t *module = (dt_iop_module_so_t *)m;
   init_presets(module);
-  // do not init accelerators if there is no gui
-  if(darktable.gui)
-  {
-    if(module->flags() & IOP_FLAGS_SUPPORTS_BLENDING)
-      dt_accel_register_slider_iop(module, FALSE, NC_("accel", "fusion"));
-
-    if(!(module->flags() & IOP_FLAGS_DEPRECATED))
-    {
-      // Adding the optional show accelerator to the table (blank)
-      dt_accel_register_iop(module, FALSE, NC_("accel", "show module"), 0, 0);
-      dt_accel_register_iop(module, FALSE, NC_("accel", "enable module"), 0, 0);
-      dt_accel_register_iop(module, FALSE, NC_("accel", "focus module"), 0, 0);
-      dt_accel_register_iop(module, FALSE, NC_("accel", "reset module parameters"), 0, 0);
-      dt_accel_register_iop(module, FALSE, NC_("accel", "show preset menu"), 0, 0);
-    }
-  }
 }
 
 void dt_iop_load_modules_so(void)
@@ -1599,7 +1578,6 @@ static void popup_callback(GtkButton *button, GdkEventButton *event, dt_iop_modu
   {
     dt_gui_presets_popup_menu_show_for_module(module);
     gtk_widget_show_all(GTK_WIDGET(darktable.gui->presets_popup_menu));
-
     gtk_menu_popup_at_widget(darktable.gui->presets_popup_menu,
                              dtgtk_expander_get_header(DTGTK_EXPANDER(module->expander)), GDK_GRAVITY_SOUTH_EAST,
                              GDK_GRAVITY_NORTH_EAST, NULL);
@@ -1832,11 +1810,9 @@ GtkWidget *dt_iop_gui_get_expander(dt_iop_module_t *module)
   hw[IOP_MODULE_ICON] = gtk_label_new("");
   gtk_widget_set_name(GTK_WIDGET(hw[IOP_MODULE_ICON]), w_name);
   gtk_widget_set_valign(GTK_WIDGET(hw[IOP_MODULE_ICON]), GTK_ALIGN_CENTER);
-
   // add module label
   hw[IOP_MODULE_LABEL] = gtk_label_new("");
   _iop_panel_label(hw[IOP_MODULE_LABEL], module);
-
   // add multi instances menu button
   hw[IOP_MODULE_INSTANCE] = dtgtk_button_new(dtgtk_cairo_paint_multiinstance, CPF_STYLE_FLAT, NULL);
   module->multimenu_button = GTK_WIDGET(hw[IOP_MODULE_INSTANCE]);
@@ -1901,7 +1877,6 @@ GtkWidget *dt_iop_gui_get_expander(dt_iop_module_t *module)
     if(hw[i])
       gtk_box_pack_end( GTK_BOX(header), hw[i], FALSE, FALSE, 0);
 
-  dt_gui_add_help_link(header, "interacting.html");
   gtk_widget_set_halign(hw[IOP_MODULE_LABEL], GTK_ALIGN_START);
   gtk_widget_set_halign(hw[IOP_MODULE_INSTANCE], GTK_ALIGN_END);
   // add the blending ui if supported
@@ -1963,7 +1938,6 @@ dt_iop_module_t *dt_iop_get_colorout_module(void)
 dt_iop_module_t *dt_iop_get_module_from_list(GList *iop_list, const char *op)
 {
   dt_iop_module_t *result = NULL;
-  
   GList *modules = g_list_first(iop_list);
   
   while(modules)
