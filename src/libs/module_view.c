@@ -16,7 +16,6 @@
     along with darktable.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "bauhaus/bauhaus.h"
-#include "common/darktable.h"
 #include "common/debug.h"
 #include "control/conf.h"
 #include "control/control.h"
@@ -25,6 +24,7 @@
 #include "gui/gtk.h"
 #include "libs/lib.h"
 #include "libs/lib_api.h"
+#include "libs/module_view.h"
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
 #endif
@@ -73,24 +73,27 @@ void _update(dt_lib_module_t *self)
 
 void fav_button_clicked(GtkWidget *widget, gpointer user_data)
 {
-  dt_lib_module_view_t *d = (dt_lib_module_view_t *)user_data;
+  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
+  dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
   gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), TRUE);
   gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), FALSE);
   d->choice = !(d->choice);
-  user_data = d;
+  fprintf(stderr, "end fav_button, choice= %d\n", d->choice);
 }
 
 void all_button_clicked(GtkWidget *widget, gpointer user_data)
 {
-  dt_lib_module_view_t *d = (dt_lib_module_view_t *)user_data;
+  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
+  dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
   gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), FALSE);
   gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), TRUE);
   d->choice = !(d->choice);
-  user_data = d;
+  fprintf(stderr, "end all_button, choice= %d\n", d->choice);
 }
 
-void gui_reset(dt_lib_module_t *self)
+void gui_update(dt_lib_module_t *self)
 {
+  fprintf(stderr, "in gui_update\n");
   _update(self);
 }
 
@@ -115,12 +118,20 @@ void gui_init(dt_lib_module_t *self)
   gtk_widget_set_tooltip_text(GTK_WIDGET(d->all_button), _("show all modules"));
   gtk_grid_attach(grid, GTK_WIDGET(d->all_button), 3, line++, 3, 1);
   
-  g_signal_connect(G_OBJECT(d->fav_button), "clicked", G_CALLBACK(fav_button_clicked), (gpointer)d);
-  g_signal_connect(G_OBJECT(d->all_button), "clicked", G_CALLBACK(all_button_clicked), (gpointer)d);
+  g_signal_connect(G_OBJECT(d->fav_button), "clicked", G_CALLBACK(fav_button_clicked), self);
+  g_signal_connect(G_OBJECT(d->all_button), "clicked", G_CALLBACK(all_button_clicked), self);
   _update(self);
   fprintf(stderr, "end of gui_init, choice = %d\n", d->choice);
 }
 #undef ellipsize_button
+
+gboolean dt_module_view_select(dt_lib_module_t *self)
+{
+  const dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
+  const gboolean choice = d->choice;
+  fprintf(stderr, "view_select, choice = %d\n", choice);
+  return choice;
+}
 
 void gui_cleanup(dt_lib_module_t *self)
 {
