@@ -2082,335 +2082,13 @@ void gui_init(dt_view_t *self)
   dev->border_size = DT_PIXEL_APPLY_DPI(dt_conf_get_int("plugins/darkroom/ui/border_size"));
 }
 
-enum
-{
-  DND_TARGET_IOP,
-};
-
-/** drag and drop module list */
-static const GtkTargetEntry _iop_target_list_internal[] = { { "iop", GTK_TARGET_SAME_WIDGET, DND_TARGET_IOP } };
-static const guint _iop_n_targets_internal = G_N_ELEMENTS(_iop_target_list_internal);
-
-static dt_iop_module_t *_get_dnd_dest_module(GtkBox *container, gint x, gint y)
-{
-  dt_iop_module_t *module_dest = NULL;
-  GtkWidget *widget_dest = NULL;
-  GList *children = gtk_container_get_children(GTK_CONTAINER(container));
-
-  for(GList *l = children; l != NULL; l = g_list_next(l))
-  {
-    GtkWidget *w = GTK_WIDGET(l->data);
-
-    if(w && gtk_widget_is_visible(w))
-    {
-      GtkAllocation allocation_w = {0};
-      gtk_widget_get_allocation(w, &allocation_w);
-
-      if(y <= allocation_w.y + allocation_w.height + DT_PIXEL_APPLY_DPI(8) && y >= allocation_w.y - DT_PIXEL_APPLY_DPI(8))
-      {
-        widget_dest = w;
-        break;
-      }
-    }
-  }
-  g_list_free(children);
-
-  if(widget_dest)
-  {
-    GList *modules = g_list_first(darktable.develop->iop);
-
-    while(modules)
-    {
-      dt_iop_module_t *mod = (dt_iop_module_t *)modules->data;
-
-      if(mod->expander == widget_dest)
-      {
-        module_dest = mod;
-        break;
-      }
-
-      modules = g_list_next(modules);
-    }
-  }
-
-  return module_dest;
-}
-
-static dt_iop_module_t *_get_dnd_source_module(GtkBox *container)
-{
-  dt_iop_module_t *module_source = NULL;
-  gpointer *source_data = g_object_get_data(G_OBJECT(container), "source_data");
-
-  if(source_data)
-    module_source = (dt_iop_module_t *)source_data;
-
-  return module_source;
-}
-
-// this will be used for a custom highlight, if ever implemented
-static void _on_drag_end(GtkWidget *widget, GdkDragContext *context, gpointer user_data)
-{
-}
-
-// FIXME: default highlight for the dnd is barely visible
-// it should be possible to configure it
-static void _on_drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user_data)
-{
-  GtkBox *container = dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER);
-  dt_iop_module_t *module_src = _get_dnd_source_module(container);
-
-  if(module_src && module_src->expander)
-  {
-    GdkWindow *window = gtk_widget_get_parent_window(module_src->header);
-
-    if(window)
-    {
-      GtkAllocation allocation_w = {0};
-      gtk_widget_get_allocation(module_src->header, &allocation_w);
-
-      GdkPixbuf *pixbuf = gdk_pixbuf_get_from_window(window, allocation_w.x, allocation_w.y,
-                                                     allocation_w.width, allocation_w.height);
-      gtk_drag_set_icon_pixbuf(context, pixbuf, allocation_w.width / 2, allocation_w.height / 2);
-    }
-  }
-}
-
-static void _on_drag_data_get(GtkWidget *widget, GdkDragContext *context,
-                              GtkSelectionData *selection_data, guint info, guint time,
-                              gpointer user_data)
-{
-  gpointer *target_data = g_object_get_data(G_OBJECT(widget), "target_data");
-  guint number_data = 0;
-
-  if(target_data)
-    number_data = GPOINTER_TO_UINT(target_data[DND_TARGET_IOP]);
-
-  gtk_selection_data_set(selection_data, gdk_atom_intern("iop", TRUE), // type
-                                        32,                            // format
-                                        (guchar*)&number_data,         // data
-                                        1);                            // length
-}
-
-static gboolean _on_drag_drop(GtkWidget *widget, GdkDragContext *dc, gint x, gint y, guint time, gpointer user_data)
-{
-  GdkAtom target_atom = GDK_NONE;
-  target_atom = gdk_atom_intern("iop", TRUE);
-  gtk_drag_get_data(widget, dc, target_atom, time);
-  return TRUE;
-}
-
-static gboolean _on_drag_motion(GtkWidget *widget, GdkDragContext *dc, gint x, gint y, guint time, gpointer user_data)
-{
-  gboolean can_moved = FALSE;
-  GtkBox *container = dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER);
-  dt_iop_module_t *module_src = _get_dnd_source_module(container);
-  dt_iop_module_t *module_dest = _get_dnd_dest_module(container, x, y);
-
-  if(module_src && module_dest && module_src != module_dest)
-  {
-    if(module_src->iop_order < module_dest->iop_order)
-      can_moved = dt_ioppr_check_can_move_after_iop(darktable.develop->iop, module_src, module_dest);
-    else
-      can_moved = dt_ioppr_check_can_move_before_iop(darktable.develop->iop, module_src, module_dest);
-  }
-
-  GList *modules = g_list_last(darktable.develop->iop);
-
-  while(modules)
-  {
-    dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
-
-    if(module->expander)
-    {
-      GtkStyleContext *context = gtk_widget_get_style_context(module->expander);
-      gtk_style_context_remove_class(context, "iop_drop_after");
-      gtk_style_context_remove_class(context, "iop_drop_before");
-    }
-
-    modules = g_list_previous(modules);
-  }
-
-  if(can_moved)
-  {
-    GtkStyleContext *context = gtk_widget_get_style_context(module_dest->expander);
-
-    if(module_src->iop_order < module_dest->iop_order)
-      gtk_style_context_add_class(context, "iop_drop_after");
-    else
-      gtk_style_context_add_class(context, "iop_drop_before");
-
-    gdk_drag_status(dc, GDK_ACTION_COPY, time);
-    GtkWidget *w = g_object_get_data(G_OBJECT(widget), "highlighted");
-    if(w) gtk_drag_unhighlight(w);
-    g_object_set_data(G_OBJECT(widget), "highlighted", (gpointer)module_dest->expander);
-    gtk_drag_highlight(module_dest->expander);
-  }
-  else
-  {
-    gdk_drag_status(dc, 0, time);
-    GtkWidget *w = g_object_get_data(G_OBJECT(widget), "highlighted");
-
-    if(w)
-    {
-      gtk_drag_unhighlight(w);
-      g_object_set_data(G_OBJECT(widget), "highlighted", (gpointer)FALSE);
-    }
-  }
-
-  return can_moved;
-}
-
-static void _on_drag_data_received(GtkWidget *widget, GdkDragContext *dc, gint x, gint y,
-                                   GtkSelectionData *selection_data,
-                                   guint info, guint time, gpointer user_data)
-{
-  int moved = 0;
-  GtkBox *container = dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER);
-  dt_iop_module_t *module_src = _get_dnd_source_module(container);
-  dt_iop_module_t *module_dest = _get_dnd_dest_module(container, x, y);
-
-  if(module_src && module_dest && module_src != module_dest)
-  {
-    if(module_src->iop_order < module_dest->iop_order)
-    {
-      /* printf("[_on_drag_data_received] moving %s %s(%f) after %s %s(%f)\n",
-          module_src->op, module_src->multi_name, module_src->iop_order,
-          module_dest->op, module_dest->multi_name, module_dest->iop_order); */
-      moved = dt_ioppr_move_iop_after(darktable.develop, module_src, module_dest);
-    }
-    else
-    {
-      /* printf("[_on_drag_data_received] moving %s %s(%f) before %s %s(%f)\n",
-          module_src->op, module_src->multi_name, module_src->iop_order,
-          module_dest->op, module_dest->multi_name, module_dest->iop_order); */
-      moved = dt_ioppr_move_iop_before(darktable.develop, module_src, module_dest);
-    }
-  }
-  else
-  {
-    if(module_src == NULL)
-      fprintf(stderr, "[_on_drag_data_received] can't find source module\n");
-    if(module_dest == NULL)
-      fprintf(stderr, "[_on_drag_data_received] can't find destination module\n");
-  }
-
-  GList *modules = g_list_last(darktable.develop->iop);
-  while(modules)
-  {
-    dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
-
-    if(module->expander)
-    {
-      GtkStyleContext *context = gtk_widget_get_style_context(module->expander);
-      gtk_style_context_remove_class(context, "iop_drop_after");
-      gtk_style_context_remove_class(context, "iop_drop_before");
-    }
-
-    modules = g_list_previous(modules);
-  }
-
-  gtk_drag_finish(dc, TRUE, FALSE, time);
-
-  if(moved)
-  {
-    // we move the headers
-    GValue gv = { 0, { { 0 } } };
-    g_value_init(&gv, G_TYPE_INT);
-    gtk_container_child_get_property(
-        GTK_CONTAINER(dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER)), module_dest->expander,
-        "position", &gv);
-    gtk_box_reorder_child(dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER),
-        module_src->expander, g_value_get_int(&gv));
-    // we update the headers
-    dt_dev_modules_update_multishow(module_src->dev);
-    dt_dev_add_history_item(module_src->dev, module_src, TRUE);
-    dt_ioppr_check_iop_order(module_src->dev, 0, "_on_drag_data_received end");
-    // we rebuild the pipe
-    module_src->dev->pipe->changed |= DT_DEV_PIPE_REMOVE;
-    module_src->dev->preview_pipe->changed |= DT_DEV_PIPE_REMOVE;
-    module_src->dev->preview2_pipe->changed |= DT_DEV_PIPE_REMOVE;
-    module_src->dev->pipe->cache_obsolete = 1;
-    module_src->dev->preview_pipe->cache_obsolete = 1;
-    module_src->dev->preview2_pipe->cache_obsolete = 1;
-    dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_MODULE_MOVED);
-    // invalidate buffers and force redraw of darkroom
-    dt_dev_invalidate_all(module_src->dev);
-  }
-}
-
-static void _on_drag_leave(GtkWidget *widget, GdkDragContext *dc, guint time, gpointer user_data)
-{
-  GList *modules = g_list_last(darktable.develop->iop);
-  while(modules)
-  {
-    dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
-
-    if(module->expander)
-    {
-      GtkStyleContext *context = gtk_widget_get_style_context(module->expander);
-      gtk_style_context_remove_class(context, "iop_drop_after");
-      gtk_style_context_remove_class(context, "iop_drop_before");
-    }
-
-    modules = g_list_previous(modules);
-  }
-
-  GtkWidget *w = g_object_get_data(G_OBJECT(widget), "highlighted");
-
-  if(w)
-  {
-    gtk_drag_unhighlight(w);
-    g_object_set_data(G_OBJECT(widget), "highlighted", (gpointer)FALSE);
-  }
-}
-
-static void _register_modules_drag_n_drop(dt_view_t *self)
-{
-  if(darktable.gui)
-  {
-    GtkWidget *container = GTK_WIDGET(dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER));
-    gtk_drag_source_set(container, GDK_BUTTON1_MASK | GDK_SHIFT_MASK, _iop_target_list_internal, _iop_n_targets_internal, GDK_ACTION_COPY);
-
-    g_object_set_data(G_OBJECT(container), "targetlist", (gpointer)_iop_target_list_internal);
-    g_object_set_data(G_OBJECT(container), "ntarget", GUINT_TO_POINTER(_iop_n_targets_internal));
-
-    g_signal_connect(container, "drag-begin", G_CALLBACK(_on_drag_begin), NULL);
-    g_signal_connect(container, "drag-data-get", G_CALLBACK(_on_drag_data_get), NULL);
-    g_signal_connect(container, "drag-end", G_CALLBACK(_on_drag_end), NULL);
-
-    gtk_drag_dest_set(container, 0, _iop_target_list_internal, _iop_n_targets_internal, GDK_ACTION_COPY);
-
-    g_signal_connect(container, "drag-data-received", G_CALLBACK(_on_drag_data_received), NULL);
-    g_signal_connect(container, "drag-drop", G_CALLBACK(_on_drag_drop), NULL);
-    g_signal_connect(container, "drag-motion", G_CALLBACK(_on_drag_motion), NULL);
-    g_signal_connect(container, "drag-leave", G_CALLBACK(_on_drag_leave), NULL);
-  }
-}
-
-static void _unregister_modules_drag_n_drop(dt_view_t *self)
-{
-  if(darktable.gui)
-  {
-    gtk_drag_source_unset(dt_ui_center(darktable.gui->ui));
-    GtkBox *container = dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER);
-
-    g_signal_handlers_disconnect_matched(container, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA, 0, 0, NULL, G_CALLBACK(_on_drag_begin), NULL);
-    g_signal_handlers_disconnect_matched(container, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA, 0, 0, NULL, G_CALLBACK(_on_drag_data_get), NULL);
-    g_signal_handlers_disconnect_matched(container, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA, 0, 0, NULL, G_CALLBACK(_on_drag_end), NULL);
-    g_signal_handlers_disconnect_matched(container, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA, 0, 0, NULL, G_CALLBACK(_on_drag_data_received), NULL);
-    g_signal_handlers_disconnect_matched(container, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA, 0, 0, NULL, G_CALLBACK(_on_drag_drop), NULL);
-    g_signal_handlers_disconnect_matched(container, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA, 0, 0, NULL, G_CALLBACK(_on_drag_motion), NULL);
-    g_signal_handlers_disconnect_matched(container, G_SIGNAL_MATCH_FUNC | G_SIGNAL_MATCH_DATA, 0, 0, NULL, G_CALLBACK(_on_drag_leave), NULL);
-  }
-}
-
 void enter(dt_view_t *self)
 {
   // prevent accels_window to refresh
   darktable.view_manager->accels_window.prevent_refresh = TRUE;
   // clean the undo list
   dt_undo_clear(darktable.undo, DT_UNDO_DEVELOP);
-  /* connect to ui pipe finished signal for redraw */
+  // connect to ui pipe finished signal for redraw
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_UI_PIPE_FINISHED,
                             G_CALLBACK(_darkroom_ui_pipe_finish_signal_callback), (gpointer)self);
 
@@ -2472,12 +2150,12 @@ void enter(dt_view_t *self)
   }
   // make signals work again:
   --darktable.gui->reset;
-  /* signal that darktable.develop is initialized and ready to be used */
+  // signal that darktable.develop is initialized and ready to be used
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_INITIALIZE);
   // synch gui and flag pipe as dirty
   // this is done here and not in dt_read_history, as it would else be triggered before module->gui_init.
   dt_dev_pop_history_items(dev, dev->history_end);
-  /* ensure that filmstrip shows current image */
+  // ensure that filmstrip shows current image
   dt_thumbtable_set_offset_image(dt_ui_thumbtable(darktable.gui->ui), dev->image_storage.id, TRUE);
   // switch on groups as they were last time:
   dt_dev_modulegroups_set(dev, dt_conf_get_int("plugins/darkroom/groups"));
@@ -2502,13 +2180,12 @@ void enter(dt_view_t *self)
   dt_dev_check_zoom_bounds(dev, &zoom_x, &zoom_y, DT_ZOOM_FIT, 0, NULL, NULL);
   dt_control_set_dev_zoom_x(zoom_x);
   dt_control_set_dev_zoom_y(zoom_y);
-  /* connect signal for filmstrip image activate */
+  // connect signal for filmstrip image activate
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_VIEWMANAGER_THUMBTABLE_ACTIVATE,
                             G_CALLBACK(_view_darkroom_filmstrip_activate_callback), self);
 
   dt_collection_hint_message(darktable.collection);
   dt_ui_scrollbars_show(darktable.gui->ui, dt_conf_get_bool("darkroom/ui/scrollbars"));
-  _register_modules_drag_n_drop(self);
 
   if(dt_conf_get_bool("second_window/last_visible"))
   {
@@ -2524,7 +2201,6 @@ void enter(dt_view_t *self)
 
 void leave(dt_view_t *self)
 {
-  _unregister_modules_drag_n_drop(self);
   /* disconnect from filmstrip image activate */
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_view_darkroom_filmstrip_activate_callback),
                                (gpointer)self);
