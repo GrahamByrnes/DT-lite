@@ -110,7 +110,6 @@ endforeach(module)
 foreach(module ${MODULES})
     if (WIN32)
       _detach_debuginfo (${module} ${CMAKE_INSTALL_LIBDIR}/darktable/plugins/lighttable)
-      _detach_debuginfo (${module} ${CMAKE_INSTALL_LIBDIR}/darktable/plugins/darkroom)
     else()
         set_target_properties(${module}
                               PROPERTIES
