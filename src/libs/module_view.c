@@ -64,11 +64,11 @@ int position()
 
 void _update(dt_lib_module_t *self)
 {
-  const dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  const gboolean choice = d->choice;
-  gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), choice);
-  gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), !choice);
-  fprintf(stderr, "in _update, choice = %d\n", choice);
+  dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
+  gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), d->choice);
+  gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), !(d->choice));
+  DT_MODULE_FAV = d->choice;
+  fprintf(stderr, "in _update, choice = %d\n", d->choice);
 }
 
 void fav_button_clicked(GtkWidget *widget, gpointer user_data)
@@ -78,7 +78,7 @@ void fav_button_clicked(GtkWidget *widget, gpointer user_data)
   gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), TRUE);
   gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), FALSE);
   d->choice = !(d->choice);
-  fprintf(stderr, "end fav_button, choice= %d\n", d->choice);
+  DT_MODULE_FAV = d->choice;
 }
 
 void all_button_clicked(GtkWidget *widget, gpointer user_data)
@@ -88,7 +88,7 @@ void all_button_clicked(GtkWidget *widget, gpointer user_data)
   gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), FALSE);
   gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), TRUE);
   d->choice = !(d->choice);
-  fprintf(stderr, "end all_button, choice= %d\n", d->choice);
+  DT_MODULE_FAV = d->choice;
 }
 
 void gui_update(dt_lib_module_t *self)
@@ -124,14 +124,6 @@ void gui_init(dt_lib_module_t *self)
   fprintf(stderr, "end of gui_init, choice = %d\n", d->choice);
 }
 #undef ellipsize_button
-
-gboolean dt_module_view_select(dt_lib_module_t *self)
-{
-  const dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  const gboolean choice = d->choice;
-  fprintf(stderr, "view_select, choice = %d\n", choice);
-  return choice;
-}
 
 void gui_cleanup(dt_lib_module_t *self)
 {

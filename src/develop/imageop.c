@@ -48,6 +48,7 @@
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
 #endif
+#include "libs/module_view.h"
 
 #include <assert.h>
 #include <gmodule.h>
@@ -347,7 +348,6 @@ int dt_iop_load_module_so(void *m, const char *libname, const char *op)
     module->gui_focus = NULL;
   if(!g_module_symbol(module->module, "connect_key_accels", (gpointer) & (module->connect_key_accels)))
     module->connect_key_accels = NULL;
-
   if(!g_module_symbol(module->module, "disconnect_key_accels", (gpointer) & (module->disconnect_key_accels)))
     module->disconnect_key_accels = NULL;
   if(!g_module_symbol(module->module, "mouse_actions", (gpointer) & (module->mouse_actions)))
@@ -715,7 +715,6 @@ static void dt_iop_gui_delete_callback(GtkButton *button, dt_iop_module_t *modul
   dev->preview2_pipe->cache_obsolete = 1;
   // invalidate buffers and force redraw of darkroom
   dt_dev_invalidate_all(dev);
-  /* redraw */
   dt_control_queue_redraw_center();
 
   --darktable.gui->reset;
@@ -798,8 +797,7 @@ dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_param
     modules = g_list_next(modules);
     pos++;
   }
-  // we set the gui part of it
-  /* initialize gui if iop have one defined */
+  // we set the gui part of it initialize gui if iop have one defined */
   if(!dt_iop_is_hidden(module))
   {
     // make sure gui_init and reload defaults is called safely
@@ -825,7 +823,7 @@ dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_param
     }
     // we save the new instance creation
     dt_dev_add_history_item(module->dev, module, TRUE);
-    /* add module to right panel */
+    // add module to right panel
     GtkWidget *expander = dt_iop_gui_get_expander(module);
     dt_ui_container_add_widget(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER, expander);
     GValue gv = { 0, { { 0 } } };
@@ -860,7 +858,7 @@ dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_param
     // invalidate buffers and force redraw of darkroom
     dt_dev_invalidate_all(module->dev);
   }
-  /* update ui to new parameters */
+
   dt_iop_gui_update(module);
   dt_dev_modulegroups_update_visibility(darktable.develop);
 
@@ -911,7 +909,7 @@ static gboolean _rename_module_key_press(GtkWidget *entry, GdkEventKey *event, d
     return TRUE;
   }
 
-  return FALSE; /* event not handled */
+  return FALSE; // event not handled
 }
 
 static gboolean _rename_module_resize(GtkWidget *entry, GdkEventKey *event, dt_iop_module_t *module)
@@ -972,17 +970,14 @@ static void dt_iop_gui_multiinstance_callback(GtkButton *button, GdkEventButton 
   GtkMenuShell *menu = GTK_MENU_SHELL(gtk_menu_new());
   GtkWidget *item;
   item = gtk_menu_item_new_with_label(_("new instance"));
-  // gtk_widget_set_tooltip_text(item, _("add a new instance of this module to the pipe"));
   g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(dt_iop_gui_copy_callback), module);
   gtk_widget_set_sensitive(item, module->multi_show_new);
   gtk_menu_shell_append(menu, item);
   item = gtk_menu_item_new_with_label(_("duplicate instance"));
-  // gtk_widget_set_tooltip_text(item, _("add a copy of this instance to the pipe"));
   g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(dt_iop_gui_duplicate_callback), module);
   gtk_widget_set_sensitive(item, module->multi_show_new);
   gtk_menu_shell_append(menu, item);
   item = gtk_menu_item_new_with_label(_("delete"));
-  // gtk_widget_set_tooltip_text(item, _("delete this instance"));
   g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(dt_iop_gui_delete_callback), module);
   gtk_widget_set_sensitive(item, module->multi_show_close);
   gtk_menu_shell_append(menu, item);
@@ -992,7 +987,6 @@ static void dt_iop_gui_multiinstance_callback(GtkButton *button, GdkEventButton 
   g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(dt_iop_gui_rename_callback), module);
   gtk_menu_shell_append(menu, item);
   gtk_widget_show_all(GTK_WIDGET(menu));
-  // popup
   gtk_menu_popup_at_pointer(GTK_MENU(menu), NULL);
   // make sure the button is deactivated now that the menu is opened
   dtgtk_button_set_active(DTGTK_BUTTON(button), FALSE);
@@ -1086,7 +1080,7 @@ static void _iop_panel_label(GtkWidget *lab, dt_iop_module_t *module)
 static void _iop_gui_update_header(dt_iop_module_t *module)
 {
   GList *childs = gtk_container_get_children(GTK_CONTAINER(module->header));
-  /* get the enable button and button */
+  // get the enable button and button
   GtkWidget *lab = g_list_nth_data(childs, IOP_MODULE_LABEL);
   g_list_free(childs);
   // set panel name to display correct multi-instance
@@ -1481,7 +1475,7 @@ void dt_iop_commit_params(dt_iop_module_t *module, dt_iop_params_t *params,
 
   if(piece->enabled)
   {
-    /* construct module params data for hash calc */
+    // construct module params data for hash calc
     int length = module->params_size;
 
     if(module->flags() & IOP_FLAGS_SUPPORTS_BLENDING)
@@ -1492,7 +1486,7 @@ void dt_iop_commit_params(dt_iop_module_t *module, dt_iop_params_t *params,
     char *str = malloc(length);
     memcpy(str, module->params, module->params_size);
     int pos = module->params_size;
-    /* if module supports blend op add blend params into account */
+    // if module supports blend op add blend params into account
     if(module->flags() & IOP_FLAGS_SUPPORTS_BLENDING)
     {
       memcpy(str + module->params_size, blendop_params, sizeof(dt_develop_blend_params_t));
@@ -1502,7 +1496,6 @@ void dt_iop_commit_params(dt_iop_module_t *module, dt_iop_params_t *params,
     memcpy(piece->blendop_data, blendop_params, sizeof(dt_develop_blend_params_t));
     // this should be redundant! (but is not)
     dt_iop_commit_blend_params(module, blendop_params);
-    /* and we add masks */
     dt_masks_group_get_hash_buffer(grp, str + pos);
     // register if module allows tiling, commit_params can overwrite this.
     if(module->flags() & IOP_FLAGS_ALLOW_TILING)
@@ -1592,7 +1585,7 @@ void dt_iop_request_focus(dt_iop_module_t *module)
 
   if(darktable.develop->gui_module != module)
     darktable.develop->focus_hash++;
-  /* lets lose the focus of previous focus module*/
+  // lets lose the focus of previous focus module
   if(darktable.develop->gui_module)
   {
     if(darktable.develop->gui_module->gui_focus)
@@ -1606,11 +1599,11 @@ void dt_iop_request_focus(dt_iop_module_t *module)
       dt_dev_invalidate_from_gui(darktable.develop);
 
     dt_accel_disconnect_locals_iop(darktable.develop->gui_module);
-    /* reset mask view */
+    // reset mask view
     dt_masks_reset_form_gui();
-    /* do stuff needed in the blending gui */
+    // do stuff needed in the blending gui
     dt_iop_gui_blending_lose_focus(darktable.develop->gui_module);
-    /* redraw the expander */
+    // redraw the expander
     gtk_widget_queue_draw(darktable.develop->gui_module->expander);
     // and finally remove hinter messages
     dt_control_hinter_message(darktable.control, "");
