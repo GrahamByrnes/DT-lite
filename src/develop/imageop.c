@@ -126,7 +126,7 @@ static int default_operation_tags(void)
 }
 
 /* default operation tags filter for modules which does not implement the flags() function */
-static int default_operation_tags_filter(void)
+static int default_operation_tags_filter(void) /* *** */
 {
   return 0;
 }
@@ -266,7 +266,8 @@ void dt_iop_default_init(dt_iop_module_t *module)
       // ignore STRUCT; nothing to do
       break;
     default:
-      fprintf(stderr, "unsupported introspection type \"%s\" encountered in dt_iop_default_init (field %s)\n", i->header.type_name, i->header.field_name);
+      fprintf(stderr, "unsupported introspection type \"%s\" encountered in dt_iop_default_init (field %s)\n",
+              i->header.type_name, i->header.field_name);
       break;
     }
 
@@ -284,7 +285,8 @@ int dt_iop_load_module_so(void *m, const char *libname, const char *op)
   dt_print(DT_DEBUG_CONTROL, "[iop_load_module] loading iop `%s' from %s\n", op, libname);
   module->module = g_module_open(libname, G_MODULE_BIND_LAZY | G_MODULE_BIND_LOCAL);
   
-  if(!module->module) goto error;
+  if(!module->module)
+    goto error;
   
   int (*version)();
   
@@ -732,9 +734,9 @@ dt_iop_module_t *dt_iop_gui_get_previous_visible_module(dt_iop_module_t *module)
     if(mod == module)
       break;
     else
-    {
-      // only for visible modules
+    {// only for visible modules
       GtkWidget *expander = mod->expander;
+
       if(expander && gtk_widget_is_visible(expander))
         prev = mod;
     }
@@ -757,8 +759,7 @@ dt_iop_module_t *dt_iop_gui_get_next_visible_module(dt_iop_module_t *module)
     if(mod == module)
       break;
     else
-    {
-      // only for visible modules
+    {// only for visible modules
       GtkWidget *expander = mod->expander;
 
       if(expander && gtk_widget_is_visible(expander))
@@ -824,7 +825,7 @@ dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_param
     // we save the new instance creation
     dt_dev_add_history_item(module->dev, module, TRUE);
     // add module to right panel
-    GtkWidget *expander = dt_iop_gui_get_expander(module);
+    GtkWidget *expander = dt_iop_gui_get_expander(module);  /* *** ************** */
     dt_ui_container_add_widget(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER, expander);
     GValue gv = { 0, { { 0 } } };
     g_value_init(&gv, G_TYPE_INT);
@@ -1047,7 +1048,7 @@ gboolean dt_iop_so_is_hidden(dt_iop_module_so_t *module)
 {
   gboolean is_hidden = TRUE;
 
-  if(!(module->flags() & IOP_FLAGS_HIDDEN))
+  if(!(module->flags() & IOP_FLAGS_HIDDEN) & !DT_MODULE_FAV)
   {
     if(!module->gui_init)
       g_debug("Module '%s' is not hidden and lacks implementation of gui_init()...", module->op);
