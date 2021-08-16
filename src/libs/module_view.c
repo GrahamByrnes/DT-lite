@@ -20,11 +20,12 @@
 #include "control/conf.h"
 #include "control/control.h"
 #include "control/jobs.h"
+#include "develop/imageop.h"
 #include "dtgtk/button.h"
 #include "gui/gtk.h"
 #include "libs/lib.h"
 #include "libs/lib_api.h"
-#include "libs/module_view.h"
+//#include "libs/module_view.h"
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
 #endif
@@ -39,6 +40,7 @@ typedef struct dt_lib_module_view_t
   GtkButton *all_button;
   GtkButton *fav_button;
   gboolean choice;
+  int state;
 } dt_lib_module_view_t;
 
 const char *name(dt_lib_module_t *self)
@@ -67,34 +69,39 @@ void _update(dt_lib_module_t *self)
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
   gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), d->choice);
   gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), !(d->choice));
-  DT_MODULE_FAV = d->choice;
-  fprintf(stderr, "in _update, choice = %d\n", d->choice);
 }
 
 void fav_button_clicked(GtkWidget *widget, gpointer user_data)
 {
   dt_lib_module_t *self = (dt_lib_module_t *)user_data;
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), TRUE);
-  gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), FALSE);
-  d->choice = !(d->choice);
-  DT_MODULE_FAV = d->choice;
+  d->choice = TRUE;
+  gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), d->choice);
+  gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), !(d->choice));
 }
 
 void all_button_clicked(GtkWidget *widget, gpointer user_data)
 {
   dt_lib_module_t *self = (dt_lib_module_t *)user_data;
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), FALSE);
-  gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), TRUE);
-  d->choice = !(d->choice);
-  DT_MODULE_FAV = d->choice;
+  d->choice = FALSE;
+  gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), d->choice);
+  gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), !(d->choice));
 }
 
 void gui_update(dt_lib_module_t *self)
 {
-  fprintf(stderr, "in gui_update\n");
   _update(self);
+}
+
+static void _lib_module_view_callback(gpointer instance, gpointer user_data)
+{
+  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
+  dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
+  d->state = d->choice ? dt_iop_state_FAVORITE : dt_iop_state_HIDDEN;
+
+  fprintf(stderr, "_lib_module_view_callback, d->state = %d, choice = %d, FAV = %d, HIDDEN = %d\n",
+                     d->state, d->choice, dt_iop_state_FAVORITE, dt_iop_state_HIDDEN);
 }
 
 #define ellipsize_button(button) gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(button))), PANGO_ELLIPSIZE_END);
@@ -102,31 +109,34 @@ void gui_init(dt_lib_module_t *self)
 {
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)malloc(sizeof(dt_lib_module_view_t));
   self->data = (void *)d;
-  d->choice = TRUE;
+  d->choice = dt_conf_get_bool("darkroom/ui/iop_view_default");
+
   self->widget = gtk_grid_new();
   GtkGrid *grid = GTK_GRID(self->widget);
   gtk_grid_set_column_homogeneous(grid, TRUE);
-  int line = 0;
 
   d->fav_button = GTK_BUTTON(gtk_button_new_with_label(_("view favorites")));
   ellipsize_button(d->fav_button);
   gtk_widget_set_tooltip_text(GTK_WIDGET(d->fav_button), _("show favorite modules"));
-  gtk_grid_attach(grid, GTK_WIDGET(d->fav_button), 0, line, 3, 1);
+  gtk_grid_attach(grid, GTK_WIDGET(d->fav_button), 0, 0, 3, 1);
 
   d->all_button = GTK_BUTTON(gtk_button_new_with_label(_("view all")));
   ellipsize_button(d->all_button);
   gtk_widget_set_tooltip_text(GTK_WIDGET(d->all_button), _("show all modules"));
-  gtk_grid_attach(grid, GTK_WIDGET(d->all_button), 3, line++, 3, 1);
-  
+  gtk_grid_attach(grid, GTK_WIDGET(d->all_button), 3, 0, 3, 1);
+
+  dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_INITIALIZE,
+                            G_CALLBACK(_lib_module_view_callback), self);
   g_signal_connect(G_OBJECT(d->fav_button), "clicked", G_CALLBACK(fav_button_clicked), self);
   g_signal_connect(G_OBJECT(d->all_button), "clicked", G_CALLBACK(all_button_clicked), self);
+  
   _update(self);
-  fprintf(stderr, "end of gui_init, choice = %d\n", d->choice);
 }
 #undef ellipsize_button
 
 void gui_cleanup(dt_lib_module_t *self)
 {
+  dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_lib_module_view_callback), self);
   free(self->data);
   self->data = NULL;
 }

@@ -388,6 +388,7 @@ gboolean dt_gui_ignore_scroll(GdkEventScroll *event)
   if(mods_pressed == 0)
     return ignore_without_mods;
   else
+  {
     if(mods_pressed == darktable.gui->sidebar_scroll_mask)
     {
       if(!ignore_without_mods) return TRUE;

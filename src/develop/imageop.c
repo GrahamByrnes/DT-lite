@@ -48,7 +48,6 @@
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
 #endif
-#include "libs/module_view.h"
 
 #include <assert.h>
 #include <gmodule.h>
@@ -1047,15 +1046,17 @@ static void dt_iop_gui_off_callback(GtkToggleButton *togglebutton, gpointer user
 gboolean dt_iop_so_is_hidden(dt_iop_module_so_t *module)
 {
   gboolean is_hidden = TRUE;
-
-  if(!(module->flags() & IOP_FLAGS_HIDDEN) & !DT_MODULE_FAV)
+ 
+  if(!(module->flags() & IOP_FLAGS_HIDDEN))
   {
-    if(!module->gui_init)
-      g_debug("Module '%s' is not hidden and lacks implementation of gui_init()...", module->op);
-    else if(!module->gui_cleanup)
-      g_debug("Module '%s' is not hidden and lacks implementation of gui_cleanup()...", module->op);
-    else
-      is_hidden = FALSE;
+    { 
+      if(!module->gui_init)
+        g_debug("Module '%s' is not hidden and lacks implementation of gui_init()...", module->op);
+      else if(!module->gui_cleanup)
+        g_debug("Module '%s' is not hidden and lacks implementation of gui_cleanup()...", module->op);
+      else
+        is_hidden = FALSE;
+    }
   }
 
   return is_hidden;
