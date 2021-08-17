@@ -99,18 +99,6 @@ int position()
   return 997;
 }
 
-void init_key_accels(dt_lib_module_t *self)
-{
-  dt_accel_register_lib(self, NC_("accel", "capture image(s)"), 0, 0);
-}
-
-void connect_key_accels(dt_lib_module_t *self)
-{
-  dt_lib_camera_t *lib = (dt_lib_camera_t *)self->data;
-
-  dt_accel_connect_button_lib(self, "capture image(s)", GTK_WIDGET(lib->gui.button1));
-}
-
 /** Property changed*/
 static void property_changed_callback(GtkComboBox *cb, gpointer data)
 {

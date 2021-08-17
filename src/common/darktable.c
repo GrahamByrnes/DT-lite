@@ -960,9 +960,10 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   // Initialize the signal system
   darktable.signals = dt_control_signal_init();
   // Make sure that the database and xmp files are in sync
-  // We need conf and db to be up and running for that which is the case here.
+  // We need conf and db to be up and running for this
   // FIXME: is this also useful in non-gui mode?
   GList *changed_xmp_files = NULL;
+
   if(init_gui && dt_conf_get_bool("run_crawler_on_start"))
     changed_xmp_files = dt_control_crawler_run();
 

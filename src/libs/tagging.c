@@ -37,11 +37,6 @@
 
 DT_MODULE(1)
 
-static gboolean _lib_tagging_tag_redo(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
-                                      GdkModifierType modifier, dt_lib_module_t *self);
-static gboolean _lib_tagging_tag_show(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
-                                      GdkModifierType modifier, dt_lib_module_t *self);
-
 typedef struct dt_lib_tagging_t
 {
   char keyword[1024];
@@ -103,18 +98,6 @@ const char **views(dt_lib_module_t *self)
 uint32_t container(dt_lib_module_t *self)
 {
   return DT_UI_CONTAINER_PANEL_RIGHT_CENTER;
-}
-
-void init_key_accels(dt_lib_module_t *self)
-{
-  dt_accel_register_lib(self, NC_("accel", "tag"), GDK_KEY_t, GDK_CONTROL_MASK);
-  dt_accel_register_lib(self, NC_("accel", "redo last tag"), GDK_KEY_t, GDK_MOD1_MASK);
-}
-
-void connect_key_accels(dt_lib_module_t *self)
-{
-  dt_accel_connect_lib(self, "tag", g_cclosure_new(G_CALLBACK(_lib_tagging_tag_show), self, NULL));
-  dt_accel_connect_lib(self, "redo last tag", g_cclosure_new(G_CALLBACK(_lib_tagging_tag_redo), self, NULL));
 }
 
 static void _update_atdetach_buttons(dt_lib_module_t *self)
@@ -2450,42 +2433,6 @@ int position()
   return 500;
 }
 
-static gboolean _match_selected_func(GtkEntryCompletion *completion, GtkTreeModel *model, GtkTreeIter *iter, gpointer user_data)
-{
-  const int column = gtk_entry_completion_get_text_column(completion);
-  char *tag = NULL;
-
-  if(gtk_tree_model_get_column_type(model, column) != G_TYPE_STRING) return TRUE;
-
-  GtkEditable *e = (GtkEditable *)gtk_entry_completion_get_entry(completion);
-  if(!GTK_IS_EDITABLE(e))
-  {
-    return FALSE;
-  }
-
-  gtk_tree_model_get(model, iter, column, &tag, -1);
-
-  gint cut_off, cur_pos = gtk_editable_get_position(e);
-
-  gchar *currentText = gtk_editable_get_chars(e, 0, -1);
-  const gchar *lastTag = g_strrstr(currentText, ",");
-  if(lastTag == NULL)
-  {
-    cut_off = 0;
-  }
-  else
-  {
-    cut_off = (int)(g_utf8_strlen(currentText, -1) - g_utf8_strlen(lastTag, -1))+1;
-  }
-  free(currentText);
-
-  gtk_editable_delete_text(e, cut_off, cur_pos);
-  cur_pos = cut_off;
-  gtk_editable_insert_text(e, tag, -1, &cur_pos);
-  gtk_editable_set_position(e, cur_pos);
-  return TRUE;
-}
-
 static gboolean _completion_match_func(GtkEntryCompletion *completion, const gchar *key, GtkTreeIter *iter,
                                        gpointer user_data)
 {
@@ -2844,134 +2791,6 @@ void gui_cleanup(dt_lib_module_t *self)
   g_free(d->collection);
   free(self->data);
   self->data = NULL;
-}
-
-// http://stackoverflow.com/questions/4631388/transparent-floating-gtkentry
-static gboolean _lib_tagging_tag_key_press(GtkWidget *entry, GdkEventKey *event, dt_lib_module_t *self)
-{
-  dt_lib_tagging_t *d = (dt_lib_tagging_t *)self->data;
-  switch(event->keyval)
-  {
-    case GDK_KEY_Escape:
-      g_list_free(d->floating_tag_imgs);
-      gtk_widget_destroy(d->floating_tag_window);
-      gtk_window_present(GTK_WINDOW(dt_ui_main_window(darktable.gui->ui)));
-      return TRUE;
-    case GDK_KEY_Tab:
-      return TRUE;
-    case GDK_KEY_Return:
-    case GDK_KEY_KP_Enter:
-    {
-      const gchar *tag = gtk_entry_get_text(GTK_ENTRY(entry));
-      const gboolean res = dt_tag_attach_string_list(tag, d->floating_tag_imgs, TRUE);
-      if(res) dt_image_synch_xmps(d->floating_tag_imgs);
-      g_list_free(d->floating_tag_imgs);
-
-      /** record last tag used */
-      g_free(d->last_tag);
-      d->last_tag = g_strdup(tag);
-
-      _init_treeview(self, 0);
-      _init_treeview(self, 1);
-      gtk_widget_destroy(d->floating_tag_window);
-      gtk_window_present(GTK_WINDOW(dt_ui_main_window(darktable.gui->ui)));
-      if(res) _raise_signal_tag_changed(self);
-
-      return TRUE;
-    }
-  }
-  return FALSE; /* event not handled */
-}
-
-static gboolean _lib_tagging_tag_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data)
-{
-  gtk_widget_destroy(GTK_WIDGET(user_data));
-  return FALSE;
-}
-
-static gboolean _lib_tagging_tag_redo(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
-                                      GdkModifierType modifier, dt_lib_module_t *self)
-{
-  dt_lib_tagging_t *d = (dt_lib_tagging_t *)self->data;
-
-  if(d->last_tag)
-  {
-    const GList *imgs = dt_view_get_images_to_act_on(TRUE, TRUE);
-    const gboolean res = dt_tag_attach_string_list(d->last_tag, imgs, TRUE);
-    if(res) dt_image_synch_xmps(imgs);
-    _init_treeview(self, 0);
-    _init_treeview(self, 1);
-    if(res) _raise_signal_tag_changed(self);
-  }
-  return TRUE;
-}
-
-static gboolean _lib_tagging_tag_show(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
-                                      GdkModifierType modifier, dt_lib_module_t *self)
-{
-  dt_lib_tagging_t *d = (dt_lib_tagging_t *)self->data;
-  if (d->tree_flag)
-  {
-    dt_control_log(_("tag shortcut is not active with tag tree view. please switch to list view"));
-    return TRUE;  // doesn't work properly with tree treeview
-  }
-
-  d->floating_tag_imgs = g_list_copy((GList *)dt_view_get_images_to_act_on(FALSE, TRUE));
-  gint x, y;
-  gint px, py, w, h;
-  GtkWidget *window = dt_ui_main_window(darktable.gui->ui);
-  GtkWidget *center = dt_ui_center(darktable.gui->ui);
-  gdk_window_get_origin(gtk_widget_get_window(center), &px, &py);
-
-  w = gdk_window_get_width(gtk_widget_get_window(center));
-  h = gdk_window_get_height(gtk_widget_get_window(center));
-
-  x = px + 0.5 * (w - FLOATING_ENTRY_WIDTH);
-  y = py + h - 50;
-
-  /* put the floating box at the mouse pointer */
-  //   gint pointerx, pointery;
-  //   GdkDevice *device =
-  //   gdk_device_manager_get_client_pointer(gdk_display_get_device_manager(gtk_widget_get_display(widget)));
-  //   gdk_window_get_device_position (gtk_widget_get_window (widget), device, &pointerx, &pointery, NULL);
-  //   x = px + pointerx + 1;
-  //   y = py + pointery + 1;
-
-  d->floating_tag_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#ifdef GDK_WINDOWING_QUARTZ
-  dt_osx_disallow_fullscreen(d->floating_tag_window);
-#endif
-  /* stackoverflow.com/questions/1925568/how-to-give-keyboard-focus-to-a-pop-up-gtk-window */
-  gtk_widget_set_can_focus(d->floating_tag_window, TRUE);
-  gtk_window_set_decorated(GTK_WINDOW(d->floating_tag_window), FALSE);
-  gtk_window_set_type_hint(GTK_WINDOW(d->floating_tag_window), GDK_WINDOW_TYPE_HINT_POPUP_MENU);
-  gtk_window_set_transient_for(GTK_WINDOW(d->floating_tag_window), GTK_WINDOW(window));
-  gtk_widget_set_opacity(d->floating_tag_window, 0.8);
-  gtk_window_move(GTK_WINDOW(d->floating_tag_window), x, y);
-
-  GtkWidget *entry = gtk_entry_new();
-  gtk_widget_set_size_request(entry, FLOATING_ENTRY_WIDTH, -1);
-  gtk_widget_add_events(entry, GDK_FOCUS_CHANGE_MASK);
-
-  GtkEntryCompletion *completion = gtk_entry_completion_new();
-  gtk_entry_completion_set_model(completion, gtk_tree_view_get_model(GTK_TREE_VIEW(d->dictionary_view)));
-  gtk_entry_completion_set_text_column(completion, DT_LIB_TAGGING_COL_PATH);
-  gtk_entry_completion_set_inline_completion(completion, TRUE);
-  gtk_entry_completion_set_popup_set_width(completion, FALSE);
-  g_signal_connect(G_OBJECT(completion), "match-selected", G_CALLBACK(_match_selected_func), self);
-  gtk_entry_completion_set_match_func(completion, _completion_match_func, NULL, NULL);
-  gtk_entry_set_completion(GTK_ENTRY(entry), completion);
-
-  gtk_editable_select_region(GTK_EDITABLE(entry), 0, -1);
-  gtk_container_add(GTK_CONTAINER(d->floating_tag_window), entry);
-  g_signal_connect(entry, "focus-out-event", G_CALLBACK(_lib_tagging_tag_destroy), d->floating_tag_window);
-  g_signal_connect(entry, "key-press-event", G_CALLBACK(_lib_tagging_tag_key_press), self);
-
-  gtk_widget_show_all(d->floating_tag_window);
-  gtk_widget_grab_focus(entry);
-  gtk_window_present(GTK_WINDOW(d->floating_tag_window));
-
-  return TRUE;
 }
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh

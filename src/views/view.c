@@ -212,10 +212,6 @@ static int dt_view_load_module(void *v, const char *libname, const char *module_
     view->scrolled = NULL;
   if(!g_module_symbol(view->module, "scrollbar_changed", (gpointer) & (view->scrollbar_changed)))
     view->scrollbar_changed = NULL;
-  if(!g_module_symbol(view->module, "init_key_accels", (gpointer) & (view->init_key_accels)))
-    view->init_key_accels = NULL;
-  if(!g_module_symbol(view->module, "connect_key_accels", (gpointer) & (view->connect_key_accels)))
-    view->connect_key_accels = NULL;
   if(!g_module_symbol(view->module, "mouse_actions", (gpointer) & (view->mouse_actions)))
     view->mouse_actions = NULL;
 
@@ -229,8 +225,6 @@ static int dt_view_load_module(void *v, const char *libname, const char *module_
 
   if(view->init)
     view->init(view);
-  if(darktable.gui && view->init_key_accels)
-    view->init_key_accels(view);
 
   return 0;
 
@@ -402,10 +396,6 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
     {
       /* try get the module expander  */
       GtkWidget *w = dt_lib_gui_get_expander(plugin);
-
-      if(plugin->connect_key_accels)
-        plugin->connect_key_accels(plugin);
-
       dt_lib_connect_common_accels(plugin);
       /* if we didn't get an expander let's add the widget */
       if(!w)
@@ -461,9 +451,6 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
       as e.g. modulegroups requires the dr stuff to be inited. */
   if(new_view->enter)
     new_view->enter(new_view);
-  if(new_view->connect_key_accels)
-    new_view->connect_key_accels(new_view);
-
   /* update the scrollbars */
   dt_ui_update_scrollbars(darktable.gui->ui);
   /* update sticky accels window */

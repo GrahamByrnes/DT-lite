@@ -654,12 +654,6 @@ static int dt_lib_load_module(void *m, const char *libname, const char *plugin_n
     module->init_presets = NULL;
   }
 
-  if(!g_module_symbol(module->module, "init_key_accels", (gpointer) & (module->init_key_accels)))
-    module->init_key_accels = NULL;
-
-  if(!g_module_symbol(module->module, "connect_key_accels", (gpointer) & (module->connect_key_accels)))
-    module->connect_key_accels = NULL;
-
   module->accel_closures = NULL;
   module->reset_button = NULL;
   module->presets_button = NULL;
@@ -810,7 +804,6 @@ static void dt_lib_init_module(void *m)
   // do not init accelerators if there is no gui
   if(darktable.gui)
   {
-    if(module->init_key_accels) module->init_key_accels(module);
     module->gui_init(module);
     g_object_ref_sink(module->widget);
   }

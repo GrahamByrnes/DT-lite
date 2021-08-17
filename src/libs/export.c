@@ -1542,17 +1542,6 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
   return res;
 }
 
-void init_key_accels(dt_lib_module_t *self)
-{
-  dt_accel_register_lib(self, NC_("accel", "export"), GDK_KEY_e, GDK_CONTROL_MASK);
-}
-
-void connect_key_accels(dt_lib_module_t *self)
-{
-  dt_lib_export_t *d = (dt_lib_export_t *)self->data;
-  dt_accel_connect_button_lib(self, "export", GTK_WIDGET(d->export_button));
-}
-
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
 // kate: tab-indents: off; indent-width 2; replace-tabs on; indent-mode cstyle; remove-trailing-spaces modified;

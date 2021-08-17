@@ -607,15 +607,6 @@ int key_pressed(dt_view_t *self, guint key, guint state)
   return 0;
 }
 
-void init_key_accels(dt_view_t *self)
-{
-  dt_accel_register_view(self, NC_("accel", "start and stop"), GDK_KEY_space, 0);
-}
-
-void connect_key_accels(dt_view_t *self)
-{
-}
-
 GSList *mouse_actions(const dt_view_t *self)
 {
   GSList *lm = NULL;

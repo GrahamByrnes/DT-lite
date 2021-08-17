@@ -283,26 +283,6 @@ void init(struct dt_lib_module_t *self)
 }
 #endif
 
-void init_key_accels(dt_lib_module_t *self)
-{
-  dt_accel_register_lib(self, NC_("accel", "select all"), GDK_KEY_a, GDK_CONTROL_MASK);
-  dt_accel_register_lib(self, NC_("accel", "select none"), GDK_KEY_a, GDK_CONTROL_MASK | GDK_SHIFT_MASK);
-  dt_accel_register_lib(self, NC_("accel", "invert selection"), GDK_KEY_i, GDK_CONTROL_MASK);
-  dt_accel_register_lib(self, NC_("accel", "select film roll"), 0, 0);
-  dt_accel_register_lib(self, NC_("accel", "select untouched"), 0, 0);
-}
-
-void connect_key_accels(dt_lib_module_t *self)
-{
-  dt_lib_select_t *d = (dt_lib_select_t *)self->data;
-
-  dt_accel_connect_button_lib(self, "select all", GTK_WIDGET(d->select_all_button));
-  dt_accel_connect_button_lib(self, "select none", GTK_WIDGET(d->select_none_button));
-  dt_accel_connect_button_lib(self, "invert selection", GTK_WIDGET(d->select_invert_button));
-  dt_accel_connect_button_lib(self, "select film roll", GTK_WIDGET(d->select_film_roll_button));
-  dt_accel_connect_button_lib(self, "select untouched", GTK_WIDGET(d->select_untouched_button));
-}
-
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
 // kate: tab-indents: off; indent-width 2; replace-tabs on; indent-mode cstyle; remove-trailing-spaces modified;

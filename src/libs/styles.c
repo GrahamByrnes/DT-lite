@@ -67,24 +67,6 @@ int position()
   return 599;
 }
 
-void init_key_accels(dt_lib_module_t *self)
-{
-  dt_accel_register_lib(self, NC_("accel", "remove"), 0, 0);
-  dt_accel_register_lib(self, NC_("accel", "export"), 0, 0);
-  dt_accel_register_lib(self, NC_("accel", "import"), 0, 0);
-  dt_accel_register_lib(self, NC_("accel", "edit"), 0, 0);
-}
-
-void connect_key_accels(dt_lib_module_t *self)
-{
-  dt_lib_styles_t *d = (dt_lib_styles_t *)self->data;
-
-  dt_accel_connect_button_lib(self, "remove", d->delete_button);
-  dt_accel_connect_button_lib(self, "export", d->export_button);
-  dt_accel_connect_button_lib(self, "import", d->import_button);
-  if(d->edit_button) dt_accel_connect_button_lib(self, "edit", d->edit_button);
-}
-
 typedef enum _styles_columns_t
 {
   DT_STYLES_COL_NAME = 0,

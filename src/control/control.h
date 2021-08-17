@@ -113,14 +113,14 @@ struct dt_control_t;
 /** sets the hinter message */
 void dt_control_hinter_message(const struct dt_control_t *s, const char *message);
 
-/** turn the use of key accelerators on */
 void dt_control_key_accelerators_on(struct dt_control_t *s);
-/** turn the use of key accelerators on */
+
 void dt_control_key_accelerators_off(struct dt_control_t *s);
 
 int dt_control_is_key_accelerators_on(struct dt_control_t *s);
 
 // All the accelerator keys for the key_pressed style shortcuts
+
 typedef struct dt_control_accels_t
 {
   GtkAccelKey filmstrip_forward, filmstrip_back, lighttable_up, lighttable_down, lighttable_right, lighttable_left,
@@ -131,6 +131,7 @@ typedef struct dt_control_accels_t
       lighttable_preview_zoom_fit, global_sideborders, global_accels_window,
       darkroom_preview, slideshow_start, darkroom_skip_mouse_events;
 } dt_control_accels_t;
+
 
 #define DT_CTL_LOG_SIZE 10
 #define DT_CTL_LOG_MSG_SIZE 200

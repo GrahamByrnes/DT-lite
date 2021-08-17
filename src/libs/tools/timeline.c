@@ -1230,58 +1230,6 @@ static gboolean _lib_timeline_button_release_callback(GtkWidget *w, GdkEventButt
   return TRUE;
 }
 
-static gboolean _selection_start(GtkAccelGroup *accel_group, GObject *aceeleratable, guint keyval,
-                                 GdkModifierType modifier, gpointer data)
-{
-  dt_lib_timeline_t *strip = (dt_lib_timeline_t *)data;
-
-  strip->start_x = strip->current_x;
-  dt_lib_timeline_time_t tt = _time_get_from_pos(strip->current_x, strip);
-  if(_time_compare(tt, _time_init()) == 0)
-    strip->start_t = strip->time_maxi; //we are past the end so selection extends until the end
-  else
-    strip->start_t = _time_get_from_pos(strip->current_x, strip);
-  strip->stop_x = strip->start_x;
-  strip->stop_t = strip->start_t;
-  strip->selecting = TRUE;
-  strip->has_selection = TRUE;
-
-  gtk_widget_queue_draw(strip->timeline);
-  return TRUE;
-}
-static gboolean _selection_stop(GtkAccelGroup *accel_group, GObject *aceeleratable, guint keyval,
-                                GdkModifierType modifier, gpointer data)
-{
-  dt_lib_timeline_t *strip = (dt_lib_timeline_t *)data;
-  dt_lib_timeline_time_t tt = _time_get_from_pos(strip->current_x, strip);
-
-  strip->stop_x = strip->current_x;
-  if(_time_compare(tt, _time_init()) == 0)
-    strip->stop_t = strip->time_maxi; //we are past the end so selection extends until the end
-  else
-  {
-    strip->stop_t = tt;
-    // we want to be at the "end" of this date
-    if(strip->zoom < DT_LIB_TIMELINE_ZOOM_HOUR)
-    {
-      strip->stop_t.minute = 59;
-      if(strip->zoom < DT_LIB_TIMELINE_ZOOM_DAY)
-      {
-	strip->stop_t.hour = 23;
-	if(strip->zoom < DT_LIB_TIMELINE_ZOOM_MONTH)
-	{
-	  strip->stop_t.day = _time_days_in_month(strip->stop_t.year, strip->stop_t.month);
-	}
-      }
-    }
-  }
-
-  strip->selecting = FALSE;
-  _selection_collect(strip, DT_LIB_TIMELINE_MODE_AND);
-  gtk_widget_queue_draw(strip->timeline);
-  return TRUE;
-}
-
 static gboolean _block_autoscroll(gpointer user_data)
 {
   // this function is called repetidly until the pointer is not more in the autoscoll zone
@@ -1432,20 +1380,6 @@ static gboolean _lib_timeline_mouse_leave_callback(GtkWidget *w, GdkEventCrossin
 
   gtk_widget_queue_draw(strip->timeline);
   return TRUE;
-}
-
-void init_key_accels(dt_lib_module_t *self)
-{
-  dt_accel_register_lib(self, NC_("accel", "start selection"), GDK_KEY_bracketleft, 0);
-  dt_accel_register_lib(self, NC_("accel", "stop selection"), GDK_KEY_bracketright, 0);
-}
-
-void connect_key_accels(dt_lib_module_t *self)
-{
-  GClosure *closure = g_cclosure_new(G_CALLBACK(_selection_start), (gpointer)self->data, NULL);
-  dt_accel_connect_lib(self, "start selection", closure);
-  closure = g_cclosure_new(G_CALLBACK(_selection_stop), (gpointer)self->data, NULL);
-  dt_accel_connect_lib(self, "stop selection", closure);
 }
 
 void gui_init(dt_lib_module_t *self)

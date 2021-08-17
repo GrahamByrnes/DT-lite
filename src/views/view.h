@@ -160,9 +160,6 @@ typedef struct dt_view_t
   void (*scrolled)(struct dt_view_t *self, double x, double y, int up, int state); // mouse scrolled in view
   void (*scrollbar_changed)(struct dt_view_t *self, double x, double y); // scrollbar changed in view
 
-  // keyboard accel callbacks
-  void (*init_key_accels)(struct dt_view_t *self);
-  void (*connect_key_accels)(struct dt_view_t *self);
 
   // list of mouse actions
   GSList *(*mouse_actions)(const struct dt_view_t *self);

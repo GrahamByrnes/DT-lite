@@ -673,7 +673,6 @@ int dt_control_key_released(guint key, guint state)
 {
   // this line is here to find the right key code on different platforms (mac).
   // printf("key code pressed: %d\n", which);
-
   const dt_control_accels_t *accels = &darktable.control->accels;
 
   // be sure to reset dynamic accel

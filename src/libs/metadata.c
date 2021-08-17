@@ -502,20 +502,6 @@ static void _config_button_clicked(GtkButton *button, dt_lib_module_t *self)
   gtk_widget_destroy(dialog);
 }
 
-void init_key_accels(dt_lib_module_t *self)
-{
-  dt_accel_register_lib(self, NC_("accel", "clear"), 0, 0);
-  dt_accel_register_lib(self, NC_("accel", "apply"), 0, 0);
-}
-
-void connect_key_accels(dt_lib_module_t *self)
-{
-  dt_lib_metadata_t *d = (dt_lib_metadata_t *)self->data;
-
-  dt_accel_connect_button_lib(self, "clear", d->clear_button);
-  dt_accel_connect_button_lib(self, "apply", d->apply_button);
-}
-
 static gboolean _mouse_scroll(GtkWidget *swindow, GdkEventScroll *event, dt_lib_module_t *self)
 {
   const dt_lib_metadata_t *d = (dt_lib_metadata_t *)self->data;

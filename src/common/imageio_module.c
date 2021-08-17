@@ -291,25 +291,35 @@ static int dt_imageio_load_modules_storage(dt_imageio_t *iio)
   dt_loc_get_plugindir(plugindir, sizeof(plugindir));
   g_strlcat(plugindir, "/plugins/imageio/storage", sizeof(plugindir));
   GDir *dir = g_dir_open(plugindir, 0, NULL);
+
   if(!dir) return 1;
+
   const int name_offset = strlen(SHARED_MODULE_PREFIX),
             name_end = strlen(SHARED_MODULE_PREFIX) + strlen(SHARED_MODULE_SUFFIX);
+
   while((d_name = g_dir_read_name(dir)))
   {
     // get lib*.so
     if(!g_str_has_prefix(d_name, SHARED_MODULE_PREFIX)) continue;
+
     if(!g_str_has_suffix(d_name, SHARED_MODULE_SUFFIX)) continue;
+
     g_strlcpy(plugin_name, d_name + name_offset, strlen(d_name) - name_end + 1);
     module = (dt_imageio_module_storage_t *)malloc(sizeof(dt_imageio_module_storage_t));
     gchar *libname = g_module_build_path(plugindir, (const gchar *)plugin_name);
+
     if(dt_imageio_load_module_storage(module, libname, plugin_name))
     {
       free(module);
       continue;
     }
+
     module->gui_data = NULL;
     module->gui_init(module);
-    if(module->widget) g_object_ref(module->widget);
+
+    if(module->widget)
+      g_object_ref(module->widget);
+
     g_free(libname);
     dt_imageio_insert_storage(module);
   }
@@ -321,7 +331,6 @@ void dt_imageio_init(dt_imageio_t *iio)
 {
   iio->plugins_format = NULL;
   iio->plugins_storage = NULL;
-
   dt_imageio_load_modules_format(iio);
   dt_imageio_load_modules_storage(iio);
 }
@@ -333,17 +342,28 @@ void dt_imageio_cleanup(dt_imageio_t *iio)
     dt_imageio_module_format_t *module = (dt_imageio_module_format_t *)(iio->plugins_format->data);
     module->gui_cleanup(module);
     module->cleanup(module);
-    if(module->widget) g_object_unref(module->widget);
-    if(module->module) g_module_close(module->module);
+
+    if(module->widget)
+      g_object_unref(module->widget);
+
+    if(module->module)
+      g_module_close(module->module);
+
     free(module);
     iio->plugins_format = g_list_delete_link(iio->plugins_format, iio->plugins_format);
   }
+
   while(iio->plugins_storage)
   {
     dt_imageio_module_storage_t *module = (dt_imageio_module_storage_t *)(iio->plugins_storage->data);
     module->gui_cleanup(module);
-    if(module->widget) g_object_unref(module->widget);
-    if(module->module) g_module_close(module->module);
+
+    if(module->widget)
+      g_object_unref(module->widget);
+
+    if(module->module)
+      g_module_close(module->module);
+
     free(module);
     iio->plugins_storage = g_list_delete_link(iio->plugins_storage, iio->plugins_storage);
   }

@@ -162,7 +162,7 @@ static gboolean fullscreen_key_accel_callback(GtkAccelGroup *accel_group, GObjec
     dt_dev_invalidate(darktable.develop);
   }
 
-  /* redraw center view */
+  // redraw center view
   gtk_widget_queue_draw(dt_ui_center(darktable.gui->ui));
 #ifdef __APPLE__
   // workaround for GTK Quartz backend bug
@@ -328,24 +328,28 @@ static gboolean _toggle_panel_accel_callback(GtkAccelGroup *accel_group, GObject
 
   return TRUE;
 }
+
 static gboolean _toggle_header_accel_callback(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
                                               GdkModifierType modifier, gpointer data)
 {
   dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_TOP, !_panel_is_visible(DT_UI_PANEL_TOP), TRUE);
   return TRUE;
 }
+
 static gboolean _toggle_filmstrip_accel_callback(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
                                                  GdkModifierType modifier, gpointer data)
 {
   dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_BOTTOM, !_panel_is_visible(DT_UI_PANEL_BOTTOM), TRUE);
   return TRUE;
 }
+
 static gboolean _toggle_top_tool_accel_callback(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
                                                 GdkModifierType modifier, gpointer data)
 {
   dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_CENTER_TOP, !_panel_is_visible(DT_UI_PANEL_CENTER_TOP), TRUE);
   return TRUE;
 }
+
 static gboolean _toggle_bottom_tool_accel_callback(GtkAccelGroup *accel_group, GObject *acceleratable,
                                                    guint keyval, GdkModifierType modifier, gpointer data)
 {
@@ -353,6 +357,7 @@ static gboolean _toggle_bottom_tool_accel_callback(GtkAccelGroup *accel_group, G
                    TRUE);
   return TRUE;
 }
+
 static gboolean _toggle_top_all_accel_callback(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
                                                GdkModifierType modifier, gpointer data)
 {
@@ -361,6 +366,7 @@ static gboolean _toggle_top_all_accel_callback(GtkAccelGroup *accel_group, GObje
   dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_CENTER_TOP, !v, TRUE);
   return TRUE;
 }
+
 static gboolean _toggle_bottom_all_accel_callback(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
                                                   GdkModifierType modifier, gpointer data)
 {
@@ -369,7 +375,6 @@ static gboolean _toggle_bottom_all_accel_callback(GtkAccelGroup *accel_group, GO
   dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_CENTER_BOTTOM, !v, TRUE);
   return TRUE;
 }
-
 
 static gboolean borders_button_pressed(GtkWidget *w, GdkEventButton *event, gpointer user_data)
 {
@@ -963,7 +968,8 @@ guint dt_gui_translated_key_state(GdkEventKey *event)
     //not an alphabetic character
     //find any modifiers consumed to produce keyval
     guint consumed;
-    gdk_keymap_translate_keyboard_state(gdk_keymap_get_for_display(gdk_display_get_default()), event->hardware_keycode, event->state, event->group, NULL, NULL, NULL, &consumed);
+    gdk_keymap_translate_keyboard_state(gdk_keymap_get_for_display(gdk_display_get_default()),
+                event->hardware_keycode, event->state, event->group, NULL, NULL, NULL, &consumed);
     return event->state & ~consumed & KEY_STATE_MASK;
   }
   else
@@ -2024,12 +2030,10 @@ static GtkWidget *_ui_init_panel_container_center(GtkWidget *container, gboolean
 {
   GtkWidget *widget;
   GtkAdjustment *a[4];
-
   a[0] = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 100, 1, 10, 10));
   a[1] = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 100, 1, 10, 10));
   a[2] = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 100, 1, 10, 10));
   a[3] = GTK_ADJUSTMENT(gtk_adjustment_new(0, 0, 100, 1, 10, 10));
-
   /* create the scrolled window */
   widget = gtk_scrolled_window_new(a[0], a[1]);
   gtk_widget_set_can_focus(widget, TRUE);
@@ -2037,7 +2041,7 @@ static GtkWidget *_ui_init_panel_container_center(GtkWidget *container, gboolean
                                     left ? GTK_CORNER_TOP_LEFT : GTK_CORNER_TOP_RIGHT);
   gtk_box_pack_start(GTK_BOX(container), widget, TRUE, TRUE, 0);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(widget), GTK_POLICY_AUTOMATIC,
-                                 dt_conf_get_bool("panel_scrollbars_always_visible")?GTK_POLICY_ALWAYS:GTK_POLICY_AUTOMATIC);
+               dt_conf_get_bool("panel_scrollbars_always_visible") ? GTK_POLICY_ALWAYS : GTK_POLICY_AUTOMATIC);
 
   g_signal_connect(G_OBJECT(gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(widget))), "notify::lower",
                    G_CALLBACK(_ui_panel_size_changed), GINT_TO_POINTER(left ? 1 : 0));
@@ -2056,8 +2060,8 @@ static GtkWidget *_ui_init_panel_container_center(GtkWidget *container, gboolean
   widget = gtk_event_box_new();
   gtk_widget_add_events(GTK_WIDGET(widget), GDK_SCROLL_MASK);
   // gtk_widget_add_events(GTK_WIDGET(widget), GDK_SMOOTH_SCROLL_MASK);
-  g_signal_connect(G_OBJECT(widget), "scroll-event", G_CALLBACK(_ui_init_panel_container_center_scroll_event),
-                   NULL);
+  g_signal_connect(G_OBJECT(widget), "scroll-event",
+                   G_CALLBACK(_ui_init_panel_container_center_scroll_event), NULL);
   gtk_container_add(GTK_CONTAINER(container), widget);
 
   /* create the container */

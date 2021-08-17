@@ -1050,7 +1050,6 @@ void dt_accel_connect_preset_iop(dt_iop_module_t *module, const gchar *path)
 }
 
 
-
 typedef struct
 {
   dt_lib_module_t *module;

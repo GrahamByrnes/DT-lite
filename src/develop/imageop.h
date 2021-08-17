@@ -137,8 +137,7 @@ typedef struct dt_iop_module_so_t
   GModule *module;
   /** string identifying this operation. */
   dt_dev_operation_t op;
-  /** other stuff that may be needed by the module, not only in gui mode. inited only once, has to be
-   * read-only then. */
+  /** other stuff that may be needed by the module, not only in gui mode. inited only once, has to be read-only then. */
   dt_iop_global_data_t *data;
   /** gui is also only inited once at startup. */
   dt_iop_gui_data_t *gui_data;
@@ -207,7 +206,7 @@ typedef struct dt_iop_module_so_t
   void (*gui_post_expose)(struct dt_iop_module_t *self, cairo_t *cr, int32_t width, int32_t height,
                           int32_t pointerx, int32_t pointery);
   void (*gui_focus)(struct dt_iop_module_t *self, gboolean in);
-  /** Optional callback for keyboard accelerators */
+  // Optional callback for keyboard accelerators 
   void (*init_key_accels)(struct dt_iop_module_so_t *so);
   void (*original_init_key_accels)(struct dt_iop_module_so_t *so);
   void (*connect_key_accels)(struct dt_iop_module_t *self);
@@ -341,8 +340,7 @@ typedef struct dt_iop_module_t
   struct {
     struct {
       /** if this module generates a mask, is it used later on? needed to decide if the mask should be stored.
-          maps dt_iop_module_t* -> id
-      */
+          maps dt_iop_module_t* -> id */
       GHashTable *users;
       /** the masks this module has to offer. maps id -> name */
       GHashTable *masks;
@@ -568,7 +566,7 @@ void dt_iop_gui_set_expanded(dt_iop_module_t *module, gboolean expanded, gboolea
 void dt_iop_gui_update_expanded(dt_iop_module_t *module);
 /** change module state */
 void dt_iop_so_gui_set_state(dt_iop_module_so_t *module, dt_iop_module_state_t state);
-/* duplicate module and return new instance */
+/** duplicate module and return new instance */
 dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_params);
 
 void dt_iop_gui_update_header(dt_iop_module_t *module);
@@ -596,10 +594,8 @@ void dt_iop_load_default_params(dt_iop_module_t *module);
 /** reloads certain gui/param defaults when the image was switched. */
 void dt_iop_reload_defaults(dt_iop_module_t *module);
 
-/*
- * must be called in dt_dev_change_image() to fix wrong histogram in levels
- * just after switching images and before full redraw
- */
+// must be called in dt_dev_change_image() to fix wrong histogram in levels
+// just after switching images and before full redraw
 void dt_iop_cleanup_histogram(gpointer data, gpointer user_data);
 
 /** let plugins have breakpoints: */
