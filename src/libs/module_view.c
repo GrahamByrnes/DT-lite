@@ -25,7 +25,7 @@
 #include "gui/gtk.h"
 #include "libs/lib.h"
 #include "libs/lib_api.h"
-//#include "libs/module_view.h"
+#include "libs/module_view.h"
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
 #endif
@@ -40,7 +40,6 @@ typedef struct dt_lib_module_view_t
   GtkButton *all_button;
   GtkButton *fav_button;
   gboolean choice;
-  int state;
 } dt_lib_module_view_t;
 
 const char *name(dt_lib_module_t *self)
@@ -98,10 +97,10 @@ static void _lib_module_view_callback(gpointer instance, gpointer user_data)
 {
   dt_lib_module_t *self = (dt_lib_module_t *)user_data;
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  d->state = d->choice ? dt_iop_state_FAVORITE : dt_iop_state_HIDDEN;
+  dt_lib_module_view_favorite = d->choice;
 
-  fprintf(stderr, "_lib_module_view_callback, d->state = %d, choice = %d, FAV = %d, HIDDEN = %d\n",
-                     d->state, d->choice, dt_iop_state_FAVORITE, dt_iop_state_HIDDEN);
+  fprintf(stderr, "_lib_module_view_callback, dt_lib_module_view_favorite = %d\n",
+                     dt_lib_module_view_favorite);
 }
 
 #define ellipsize_button(button) gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(button))), PANGO_ELLIPSIZE_END);

@@ -45,6 +45,7 @@
 #include "gui/gtk.h"
 #include "gui/presets.h"
 #include "gui/color_picker_proxy.h"
+#include "libs/module_view.h"
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
 #endif
@@ -1047,7 +1048,7 @@ gboolean dt_iop_so_is_hidden(dt_iop_module_so_t *module)
 {
   gboolean is_hidden = TRUE;
  
-  if(!(module->flags() & IOP_FLAGS_HIDDEN))
+  if(!(module->flags() & IOP_FLAGS_HIDDEN) || dt_lib_module_view_favorite)
   {
     { 
       if(!module->gui_init)
@@ -1055,7 +1056,7 @@ gboolean dt_iop_so_is_hidden(dt_iop_module_so_t *module)
       else if(!module->gui_cleanup)
         g_debug("Module '%s' is not hidden and lacks implementation of gui_cleanup()...", module->op);
       else
-        is_hidden = FALSE;
+        is_hidden = !dt_lib_module_view_favorite;
     }
   }
 
