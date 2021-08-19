@@ -194,8 +194,6 @@ int dt_view_get_image_to_act_on();
 char* dt_view_extend_modes_str(const char * name, const gboolean is_hdr);
 /** expose an image and return a cairi_surface. return != 0 if thumbnail wasn't loaded yet. */
 int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t **surface, const gboolean quality);
-
-
 /** Set the selection bit to a given value for the specified image */
 void dt_view_set_selection(int imgid, int value);
 /** toggle selection of given image. */
@@ -209,10 +207,8 @@ typedef struct dt_view_manager_t
 {
   GList *views;
   dt_view_t *current_view;
-
   // images currently active in the main view (there can be more than 1 in culling)
   GSList *active_images;
-
   // copy/paste history structure
   dt_history_copy_item_t copy_paste;
 
@@ -257,48 +253,41 @@ typedef struct dt_view_manager_t
    // Proxy
   struct
   {
-
     /* view toolbox proxy object */
     struct
     {
       struct dt_lib_module_t *module;
       void (*add)(struct dt_lib_module_t *, GtkWidget *, dt_view_type_flags_t );
     } view_toolbox;
-
     /* module toolbox proxy object */
     struct
     {
       struct dt_lib_module_t *module;
       void (*add)(struct dt_lib_module_t *, GtkWidget *, dt_view_type_flags_t);
     } module_toolbox;
-
     /* filter toolbox proxy object */
     struct
     {
       struct dt_lib_module_t *module;
       void (*reset_filter)(struct dt_lib_module_t *, gboolean smart_filter);
     } filter;
-
     /* module collection proxy object */
     struct
     {
       struct dt_lib_module_t *module;
       void (*update)(struct dt_lib_module_t *);
     } module_collect;
-
     /* filmstrip proxy object */
     struct
     {
       struct dt_lib_module_t *module;
     } filmstrip;
-
     /* darkroom view proxy object */
     struct
     {
       struct dt_view_t *view;
       dt_darkroom_layout_t (*get_layout)(struct dt_view_t *view);
     } darkroom;
-
     /* lighttable view proxy object */
     struct
     {
@@ -315,7 +304,6 @@ typedef struct dt_view_manager_t
       gboolean (*get_preview_state)(struct dt_view_t *view);
       void (*change_offset)(struct dt_view_t *view, gboolean reset, gint imgid);
     } lighttable;
-
     /* tethering view proxy object */
     struct
     {
@@ -324,14 +312,12 @@ typedef struct dt_view_manager_t
       void (*set_job_code)(const dt_view_t *view, const char *name);
       int32_t (*get_selected_imgid)(const dt_view_t *view);
     } tethering;
-
-    /* more module window proxy */
+    /* module_view window proxy */
     struct
     {
       struct dt_lib_module_t *module;
       void (*update)(struct dt_lib_module_t *);
-    } more_module;
-
+    } module_view;
     /* timeline module proxy */
     struct
     {
@@ -345,7 +331,6 @@ typedef struct dt_view_manager_t
     } print;
 #endif
   } proxy;
-
 
 } dt_view_manager_t;
 

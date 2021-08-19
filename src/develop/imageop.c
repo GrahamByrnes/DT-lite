@@ -1530,7 +1530,9 @@ void dt_iop_gui_update(dt_iop_module_t *module)
     
     if(!dt_iop_is_hidden(module))
     {
-      if(module->params) module->gui_update(module);
+      if(module->params)
+        module->gui_update(module);
+
       dt_iop_gui_update_blending(module);
       dt_iop_gui_update_expanded(module);
       _iop_gui_update_label(module);
@@ -2103,8 +2105,8 @@ void dt_iop_so_gui_set_state(dt_iop_module_so_t *module, dt_iop_module_state_t s
 
   dt_view_manager_t *vm = darktable.view_manager;
 
-  if(vm->proxy.more_module.module)
-    vm->proxy.more_module.update(vm->proxy.more_module.module);
+  if(vm->proxy.module_view.module)
+    vm->proxy.module_view.update(vm->proxy.module_view.module);
 }
 
 void dt_iop_update_multi_priority(dt_iop_module_t *module, int new_priority)
