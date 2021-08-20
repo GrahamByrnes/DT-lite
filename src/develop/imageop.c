@@ -1058,9 +1058,7 @@ gboolean dt_iop_so_is_hidden(dt_iop_module_so_t *module)
         is_hidden = FALSE;
     }
   }
-  
-  fprintf(stderr, "dt_iop_is_hidden, module->state = %d, favorite = %d, is_hidden = %d\n",
-           module->state, dt_lib_module_view_favorite, is_hidden); /* *** */
+
   return is_hidden;
 }
 
@@ -1924,8 +1922,7 @@ void dt_iop_nap(int32_t usec)
   if(usec <= 0)
     return;
   // relinquish processor
-  sched_yield();
-  // additionally wait the given amount of time
+  sched_yield();// additionally wait the given amount of time
   g_usleep(usec);
 }
 
@@ -2107,8 +2104,6 @@ void dt_iop_so_gui_set_state(dt_iop_module_so_t *module, dt_iop_module_state_t s
 
   if(vm->proxy.module_view.module)
     vm->proxy.module_view.update(vm->proxy.module_view.module);
-
-  fprintf(stderr, "dt_iop_so_gui_set_state in imageop, state = %d\n", state);  /* **** */
 }
 
 void dt_iop_update_multi_priority(dt_iop_module_t *module, int new_priority)
