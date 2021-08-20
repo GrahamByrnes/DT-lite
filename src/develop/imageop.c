@@ -1045,10 +1045,11 @@ static void dt_iop_gui_off_callback(GtkToggleButton *togglebutton, gpointer user
 gboolean dt_iop_so_is_hidden(dt_iop_module_so_t *module)
 {
   gboolean is_hidden = TRUE;
+  const gboolean module_view_favorite = dt_conf_get_bool("darkroom/ui/iop_view_default_2");
  
   if(!(module->flags() & IOP_FLAGS_HIDDEN))
   {
-    if((module->state == dt_iop_state_FAVORITE && dt_lib_module_view_favorite) || !dt_lib_module_view_favorite)
+    if((module->state == dt_iop_state_FAVORITE && module_view_favorite) || !module_view_favorite)
     { 
       if(!module->gui_init)
         g_debug("Module '%s' is not hidden and lacks implementation of gui_init()...", module->op);
