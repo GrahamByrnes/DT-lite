@@ -103,6 +103,7 @@ static void _lib_module_view_callback(gpointer instance, gpointer user_data)
   {
     dt_iop_module_t *module = (dt_iop_module_t *)iter->data;
     dt_iop_gui_update(module);
+    fprintf(stderr, "module view callback, state = %d, favorite = %d\n", (module->so)->state, dt_lib_module_view_favorite);
   }
 }
 
@@ -110,6 +111,7 @@ static void _lib_modulelist_gui_update(dt_lib_module_t *self)
 {
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
   dt_lib_module_view_favorite = d->choice;
+  fprintf(stderr, "module gui update, view fav=%d\n", dt_lib_module_view_favorite);
 }
 
 #define ellipsize_button(button) gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(button))), PANGO_ELLIPSIZE_END);
@@ -118,7 +120,7 @@ void gui_init(dt_lib_module_t *self)
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)malloc(sizeof(dt_lib_module_view_t));
   self->data = (void *)d;
   d->choice = dt_conf_get_bool("darkroom/ui/iop_view_default");
-
+  dt_lib_module_view_favorite = d->choice;
   self->widget = gtk_grid_new();
   GtkGrid *grid = GTK_GRID(self->widget);
   gtk_grid_set_column_homogeneous(grid, TRUE);

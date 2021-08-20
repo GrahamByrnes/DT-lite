@@ -16,4 +16,4 @@
     along with darktable.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-gboolean dt_lib_module_view_favorite = 1;
+gboolean dt_lib_module_view_favorite = 0;

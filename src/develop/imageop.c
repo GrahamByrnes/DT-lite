@@ -126,7 +126,7 @@ static int default_operation_tags(void)
 }
 
 /* default operation tags filter for modules which does not implement the flags() function */
-static int default_operation_tags_filter(void) /* *** */
+static int default_operation_tags_filter(void)
 {
   return 0;
 }
@@ -825,7 +825,7 @@ dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_param
     // we save the new instance creation
     dt_dev_add_history_item(module->dev, module, TRUE);
     // add module to right panel
-    GtkWidget *expander = dt_iop_gui_get_expander(module);  /* *** ************** */
+    GtkWidget *expander = dt_iop_gui_get_expander(module);
     dt_ui_container_add_widget(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER, expander);
     GValue gv = { 0, { { 0 } } };
     g_value_init(&gv, G_TYPE_INT);
@@ -897,7 +897,6 @@ static gboolean _rename_module_key_press(GtkWidget *entry, GdkEventKey *event, d
     // restore saved 1st character of instance name
     module->multi_name[0] = module->multi_name[sizeof(module->multi_name) - 1];
     module->multi_name[sizeof(module->multi_name) - 1] = 0;
-
     ended = 1;
   }
 
@@ -906,7 +905,6 @@ static gboolean _rename_module_key_press(GtkWidget *entry, GdkEventKey *event, d
     g_signal_handlers_disconnect_by_func(entry, G_CALLBACK(_rename_module_key_press), module);
     gtk_widget_destroy(entry);
     dt_iop_gui_update_header(module);
-
     return TRUE;
   }
 
@@ -1050,7 +1048,7 @@ gboolean dt_iop_so_is_hidden(dt_iop_module_so_t *module)
  
   if(!(module->flags() & IOP_FLAGS_HIDDEN))
   {
-    if((module->state = dt_iop_state_FAVORITE && dt_lib_module_view_favorite) || !dt_lib_module_view_favorite)
+    if((module->state == dt_iop_state_FAVORITE && dt_lib_module_view_favorite) || !dt_lib_module_view_favorite)
     { 
       if(!module->gui_init)
         g_debug("Module '%s' is not hidden and lacks implementation of gui_init()...", module->op);
@@ -1060,7 +1058,9 @@ gboolean dt_iop_so_is_hidden(dt_iop_module_so_t *module)
         is_hidden = FALSE;
     }
   }
-
+  
+  fprintf(stderr, "dt_iop_is_hidden, module->state = %d, favorite = %d, is_hidden = %d\n",
+           module->state, dt_lib_module_view_favorite, is_hidden); /* *** */
   return is_hidden;
 }
 
@@ -2107,6 +2107,8 @@ void dt_iop_so_gui_set_state(dt_iop_module_so_t *module, dt_iop_module_state_t s
 
   if(vm->proxy.module_view.module)
     vm->proxy.module_view.update(vm->proxy.module_view.module);
+
+  fprintf(stderr, "dt_iop_so_gui_set_state in imageop, state = %d\n", state);  /* **** */
 }
 
 void dt_iop_update_multi_priority(dt_iop_module_t *module, int new_priority)
