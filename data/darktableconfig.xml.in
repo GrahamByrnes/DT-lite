@@ -951,20 +951,6 @@
     <shortdescription>reduce resolution of preview image</shortdescription>
     <longdescription>decrease to speed up preview rendering, may hinder accurate masking</longdescription>
   </dtconfig>
-  <!--
-  <dtconfig prefs="darkroom">
-    <name>darkroom/ui/gray_channels</name>
-    <type>
-      <enum>
-        <option>standard (4)</option>
-        <option>experimental (1)</option>
-      </enum>
-    </type>
-    <default>standard (4)</default>
-    <shortdescription>experimental channel changer</shortdescription>
-    <longdescription/>
-  </dtconfig>
-  -->
   <dtconfig>
     <name>database_cache_quality</name>
     <type>int</type>
