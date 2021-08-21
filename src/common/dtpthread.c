@@ -34,10 +34,9 @@
 int dt_pthread_create(pthread_t *thread, void *(*start_routine)(void *), void *arg)
 {
   int ret;
-
   pthread_attr_t attr;
-
   ret = pthread_attr_init(&attr);
+
   if(ret != 0)
   {
     fprintf(stderr, "[dt_pthread_create] error: pthread_attr_init() returned %i\n", ret);
@@ -45,32 +44,23 @@ int dt_pthread_create(pthread_t *thread, void *(*start_routine)(void *), void *a
   }
 
   size_t stacksize;
-
   ret = pthread_attr_getstacksize(&attr, &stacksize);
 
   if(ret != 0)
-  {
     fprintf(stderr, "[dt_pthread_create] error: pthread_attr_getstacksize() returned %i\n", ret);
-  }
 
   if(ret != 0 || stacksize < WANTED_THREADS_STACK_SIZE /*|| 1*/)
   {
     // looks like we need to bump/set it...
-
     fprintf(stderr, "[dt_pthread_create] info: bumping pthread's stacksize from %zu to %"PRIuMAX"\n", stacksize,
             (uintmax_t)WANTED_THREADS_STACK_SIZE);
-
     ret = pthread_attr_setstacksize(&attr, WANTED_THREADS_STACK_SIZE);
     if(ret != 0)
-    {
       fprintf(stderr, "[dt_pthread_create] error: pthread_attr_setstacksize() returned %i\n", ret);
-    }
   }
 
   ret = pthread_create(thread, &attr, start_routine, arg);
-
   pthread_attr_destroy(&attr);
-
   return ret;
 }
 

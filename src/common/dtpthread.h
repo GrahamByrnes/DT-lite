@@ -39,7 +39,6 @@ static inline double dt_pthread_get_wtime()
   return time.tv_sec - 1290608000 + (1.0 / 1000000.0) * time.tv_usec;
 }
 
-
 #define TOPN 3
 typedef struct dt_pthread_mutex_t
 {
@@ -118,15 +117,19 @@ static inline int dt_pthread_mutex_lock_with_caller(dt_pthread_mutex_t *mutex, c
   char *name = mutex->name;
   snprintf(mutex->name, sizeof(mutex->name), "%s:%d (%s)", file, line, function);
   int min_wait_slot = 0;
+
   for(int k = 0; k < TOPN; k++)
   {
-    if(mutex->top_wait_sum[k] < mutex->top_wait_sum[min_wait_slot]) min_wait_slot = k;
+    if(mutex->top_wait_sum[k] < mutex->top_wait_sum[min_wait_slot])
+      min_wait_slot = k;
+
     if(!strncmp(name, mutex->top_wait_name[k], 256))
     {
       mutex->top_wait_sum[k] += wait;
       return ret;
     }
   }
+
   g_strlcpy(mutex->top_wait_name[min_wait_slot], name, sizeof(mutex->top_wait_name[min_wait_slot]));
   mutex->top_wait_sum[min_wait_slot] = wait;
   return ret;
@@ -139,16 +142,22 @@ static inline int dt_pthread_mutex_trylock_with_caller(dt_pthread_mutex_t *mutex
   const double t0 = dt_pthread_get_wtime();
   const int ret = pthread_mutex_trylock(&(mutex->mutex));
   assert(!ret || (ret == EBUSY));
-  if(ret) return ret;
+
+  if(ret)
+    return ret;
+
   mutex->time_locked = dt_pthread_get_wtime();
   double wait = mutex->time_locked - t0;
   mutex->time_sum_wait += wait;
   char *name = mutex->name;
   snprintf(mutex->name, sizeof(mutex->name), "%s:%d (%s)", file, line, function);
   int min_wait_slot = 0;
+
   for(int k = 0; k < TOPN; k++)
   {
-    if(mutex->top_wait_sum[k] < mutex->top_wait_sum[min_wait_slot]) min_wait_slot = k;
+    if(mutex->top_wait_sum[k] < mutex->top_wait_sum[min_wait_slot])
+      min_wait_slot = k;
+
     if(!strncmp(name, mutex->top_wait_name[k], 256))
     {
       mutex->top_wait_sum[k] += wait;
@@ -167,13 +176,15 @@ static inline int dt_pthread_mutex_unlock_with_caller(dt_pthread_mutex_t *mutex,
   const double t0 = dt_pthread_get_wtime();
   const double locked = t0 - mutex->time_locked;
   mutex->time_sum_locked += locked;
-
   char *name = mutex->name;
   snprintf(mutex->name, sizeof(mutex->name), "%s:%d (%s)", file, line, function);
   int min_locked_slot = 0;
+
   for(int k = 0; k < TOPN; k++)
   {
-    if(mutex->top_locked_sum[k] < mutex->top_locked_sum[min_locked_slot]) min_locked_slot = k;
+    if(mutex->top_locked_sum[k] < mutex->top_locked_sum[min_locked_slot])
+      min_locked_slot = k;
+
     if(!strncmp(name, mutex->top_locked_name[k], 256))
     {
       mutex->top_locked_sum[k] += locked;
@@ -181,12 +192,12 @@ static inline int dt_pthread_mutex_unlock_with_caller(dt_pthread_mutex_t *mutex,
       break;
     }
   }
+
   if(min_locked_slot >= 0)
   {
     g_strlcpy(mutex->top_locked_name[min_locked_slot], name, sizeof(mutex->top_locked_name[min_locked_slot]));
     mutex->top_locked_sum[min_locked_slot] = locked;
   }
-
   // need to unlock last, to shield our internal data.
   const int ret = pthread_mutex_unlock(&(mutex->mutex));
   assert(!ret);
@@ -226,13 +237,14 @@ static inline pthread_t dt_pthread_rwlock_get_writer(dt_pthread_rwlock_t *lock)
 static inline int dt_pthread_rwlock_unlock_with_caller(dt_pthread_rwlock_t *rwlock, const char *file, int line)
 {
   const int res = pthread_rwlock_unlock(&rwlock->lock);
-
   assert(!res);
-
   __sync_fetch_and_sub(&(rwlock->cnt), 1);
   assert(rwlock->cnt >= 0);
   __sync_bool_compare_and_swap(&(rwlock->writer), pthread_self(), 0);
-  if(!res) snprintf(rwlock->name, sizeof(rwlock->name), "u:%s:%d", file, line);
+  
+  if(!res)
+    snprintf(rwlock->name, sizeof(rwlock->name), "u:%s:%d", file, line);
+
   return res;
 }
 
@@ -243,8 +255,10 @@ static inline int dt_pthread_rwlock_rdlock_with_caller(dt_pthread_rwlock_t *rwlo
   assert(!res);
   assert(!(res && pthread_equal(rwlock->writer, pthread_self())));
   __sync_fetch_and_add(&(rwlock->cnt), 1);
+
   if(!res)
     snprintf(rwlock->name, sizeof(rwlock->name), "r:%s:%d", file, line);
+
   return res;
 }
 #define dt_pthread_rwlock_wrlock(A) dt_pthread_rwlock_wrlock_with_caller(A, __FILE__, __LINE__)
@@ -253,11 +267,13 @@ static inline int dt_pthread_rwlock_wrlock_with_caller(dt_pthread_rwlock_t *rwlo
   const int res = pthread_rwlock_wrlock(&rwlock->lock);
   assert(!res);
   __sync_fetch_and_add(&(rwlock->cnt), 1);
+
   if(!res)
   {
     __sync_lock_test_and_set(&(rwlock->writer), pthread_self());
     snprintf(rwlock->name, sizeof(rwlock->name), "w:%s:%d", file, line);
   }
+
   return res;
 }
 #define dt_pthread_rwlock_tryrdlock(A) dt_pthread_rwlock_tryrdlock_with_caller(A, __FILE__, __LINE__)
@@ -266,30 +282,34 @@ static inline int dt_pthread_rwlock_tryrdlock_with_caller(dt_pthread_rwlock_t *r
   const int res = pthread_rwlock_tryrdlock(&rwlock->lock);
   assert(!res || (res == EBUSY));
   assert(!(res && pthread_equal(rwlock->writer, pthread_self())));
+
   if(!res)
   {
     __sync_fetch_and_add(&(rwlock->cnt), 1);
     snprintf(rwlock->name, sizeof(rwlock->name), "tr:%s:%d", file, line);
   }
+
   return res;
 }
+
 #define dt_pthread_rwlock_trywrlock(A) dt_pthread_rwlock_trywrlock_with_caller(A, __FILE__, __LINE__)
 static inline int dt_pthread_rwlock_trywrlock_with_caller(dt_pthread_rwlock_t *rwlock, const char *file, int line)
 {
   const int res = pthread_rwlock_trywrlock(&rwlock->lock);
   assert(!res || (res == EBUSY));
+
   if(!res)
   {
     __sync_fetch_and_add(&(rwlock->cnt), 1);
     __sync_lock_test_and_set(&(rwlock->writer), pthread_self());
     snprintf(rwlock->name, sizeof(rwlock->name), "tw:%s:%d", file, line);
   }
+
   return res;
 }
 
 #undef TOPN
 #else
-
 typedef struct CAPABILITY("mutex") dt_pthread_mutex_t
 {
   pthread_mutex_t mutex;

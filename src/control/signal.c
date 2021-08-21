@@ -211,7 +211,10 @@ static gboolean _signal_raise(gpointer user_data)
 {
   _signal_param_t *params = (_signal_param_t *)user_data;
   g_signal_emitv(params->instance_and_params, params->signal_id, 0, NULL);
-  for(int i = 0; i <= params->n_params; i++) g_value_unset(&params->instance_and_params[i]);
+
+  for(int i = 0; i <= params->n_params; i++)
+    g_value_unset(&params->instance_and_params[i]);
+
   free(params->instance_and_params);
   free(params);
   return FALSE;
@@ -229,7 +232,6 @@ gboolean _async_com_callback(gpointer data)
   async_com_data *communication = (async_com_data*)data;
   g_mutex_lock(&communication->end_mutex);
   _signal_raise(communication->user_data);
-
   g_cond_signal(&communication->end_cond);
   g_mutex_unlock(&communication->end_mutex);
   return FALSE;
@@ -353,6 +355,7 @@ void dt_control_signal_connect(const dt_control_signal_t *ctlsig, dt_signal_t si
     dt_print(DT_DEBUG_SIGNAL, "[signal] connected: %s\n", _signal_description[signal].name);
     _print_trace("connect");
   }
+
   g_signal_connect(G_OBJECT(ctlsig->sink), _signal_description[signal].name, G_CALLBACK(cb), user_data);
 }
 

@@ -91,24 +91,24 @@ void gui_update(dt_lib_module_t *self)
 {
   _update(self);
 }
-
+/*
 static void _lib_module_view_callback(gpointer instance, gpointer user_data)
 {
   dt_lib_module_t *self = (dt_lib_module_t *)user_data;
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  dt_conf_set_bool("darkroom/ui/iop_view_default", d->choice);
+  dt_conf_set_bool("darkroom/ui/iop_view_default-1", d->choice);
   
   for(GList *iter = g_list_first(darktable.iop); iter; iter = g_list_next(iter))
   {
     dt_iop_module_t *module = (dt_iop_module_t *)iter->data;
     dt_iop_gui_update(module);
   }
-}
+}*/
 
 static void _lib_modulelist_gui_update(dt_lib_module_t *self)
 {
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  dt_conf_set_bool("darkroom/ui/iop_view_default", d->choice);
+  dt_conf_set_bool("darkroom/ui/iop_view_default-1", d->choice);
 }
 
 #define ellipsize_button(button) gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(button))), PANGO_ELLIPSIZE_END);
@@ -136,8 +136,8 @@ void gui_init(dt_lib_module_t *self)
   g_signal_connect(G_OBJECT(d->all_button), "clicked", G_CALLBACK(all_button_clicked), self);
   darktable.view_manager->proxy.module_view.module = self;
   darktable.view_manager->proxy.module_view.update = _lib_modulelist_gui_update;
-  dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_INITIALIZE,
-                            G_CALLBACK(_lib_module_view_callback), self);
+//  dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_INITIALIZE,
+//                            G_CALLBACK(_lib_module_view_callback), self);
   _update(self);
 }
 #undef ellipsize_button

@@ -900,15 +900,15 @@
     <name>darkroom/ui/iop_view_default</name>
     <type>bool</type>
     <default>false</default>
-    <shortdescription>test for favorite modules at start-up</shortdescription>
-    <longdescription>if true list of modules shown at start-up will include only favorites</longdescription>
+    <shortdescription>display only favorite modules</shortdescription>
+    <longdescription>if list of modules shown will include only favorites</longdescription>
   </dtconfig>
     <dtconfig prefs="darkroom">
-    <name>darkroom/ui/iop_view_default_2</name>
+    <name>darkroom/ui/iop_view_default_1</name>
     <type>bool</type>
     <default>false</default>
-    <shortdescription>show only favorite modules at start-up</shortdescription>
-    <longdescription>if true list of modules shown at start-up will include only favorites</longdescription>
+    <shortdescription>store favorite modules</shortdescription>
+    <longdescription>store favorite modules</longdescription>
   </dtconfig>
   <dtconfig prefs="darkroom">
     <name>plugins/darkroom/ui/border_size</name>

@@ -1044,7 +1044,7 @@ static void dt_iop_gui_off_callback(GtkToggleButton *togglebutton, gpointer user
 gboolean dt_iop_so_is_hidden(dt_iop_module_so_t *module)
 {
   gboolean is_hidden = TRUE;
-  const gboolean module_view_favorite = dt_conf_get_bool("darkroom/ui/iop_view_default_2");
+  const gboolean module_view_favorite = dt_conf_get_bool("darkroom/ui/iop_view_default");
  
   if(!(module->flags() & IOP_FLAGS_HIDDEN))
   {
