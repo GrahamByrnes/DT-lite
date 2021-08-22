@@ -896,7 +896,7 @@
     <shortdescription>scroll to darkroom modules when expanded/collapsed</shortdescription>
     <longdescription>when this option is enabled then darktable will try to scroll the module to the top of the visible list</longdescription>
   </dtconfig>
-    <dtconfig prefs="darkroom">
+    <dtconfig> <!--hidden since updating from darkroom causes segmentation fault-->
     <name>darkroom/ui/iop_view_default</name>
     <type>bool</type>
     <default>false</default>
