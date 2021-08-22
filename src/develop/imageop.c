@@ -1680,7 +1680,6 @@ static void dt_iop_gui_set_single_expanded(dt_iop_module_t *module, gboolean exp
 void dt_iop_gui_set_expanded(dt_iop_module_t *module, gboolean expanded, gboolean collapse_others)
 {
   if(!module->expander) return;
-
   // handle shiftclick on expander, hide all except this
   if(collapse_others)
   {
@@ -1899,7 +1898,6 @@ GtkWidget *dt_iop_gui_get_widget(dt_iop_module_t *module)
 
 GtkWidget *dt_iop_gui_get_pluginui(dt_iop_module_t *module)
 {
-  // return gtkframe (pluginui_frame)
   return dtgtk_expander_get_frame(DTGTK_EXPANDER(module->expander));
 }
 
@@ -2009,13 +2007,11 @@ gchar *dt_iop_get_localized_name(const gchar *op)
     GList *iop = g_list_first(darktable.iop);
 
     if(iop != NULL)
-    {
       do
       {
         dt_iop_module_so_t *module = (dt_iop_module_so_t *)iop->data;
         g_hash_table_insert(module_names, module->op, g_strdup(module->name()));
       } while((iop = g_list_next(iop)) != NULL);
-    }
   }
 
   if(op != NULL)
@@ -2272,8 +2268,8 @@ static gboolean _postponed_history_update(gpointer data)
   return FALSE; //cancel the timer
 }
 
-// queue a delayed call of the add_history function after user interaction, to capture parameter updates
-//(but not too often).
+// queue a delayed call of the add_history function after user interaction,
+// to capture parameter updates (but not too often).
 void dt_iop_queue_history_update(dt_iop_module_t *module, gboolean extend_prior)
 {
   if (module->timeout_handle && extend_prior)
