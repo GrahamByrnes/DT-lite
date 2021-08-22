@@ -998,7 +998,6 @@ static void _darkroom_ui_apply_style_popupmenu(GtkWidget *w, gpointer user_data)
     do
     {
       dt_style_t *style = (dt_style_t *)styles->data;
-
       char *items_string = dt_styles_get_item_list_as_string(style->name);
       gchar *tooltip = NULL;
 
@@ -1063,7 +1062,6 @@ static void _darkroom_ui_apply_style_popupmenu(GtkWidget *w, gpointer user_data)
                                G_CALLBACK(_darkroom_ui_apply_style_activate_callback),
                                (gpointer)g_strdup(style->name));
       gtk_widget_show(mi);
-
       g_free(items_string);
       g_free(tooltip);
       g_strfreev(split);
@@ -1083,7 +1081,6 @@ static void _second_window_quickbutton_clicked(GtkWidget *w, dt_develop_t *dev)
   if(dev->second_window.second_wnd && !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w)))
   {
     _darkroom_ui_second_window_write_config(dev->second_window.second_wnd);
-
     gtk_widget_destroy(dev->second_window.second_wnd);
     dev->second_window.second_wnd = NULL;
     dev->second_window.widget = NULL;
@@ -1255,7 +1252,9 @@ static gboolean _rawoverexposed_quickbutton_released(GtkWidget *widget, GdkEvent
 {
   dt_develop_t *d = (dt_develop_t *)user_data;
 
-  if(d->rawoverexposed.timeout > 0) g_source_remove(d->rawoverexposed.timeout);
+  if(d->rawoverexposed.timeout > 0)
+    g_source_remove(d->rawoverexposed.timeout);
+
   d->rawoverexposed.timeout = 0;
   return FALSE;
 }
@@ -1405,7 +1404,6 @@ static void display_intent_callback(GtkWidget *combo, gpointer user_data)
   dt_develop_t *d = (dt_develop_t *)user_data;
   const int pos = dt_bauhaus_combobox_get(combo);
   dt_iop_color_intent_t new_intent = darktable.color_profiles->display_intent;
-
   // we are not using the int value directly so it's robust against changes on lcms' side
   switch(pos)
   {
@@ -1468,6 +1466,7 @@ static void softproof_profile_callback(GtkWidget *combo, gpointer user_data)
   for(GList *profiles = darktable.color_profiles->profiles; profiles; profiles = g_list_next(profiles))
   {
     dt_colorspaces_color_profile_t *pp = (dt_colorspaces_color_profile_t *)profiles->data;
+
     if(pp->out_pos == pos)
     {
       if(darktable.color_profiles->softproof_type != pp->type
@@ -2091,10 +2090,8 @@ void enter(dt_view_t *self)
   // connect to ui pipe finished signal for redraw
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_UI_PIPE_FINISHED,
                             G_CALLBACK(_darkroom_ui_pipe_finish_signal_callback), (gpointer)self);
-
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_PREVIEW2_PIPE_FINISHED,
                             G_CALLBACK(_darkroom_ui_preview2_pipe_finish_signal_callback), (gpointer)self);
-
   dt_print(DT_DEBUG_CONTROL, "[run_job+] 11 %f in darkroom mode\n", dt_get_wtime());
   dt_develop_t *dev = (dt_develop_t *)self->data;
 
@@ -2117,15 +2114,14 @@ void enter(dt_view_t *self)
   dt_control_set_dev_zoom_x(0);
   dt_control_set_dev_zoom_y(0);
   dt_control_set_dev_closeup(0);
-
   // take a copy of the image struct for convenience.
   dt_dev_load_image(darktable.develop, dev->image_storage.id);
-
   // add IOP modules to plugin list
   // avoid triggering of events before plugin is ready:
   ++darktable.gui->reset;
   char option[1024];
   GList *modules = g_list_last(dev->iop);
+
   while(modules)
   {
     dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
@@ -2134,12 +2130,11 @@ void enter(dt_view_t *self)
     {
       module->gui_init(module);
       dt_iop_reload_defaults(module);
-
       /* add module to right panel */
       GtkWidget *expander = dt_iop_gui_get_expander(module);
       dt_ui_container_add_widget(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER, expander);
-
       snprintf(option, sizeof(option), "plugins/darkroom/%s/expanded", module->op);
+      
       if(dt_conf_get_bool(option))
         dt_iop_gui_set_expanded(module, TRUE, dt_conf_get_bool("darkroom/ui/single_module"));
       else
@@ -2165,12 +2160,14 @@ void enter(dt_view_t *self)
   if(active_plugin)
   {
     modules = dev->iop;
+
     while(modules)
     {
       dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
       if(!strcmp(module->op, active_plugin)) dt_iop_request_focus(module);
       modules = g_list_next(modules);
     }
+
     g_free(active_plugin);
   }
   // update module multishow state now modules are loaded
@@ -2183,7 +2180,6 @@ void enter(dt_view_t *self)
   // connect signal for filmstrip image activate
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_VIEWMANAGER_THUMBTABLE_ACTIVATE,
                             G_CALLBACK(_view_darkroom_filmstrip_activate_callback), self);
-
   dt_collection_hint_message(darktable.collection);
   dt_ui_scrollbars_show(darktable.gui->ui, dt_conf_get_bool("darkroom/ui/scrollbars"));
 
@@ -2250,7 +2246,6 @@ void leave(dt_view_t *self)
   dt_pthread_mutex_lock(&dev->preview_pipe_mutex);
   dt_pthread_mutex_lock(&dev->preview2_pipe_mutex);
   dt_pthread_mutex_lock(&dev->pipe_mutex);
-
   dev->gui_leaving = 1;
 
   dt_dev_pixelpipe_cleanup_nodes(dev->pipe);
@@ -2341,7 +2336,6 @@ void mouse_leave(dt_view_t *self)
 static int mouse_in_imagearea(dt_view_t *self, double x, double y)
 {
   dt_develop_t *dev = (dt_develop_t *)self->data;
-
   const int closeup = dt_control_get_dev_closeup();
   const int pwidth = (dev->pipe->output_backbuf_width<<closeup) / darktable.gui->ppd;
   const int pheight = (dev->pipe->output_backbuf_height<<closeup) / darktable.gui->ppd;
@@ -2421,6 +2415,7 @@ void mouse_moved(dt_view_t *self, double x, double y, double pressure, int which
     dt_control_queue_redraw();
     return;
   }
+
   x += offx;
   y += offy;
   // masks
@@ -2527,10 +2522,8 @@ int button_pressed(dt_view_t *self, double x, double y, double pressure, int whi
       // The default box will be a square with 1% of the image width
       const float delta_x = 0.01f;
       const float delta_y = delta_x * (float)dev->pipe->processed_width / (float)dev->pipe->processed_height;
-
       zoom_x += 0.5f;
       zoom_y += 0.5f;
-
       dev->gui_module->color_picker_point[0] = zoom_x;
       dev->gui_module->color_picker_point[1] = zoom_y;
 
@@ -2579,7 +2572,6 @@ int button_pressed(dt_view_t *self, double x, double y, double pressure, int whi
     // default is hardcoded this way
     dev->gui_module->color_picker_box[0] = dev->gui_module->color_picker_box[1] = .01f;
     dev->gui_module->color_picker_box[2] = dev->gui_module->color_picker_box[3] = .99f;
-
     dev->preview_status = DT_DEV_PIXELPIPE_DIRTY;
     dt_control_queue_redraw();
     return 1;
@@ -2689,8 +2681,8 @@ void scrolled(dt_view_t *self, double x, double y, int up, int state)
       float value = dt_bauhaus_slider_get(widget);
       float step = dt_bauhaus_slider_get_step(widget);
       float multiplier = dt_accel_get_slider_scale_multiplier();
-
       const float min_visible = powf(10.0f, -dt_bauhaus_slider_get_digits(widget));
+
       if(fabsf(step*multiplier) < min_visible)
         multiplier = min_visible / fabsf(step);
 
@@ -2715,6 +2707,7 @@ void scrolled(dt_view_t *self, double x, double y, int up, int state)
       }
 
     }
+
     g_signal_emit_by_name(G_OBJECT(self->dynamic_accel_current->widget), "value-changed");
     dt_accel_widget_toast(self->dynamic_accel_current->widget);
     return;
@@ -2750,7 +2743,9 @@ void scrolled(dt_view_t *self, double x, double y, int up, int state)
 
   if(up)
   {
-    if((scale == 1.0f || scale == 2.0f) && !((state & GDK_CONTROL_MASK) == GDK_CONTROL_MASK)) return;
+    if((scale == 1.0f || scale == 2.0f) && !((state & GDK_CONTROL_MASK) == GDK_CONTROL_MASK))
+      return;
+
     if(scale >= 16.0f)
       return;
     else if(scale >= 8.0f)
@@ -2789,7 +2784,6 @@ void scrolled(dt_view_t *self, double x, double y, int up, int state)
     scale = fitscale;
 
   scale = fmaxf(fminf(scale, 16.0f), 0.5 * fitscale);
-
   // for 200% zoom we want pixel doubling instead of interpolation
   if(scale > 15.9999f)
   {
@@ -3045,7 +3039,9 @@ static void second_window_scrolled(GtkWidget *widget, dt_develop_t *dev, double 
 
   if(up)
   {
-    if((scale == 1.0f || scale == 2.0f) && !((state & GDK_CONTROL_MASK) == GDK_CONTROL_MASK)) return;
+    if((scale == 1.0f || scale == 2.0f) && !((state & GDK_CONTROL_MASK) == GDK_CONTROL_MASK))
+      return;
+
     if(scale >= 16.0f)
       return;
     else if(scale >= 8.0f)
@@ -3122,7 +3118,6 @@ static void second_window_scrolled(GtkWidget *widget, dt_develop_t *dev, double 
   dt_second_window_set_dev_zoom(dev, zoom);
   dt_second_window_set_dev_zoom_x(dev, zoom_x);
   dt_second_window_set_dev_zoom_y(dev, zoom_y);
-
   // pipe needs to be reconstructed
   dev->preview2_status = DT_DEV_PIXELPIPE_DIRTY;
   gtk_widget_queue_draw(widget);
@@ -3179,9 +3174,7 @@ static gboolean _second_window_draw_callback(GtkWidget *widget, cairo_t *crf, dt
   gdk_window_get_device_position(gtk_widget_get_window(widget),
                                  gdk_seat_get_pointer(gdk_display_get_default_seat(gtk_widget_get_display(widget))),
                                  &pointerx, &pointery, NULL);
-
   second_window_expose(widget, dev, crf, width, height, pointerx, pointery);
-
   return TRUE;
 }
 
@@ -3294,7 +3287,6 @@ static void _darkroom_ui_second_window_init(GtkWidget *widget, dt_develop_t *dev
 {
   const int width = MAX(10, dt_conf_get_int("second_window/window_w"));
   const int height = MAX(10, dt_conf_get_int("second_window/window_h"));
-
   dev->second_window.width = width;
   dev->second_window.height = height;
 
@@ -3359,7 +3351,6 @@ static void _darkroom_display_second_window(dt_develop_t *dev)
     dev->second_window.height = -1;
     dev->second_window.second_wnd = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_name(dev->second_window.second_wnd, "second_window");
-
     _second_window_configure_ppd_dpi(dev);
 
     gtk_window_set_icon_name(GTK_WINDOW(dev->second_window.second_wnd), "darktable");
@@ -3392,7 +3383,6 @@ static void _darkroom_display_second_window(dt_develop_t *dev)
                      G_CALLBACK(_second_window_delete_callback), dev);
     g_signal_connect(G_OBJECT(dev->second_window.second_wnd), "key-press-event",
                      G_CALLBACK(_second_window_key_pressed_callback), dev);
-
     _darkroom_ui_second_window_init(dev->second_window.second_wnd, dev);
   }
 
