@@ -150,14 +150,12 @@ const char *name(dt_lib_module_t *self)
 
 const char **views(dt_lib_module_t *self)
 {
-  //static const char *v[] = {"lighttable", NULL};
   static const char *v[] = {"lighttable", "darkroom", NULL};
   return v;
 }
 
 uint32_t container(dt_lib_module_t *self)
 {
-  //return DT_UI_CONTAINER_PANEL_RIGHT_CENTER;
   const dt_view_t *cv = dt_view_manager_get_current_view(darktable.view_manager);
   if(cv->view((dt_view_t *)cv) == DT_VIEW_DARKROOM)
     return DT_UI_CONTAINER_PANEL_LEFT_CENTER;
