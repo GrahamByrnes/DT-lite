@@ -37,10 +37,10 @@ DT_MODULE(1)
 
 typedef struct dt_lib_module_view_t
 {
-  GtkButton *all_button;
   GtkButton *fav_button;
   gboolean choice;
   dt_pthread_mutex_t view_lock;
+  char *button_title[2];
 } dt_lib_module_view_t;
 
 const char *name(dt_lib_module_t *self)
@@ -67,8 +67,6 @@ int position()
 void _update(dt_lib_module_t *self)
 {
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), d->choice);
-  gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), !(d->choice));
   dt_conf_set_bool("darkroom/ui/iop_view_default", d->choice);
 }
 
@@ -76,18 +74,8 @@ void fav_button_clicked(GtkWidget *widget, gpointer user_data)
 {
   dt_lib_module_t *self = (dt_lib_module_t *)user_data;
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  d->choice = TRUE;
-  gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), d->choice);
-  gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), !(d->choice));
-}
-
-void all_button_clicked(GtkWidget *widget, gpointer user_data)
-{
-  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
-  dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  d->choice = FALSE;
-  gtk_widget_set_sensitive(GTK_WIDGET(d->all_button), d->choice);
-  gtk_widget_set_sensitive(GTK_WIDGET(d->fav_button), !(d->choice));
+  d->choice = !d->choice;
+  gtk_button_set_label(GTK_BUTTON(d->fav_button), d->button_title[!d->choice]);
 }
 
 void gui_update(dt_lib_module_t *self)
@@ -101,14 +89,13 @@ static void _lib_module_view_callback(gpointer instance, gpointer user_data)
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
   dt_pthread_mutex_lock(&d->view_lock);
   d->choice = dt_conf_get_bool("darkroom/ui/iop_view_default");
-  //dt_conf_set_bool("darkroom/ui/iop_view_default", d->choice);
   
   for(GList *iter = g_list_first(darktable.iop); iter; iter = g_list_next(iter))
   {
     dt_iop_module_t *module = (dt_iop_module_t *)iter->data;
     dt_iop_gui_update(module);
   }
-  
+
   dt_pthread_mutex_unlock(&d->view_lock);
 }
 
@@ -125,22 +112,18 @@ void gui_init(dt_lib_module_t *self)
   self->data = (void *)d;
   dt_pthread_mutex_init(&d->view_lock, 0);
   d->choice = dt_conf_get_bool("darkroom/ui/iop_view_default");
+  d->button_title[0]="show all";
+  d->button_title[1]="only favourites";
   self->widget = gtk_grid_new();
   GtkGrid *grid = GTK_GRID(self->widget);
   gtk_grid_set_column_homogeneous(grid, TRUE);
 
-  d->fav_button = GTK_BUTTON(gtk_button_new_with_label(_("view favorites")));
+  d->fav_button = GTK_BUTTON(gtk_button_new_with_label(d->button_title[!d->choice]));
   ellipsize_button(d->fav_button);
-  gtk_widget_set_tooltip_text(GTK_WIDGET(d->fav_button), _("show favorite modules"));
-  gtk_grid_attach(grid, GTK_WIDGET(d->fav_button), 0, 0, 3, 1);
-
-  d->all_button = GTK_BUTTON(gtk_button_new_with_label(_("view all")));
-  ellipsize_button(d->all_button);
-  gtk_widget_set_tooltip_text(GTK_WIDGET(d->all_button), _("show all modules"));
-  gtk_grid_attach(grid, GTK_WIDGET(d->all_button), 3, 0, 3, 1);
+  gtk_widget_set_tooltip_text(GTK_WIDGET(d->fav_button), _("choose all modules or favourites"));
+  gtk_grid_attach(grid, GTK_WIDGET(d->fav_button), 0, 0, 1, 1);
 
   g_signal_connect(G_OBJECT(d->fav_button), "clicked", G_CALLBACK(fav_button_clicked), self);
-  g_signal_connect(G_OBJECT(d->all_button), "clicked", G_CALLBACK(all_button_clicked), self);
   darktable.view_manager->proxy.module_view.module = self;
   darktable.view_manager->proxy.module_view.update = _lib_modulelist_gui_update;
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_INITIALIZE,
