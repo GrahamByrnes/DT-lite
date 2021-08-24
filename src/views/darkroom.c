@@ -743,7 +743,6 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   if(darktable.develop->gui_module)
     active_plugin = g_strdup(darktable.develop->gui_module->op);
 
-  dt_conf_set_int("plugins/darkroom/groups", dt_dev_modulegroups_get(dev));
   dt_iop_request_focus(NULL);
   g_assert(dev->gui_attached);
   // commit image ops to db
@@ -879,8 +878,6 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   // set the module list order
   dt_dev_reorder_gui_module_list(dev);
   dt_dev_masks_list_change(dev);
-  // last set the group to update visibility of iop modules for new pipe 
-  dt_dev_modulegroups_set(dev, dt_conf_get_int("plugins/darkroom/groups"));
   // cleanup histograms */
   g_list_foreach(dev->iop, (GFunc)dt_iop_cleanup_histogram, (gpointer)NULL);
   // make signals work again, we can't restore the active_plugin while signals
@@ -2152,8 +2149,6 @@ void enter(dt_view_t *self)
   dt_dev_pop_history_items(dev, dev->history_end);
   // ensure that filmstrip shows current image
   dt_thumbtable_set_offset_image(dt_ui_thumbtable(darktable.gui->ui), dev->image_storage.id, TRUE);
-  // switch on groups as they were last time:
-  dt_dev_modulegroups_set(dev, dt_conf_get_int("plugins/darkroom/groups"));
   // get last active plugin:
   gchar *active_plugin = dt_conf_get_string("plugins/darkroom/active");
 
@@ -2205,8 +2200,6 @@ void leave(dt_view_t *self)
                                (gpointer)self);
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_darkroom_ui_preview2_pipe_finish_signal_callback),
                                (gpointer)self);
-  // store groups for next time:
-  dt_conf_set_int("plugins/darkroom/groups", dt_dev_modulegroups_get(darktable.develop));
   // store last active plugin:
   if(darktable.develop->gui_module)
     dt_conf_set_string("plugins/darkroom/active", darktable.develop->gui_module->op);

@@ -503,8 +503,6 @@ void dt_ioppr_resync_modules_order(dt_develop_t *dev)
     dt_iop_module_t *mod = (dt_iop_module_t *)(modules->data);
     GList *next = g_list_next(modules);
 
-    // modules with iop_order set to INT_MAX we keep them as they will be removed (non visible)
-    // _lib_modulegroups_update_iop_visibility.
     if(mod->iop_order != INT_MAX)
       mod->iop_order = dt_ioppr_get_iop_order(dev->iop_order_list, mod->op, mod->multi_priority);
 

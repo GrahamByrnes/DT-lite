@@ -447,8 +447,7 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
     }
   }
 
-  /* enter view. crucially, do this before initing the plugins below,
-      as e.g. modulegroups requires the dr stuff to be inited. */
+  // enter view. crucially, do this before initing the plugins below
   if(new_view->enter)
     new_view->enter(new_view);
   /* update the scrollbars */

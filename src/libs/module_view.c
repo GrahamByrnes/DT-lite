@@ -70,14 +70,6 @@ void _update(dt_lib_module_t *self)
   dt_conf_set_bool("darkroom/ui/iop_view_default", d->choice);
 }
 
-void fav_button_clicked(GtkWidget *widget, gpointer user_data)
-{
-  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
-  dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  d->choice = !d->choice;
-  gtk_button_set_label(GTK_BUTTON(d->fav_button), d->button_title[!d->choice]);
-}
-
 void gui_update(dt_lib_module_t *self)
 {
   _update(self);
@@ -99,10 +91,18 @@ static void _lib_module_view_callback(gpointer instance, gpointer user_data)
   dt_pthread_mutex_unlock(&d->view_lock);
 }
 
-static void _lib_modulelist_gui_update(dt_lib_module_t *self)
+static void _lib_module_view_gui_update(dt_lib_module_t *self)
 {
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
   dt_conf_set_bool("darkroom/ui/iop_view_default", d->choice);
+}
+
+void fav_button_clicked(GtkWidget *widget, gpointer user_data)
+{
+  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
+  dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
+  d->choice = !d->choice;
+  gtk_button_set_label(GTK_BUTTON(d->fav_button), d->button_title[!d->choice]);
 }
 
 #define ellipsize_button(button) gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(button))), PANGO_ELLIPSIZE_END);
@@ -125,7 +125,7 @@ void gui_init(dt_lib_module_t *self)
 
   g_signal_connect(G_OBJECT(d->fav_button), "clicked", G_CALLBACK(fav_button_clicked), self);
   darktable.view_manager->proxy.module_view.module = self;
-  darktable.view_manager->proxy.module_view.update = _lib_modulelist_gui_update;
+  darktable.view_manager->proxy.module_view.update = _lib_module_view_gui_update;
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_INITIALIZE,
                             G_CALLBACK(_lib_module_view_callback), self);
   _update(self);

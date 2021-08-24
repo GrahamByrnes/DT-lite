@@ -551,7 +551,6 @@ static void _pop_undo(gpointer user_data, dt_undo_type_t type, dt_undo_data_t da
     dt_dev_write_history(dev);
     dt_dev_reload_history_items(dev);
     dt_ioppr_resync_modules_order(dev);
-    dt_dev_modulegroups_set(darktable.develop, dt_dev_modulegroups_get(darktable.develop));
   }
 }
 
@@ -699,7 +698,6 @@ static void _lib_history_truncate(gboolean compress)
 
   dt_dev_reload_history_items(darktable.develop);
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE);
-  dt_dev_modulegroups_set(darktable.develop, dt_dev_modulegroups_get(darktable.develop));
 }
 
 static void _lib_history_compress_clicked_callback(GtkWidget *widget, GdkEventButton *e, gpointer user_data)
@@ -720,7 +718,7 @@ static void _lib_history_button_clicked_callback(GtkWidget *widget, gpointer use
   dt_lib_module_t *self = (dt_lib_module_t *)user_data;
   dt_lib_history_t *d = (dt_lib_history_t *)self->data;
   reset = 1;
-  /* deactivate all toggle buttons */
+  // deactivate all toggle buttons
   GList *children = gtk_container_get_children(GTK_CONTAINER(d->history_box));
 
   for(GList *l = children; l != NULL; l = g_list_next(l))
@@ -740,14 +738,13 @@ static void _lib_history_button_clicked_callback(GtkWidget *widget, gpointer use
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_WILL_CHANGE,
                           dt_history_duplicate(darktable.develop->history), darktable.develop->history_end,
                           dt_ioppr_iop_order_copy_deep(darktable.develop->iop_order_list));
-  /* revert to given history item. */
+  // revert to given history item
   const int num = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "history-number"));
   dt_dev_pop_history_items(darktable.develop, num);
   // set the module list order
   dt_dev_reorder_gui_module_list(darktable.develop);
-  /* signal history changed */
+  // signal history changed
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE);
-  dt_dev_modulegroups_set(darktable.develop, dt_dev_modulegroups_get(darktable.develop));
 }
 
 static void _lib_history_create_style_button_clicked_callback(GtkWidget *widget, gpointer user_data)
@@ -788,7 +785,6 @@ void gui_reset(dt_lib_module_t *self)
                           dt_ioppr_iop_order_copy_deep(darktable.develop->iop_order_list));
     dt_history_delete_on_image_ext(imgid, FALSE);
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE);
-    dt_dev_modulegroups_set(darktable.develop, dt_dev_modulegroups_get(darktable.develop));
     dt_control_queue_redraw_center();
   }
 }

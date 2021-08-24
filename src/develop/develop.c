@@ -108,10 +108,8 @@ void dt_dev_init(dt_develop_t *dev, int32_t gui_attached)
   dev->alliop = NULL;
 
   dev->allprofile_info = NULL;
-
   dev->iop_order_version = 0;
   dev->iop_order_list = NULL;
-
   dev->proxy.exposure = NULL;
 
   dev->rawoverexposed.enabled = FALSE;
@@ -143,58 +141,57 @@ void dt_dev_cleanup(dt_develop_t *dev)
   dt_pthread_mutex_destroy(&dev->pipe_mutex);
   dt_pthread_mutex_destroy(&dev->preview_pipe_mutex);
   dt_pthread_mutex_destroy(&dev->preview2_pipe_mutex);
+
   if(dev->pipe)
   {
     dt_dev_pixelpipe_cleanup(dev->pipe);
     free(dev->pipe);
   }
+
   if(dev->preview_pipe)
   {
     dt_dev_pixelpipe_cleanup(dev->preview_pipe);
     free(dev->preview_pipe);
   }
+
   if(dev->preview2_pipe)
   {
     dt_dev_pixelpipe_cleanup(dev->preview2_pipe);
     free(dev->preview2_pipe);
   }
+
   while(dev->history)
   {
     dt_dev_free_history_item(((dt_dev_history_item_t *)dev->history->data));
     dev->history = g_list_delete_link(dev->history, dev->history);
   }
+
   while(dev->iop)
   {
     dt_iop_cleanup_module((dt_iop_module_t *)dev->iop->data);
     free(dev->iop->data);
     dev->iop = g_list_delete_link(dev->iop, dev->iop);
   }
+
   while(dev->alliop)
   {
     dt_iop_cleanup_module((dt_iop_module_t *)dev->alliop->data);
     free(dev->alliop->data);
     dev->alliop = g_list_delete_link(dev->alliop, dev->alliop);
   }
+
   g_list_free_full(dev->iop_order_list, free);
-  /*while(dev->allprofile_info)
-  {
-    dt_ioppr_cleanup_profile_info((dt_iop_order_iccprofile_info_t *)dev->allprofile_info->data);
-    free(dev->allprofile_info->data);
-    dev->allprofile_info = g_list_delete_link(dev->allprofile_info, dev->allprofile_info);
-  }*/
   dt_pthread_mutex_destroy(&dev->history_mutex);
   free(dev->histogram_pre_tonecurve);
   free(dev->histogram_pre_levels);
 
   g_list_free_full(dev->forms, (void (*)(void *))dt_masks_free_form);
   g_list_free_full(dev->allforms, (void (*)(void *))dt_masks_free_form);
-
   g_list_free_full(dev->proxy.exposure, g_free);
 
   dt_conf_set_int("darkroom/ui/rawoverexposed/mode", dev->rawoverexposed.mode);
   dt_conf_set_int("darkroom/ui/rawoverexposed/colorscheme", dev->rawoverexposed.colorscheme);
   dt_conf_set_float("darkroom/ui/rawoverexposed/threshold", dev->rawoverexposed.threshold);
-
   dt_conf_set_int("darkroom/ui/overexposed/colorscheme", dev->overexposed.colorscheme);
   dt_conf_set_float("darkroom/ui/overexposed/lower", dev->overexposed.lower);
   dt_conf_set_float("darkroom/ui/overexposed/upper", dev->overexposed.upper);
@@ -272,7 +269,6 @@ void dt_dev_process_preview_job(dt_develop_t *dev)
   dt_control_toast_busy_enter();
   dev->preview_pipe->input_timestamp = dev->timestamp;
   dev->preview_status = DT_DEV_PIXELPIPE_RUNNING;
-
   // lock if there, issue a background load, if not (best-effort for mip f).
   dt_mipmap_buffer_t buf;
   dt_mipmap_cache_get(darktable.mipmap_cache, &buf, dev->image_storage.id, DT_MIPMAP_F, DT_MIPMAP_BEST_EFFORT,
@@ -296,7 +292,6 @@ void dt_dev_process_preview_job(dt_develop_t *dev)
     dt_dev_pixelpipe_flush_caches(dev->preview_pipe);
     dev->preview_loading = FALSE;
   }
-
   // if raw loaded, get new mipf
   if(dev->preview_input_changed)
   {
@@ -306,6 +301,7 @@ void dt_dev_process_preview_job(dt_develop_t *dev)
 
 // always process the whole downsampled mipf buffer, to allow for fast scrolling and mip4 write-through.
 restart:
+
   if(dev->gui_leaving)
   {
     dt_control_log_busy_leave();
@@ -320,6 +316,7 @@ restart:
   dt_times_t start;
   dt_get_times(&start);
   dt_dev_pixelpipe_change(dev->preview_pipe, dev);
+
   if(dt_dev_pixelpipe_process(
          dev->preview_pipe, dev, 0, 0, dev->preview_pipe->processed_width * dev->preview_downsampling,
          dev->preview_pipe->processed_height * dev->preview_downsampling, dev->preview_downsampling))
@@ -338,10 +335,8 @@ restart:
   }
 
   dev->preview_status = DT_DEV_PIXELPIPE_VALID;
-
   dt_show_times(&start, "[dev_process_preview] pixel pipeline processing");
   dt_dev_average_delay_update(&start, &dev->preview_average_delay);
-
   // if a widget needs to be redraw there's the DT_SIGNAL_*_PIPE_FINISHED signals
   dt_control_log_busy_leave();
   dt_control_toast_busy_leave();
@@ -421,13 +416,11 @@ restart:
   }
 
   const dt_dev_pixelpipe_change_t pipe_changed = dev->pipe->changed;
-
   // adjust pipeline according to changed flag set by {add,pop}_history_item.
   // this locks dev->history_mutex.
   dt_times_t start;
   dt_get_times(&start);
   dt_dev_pixelpipe_change(dev->preview2_pipe, dev);
-
   const dt_dev_zoom_t zoom = dt_second_window_get_dev_zoom(dev);
   const int closeup = dt_second_window_get_dev_closeup(dev);
   float zoom_x = dt_second_window_get_dev_zoom_x(dev);
@@ -444,6 +437,7 @@ restart:
   const float scale = dt_second_window_get_zoom_scale(dev, zoom, 1.0f, 0) * dev->second_window.ppd;
   int window_width = dev->second_window.width * dev->second_window.ppd;
   int window_height = dev->second_window.height * dev->second_window.ppd;
+
   if(closeup)
   {
     window_width /= 1 << closeup;
@@ -473,7 +467,6 @@ restart:
   dev->preview2_pipe->backbuf_scale = scale;
   dev->preview2_pipe->backbuf_zoom_x = zoom_x;
   dev->preview2_pipe->backbuf_zoom_y = zoom_y;
-
   dev->preview2_status = DT_DEV_PIXELPIPE_VALID;
 
   dt_show_times(&start, "[dev_process_preview2] pixel pipeline processing");
@@ -836,6 +829,7 @@ static void _dev_add_history_item_ext(dt_develop_t *dev, dt_iop_module_t *module
     // ((dt_dev_history_item_t *)history->data)->module->op);
     dev->history_end++;
     hist = (dt_dev_history_item_t *)calloc(1, sizeof(dt_dev_history_item_t));
+
     if(enable)
     {
       module->enabled = TRUE;
@@ -847,6 +841,7 @@ static void _dev_add_history_item_ext(dt_develop_t *dev, dt_iop_module_t *module
           --darktable.gui->reset;
         }
     }
+
     g_strlcpy(hist->op_name, module->op, sizeof(hist->op_name));
     hist->focus_hash = dev->focus_hash;
     hist->enabled = module->enabled;
@@ -866,6 +861,7 @@ static void _dev_add_history_item_ext(dt_develop_t *dev, dt_iop_module_t *module
       hist->forms = NULL;
 
     dev->history = g_list_append(dev->history, hist);
+
     if(!no_image)
     {
       dev->pipe->changed |= DT_DEV_PIPE_SYNCH;
@@ -882,21 +878,20 @@ static void _dev_add_history_item_ext(dt_develop_t *dev, dt_iop_module_t *module
 
     if(module->flags() & IOP_FLAGS_SUPPORTS_BLENDING)
       memcpy(hist->blend_params, module->blend_params, sizeof(dt_develop_blend_params_t));
-
     // if the user changed stuff and the module is still not enabled, do it:
     if(!hist->enabled && !module->enabled)
     {
       module->enabled = 1;
+
       if(!no_image)
-      {
         if(module->off)
         {
           ++darktable.gui->reset;
           dt_iop_gui_set_enable_button(module);
           --darktable.gui->reset;
         }
-      }
     }
+
     hist->iop_order = module->iop_order;
     hist->multi_priority = module->multi_priority;
     memcpy(hist->multi_name, module->multi_name, sizeof(module->multi_name));
@@ -907,6 +902,7 @@ static void _dev_add_history_item_ext(dt_develop_t *dev, dt_iop_module_t *module
       g_list_free_full(hist->forms, (void (*)(void *))dt_masks_free_form);
       hist->forms = dt_masks_dup_forms_deep(dev->forms, NULL);
     }
+
     if(!no_image)
     {
       dev->pipe->changed |= DT_DEV_PIPE_TOP_CHANGED;
@@ -965,8 +961,10 @@ void dt_dev_add_history_item(dt_develop_t *dev, dt_iop_module_t *module, gboolea
   {
     /* signal that history has changed */
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE);
-    if(tag_change) dt_control_signal_raise(darktable.signals, DT_SIGNAL_TAG_CHANGED);
-    /* redraw */
+
+    if(tag_change)
+      dt_control_signal_raise(darktable.signals, DT_SIGNAL_TAG_CHANGED);
+    // redraw
     dt_control_queue_redraw_center();
   }
 }
@@ -1282,7 +1280,6 @@ void dt_dev_write_history_ext(dt_develop_t *dev, const int imgid)
   }
   if (DT_IOP_ORDER_INFO)
     fprintf(stderr,"\nvvvv\n");
-
   // update history end
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "UPDATE main.images SET history_end = ?1 WHERE id = ?2", -1,
@@ -1291,9 +1288,7 @@ void dt_dev_write_history_ext(dt_develop_t *dev, const int imgid)
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, imgid);
   sqlite3_step(stmt);
   sqlite3_finalize(stmt);
-
   // write the current iop-order-list for this image
-
   dt_ioppr_write_iop_order_list(dev->iop_order_list, imgid);
   dt_history_hash_write_from_history(imgid, DT_HISTORY_HASH_CURRENT);
 
@@ -1384,7 +1379,7 @@ static gboolean _dev_auto_apply_presets(dt_develop_t *dev)
            "       AND ?9 BETWEEN aperture_min AND aperture_max"
            "       AND ?10 BETWEEN focal_length_min AND focal_length_max"
            "       AND (format = 0 OR (format&?11 != 0 AND ~format&?12 != 0))"
-           "       AND operation NOT IN ('ioporder', 'modulelist', 'metadata', 'export', 'tagging', 'collect')"
+           "       AND operation NOT IN ('ioporder', 'metadata', 'export', 'tagging', 'collect')"
            " OR (name = ?13)"
            " ORDER BY writeprotect DESC, LENGTH(model), LENGTH(maker), LENGTH(lens)",
            preset_table[legacy]);
@@ -1884,7 +1879,7 @@ void dt_dev_reprocess_all(dt_develop_t *dev)
     // invalidate buffers and force redraw of darkroom
     dt_dev_invalidate_all(dev);
 
-    /* redraw */
+    // redraw
     dt_control_queue_redraw_center();
   }
 }
@@ -1900,7 +1895,7 @@ void dt_dev_reprocess_center(dt_develop_t *dev)
     // invalidate buffers and force redraw of darkroom
     dt_dev_invalidate_all(dev);
 
-    /* redraw */
+    // redraw
     dt_control_queue_redraw_center();
   }
 }
@@ -1950,7 +1945,6 @@ void dt_dev_check_zoom_bounds(dt_develop_t *dev, float *zoom_x, float *zoom_y, d
 void dt_dev_get_processed_size(const dt_develop_t *dev, int *procw, int *proch)
 {
   if(!dev) return;
-
   // if pipe is processed, lets return its size
   if(dev->pipe && dev->pipe->processed_width)
   {
@@ -1958,7 +1952,6 @@ void dt_dev_get_processed_size(const dt_develop_t *dev, int *procw, int *proch)
     *proch = dev->pipe->processed_height;
     return;
   }
-
   // fallback on preview pipe
   if(dev->preview_pipe && dev->preview_pipe->processed_width)
   {
@@ -1967,7 +1960,6 @@ void dt_dev_get_processed_size(const dt_develop_t *dev, int *procw, int *proch)
     *proch = scale * dev->preview_pipe->processed_height;
     return;
   }
-
   // no processed pipes, lets return 0 size
   *procw = *proch = 0;
   return;
@@ -2011,10 +2003,10 @@ gint dt_dev_exposure_hooks_sort(gconstpointer a, gconstpointer b)
   const dt_dev_proxy_exposure_t *bi = (const dt_dev_proxy_exposure_t *)b;
   const dt_iop_module_t *am = (const dt_iop_module_t *)ai->module;
   const dt_iop_module_t *bm = (const dt_iop_module_t *)bi->module;
-  // if(am->priority == bm->priority) return bm->multi_priority - am->multi_priority;
-  // return am->priority - bm->priority;
+
   if(am->iop_order < bm->iop_order)
     return -1;
+
   if(am->iop_order > bm->iop_order)
     return 1;
 
@@ -2033,7 +2025,7 @@ static dt_dev_proxy_exposure_t *find_last_exposure_instance(dt_develop_t *dev)
 gboolean dt_dev_exposure_hooks_available(dt_develop_t *dev)
 {
   dt_dev_proxy_exposure_t *instance = find_last_exposure_instance(dev);
-  /* check if exposure iop module has registered its hooks */
+  // check if exposure iop module has registered its hooks
   if(instance && instance->module && instance->set_black && instance->get_black && instance->set_exposure
      && instance->get_exposure)
     return TRUE;
@@ -2093,68 +2085,24 @@ float dt_dev_exposure_get_black(dt_develop_t *dev)
   return 0.0;
 }
 
-gboolean dt_dev_modulegroups_available(dt_develop_t *dev)
-{
-  if(dev->proxy.modulegroups.module && dev->proxy.modulegroups.set && dev->proxy.modulegroups.get)
-    return TRUE;
-
-  return FALSE;
-}
-
-void dt_dev_modulegroups_set(dt_develop_t *dev, uint32_t group)
-{
-  if(dev->proxy.modulegroups.module && dev->proxy.modulegroups.set && dev->first_load == FALSE)
-    dev->proxy.modulegroups.set(dev->proxy.modulegroups.module, group);
-}
-
-uint32_t dt_dev_modulegroups_get(dt_develop_t *dev)
-{
-  if(dev->proxy.modulegroups.module && dev->proxy.modulegroups.get)
-    return dev->proxy.modulegroups.get(dev->proxy.modulegroups.module);
-
-  return 0;
-}
-
-gboolean dt_dev_modulegroups_test(dt_develop_t *dev, uint32_t group, uint32_t iop_group)
-{
-  if(dev->proxy.modulegroups.module && dev->proxy.modulegroups.test)
-    return dev->proxy.modulegroups.test(dev->proxy.modulegroups.module, group, iop_group);
-  return FALSE;
-}
-
-void dt_dev_modulegroups_switch(dt_develop_t *dev, dt_iop_module_t *module)
-{
-  if(dev->proxy.modulegroups.module && dev->proxy.modulegroups.switch_group && dev->first_load == FALSE)
-    dev->proxy.modulegroups.switch_group(dev->proxy.modulegroups.module, module);
-}
-
-void dt_dev_modulegroups_update_visibility(dt_develop_t *dev)
-{
-  if(dev->proxy.modulegroups.module && dev->proxy.modulegroups.switch_group && dev->first_load == FALSE)
-    dev->proxy.modulegroups.update_visibility(dev->proxy.modulegroups.module);
-}
-
-void dt_dev_modulegroups_search_text_focus(dt_develop_t *dev)
-{
-  if(dev->proxy.modulegroups.module && dev->proxy.modulegroups.search_text_focus && dev->first_load == 0)
-    dev->proxy.modulegroups.search_text_focus(dev->proxy.modulegroups.module);
-}
-
 void dt_dev_masks_list_change(dt_develop_t *dev)
 {
   if(dev->proxy.masks.module && dev->proxy.masks.list_change)
     dev->proxy.masks.list_change(dev->proxy.masks.module);
 }
+
 void dt_dev_masks_list_update(dt_develop_t *dev)
 {
   if(dev->proxy.masks.module && dev->proxy.masks.list_update)
     dev->proxy.masks.list_update(dev->proxy.masks.module);
 }
+
 void dt_dev_masks_list_remove(dt_develop_t *dev, int formid, int parentid)
 {
   if(dev->proxy.masks.module && dev->proxy.masks.list_remove)
     dev->proxy.masks.list_remove(dev->proxy.masks.module, formid, parentid);
 }
+
 void dt_dev_masks_selection_change(dt_develop_t *dev, int selectid, int throw_event)
 {
   if(dev->proxy.masks.module && dev->proxy.masks.selection_change)
@@ -2177,39 +2125,37 @@ void dt_dev_average_delay_update(const dt_times_t *start, uint32_t *average_dela
 {
   dt_times_t end;
   dt_get_times(&end);
-
   *average_delay += ((end.clock - start->clock) * 1000 / DT_DEV_AVERAGE_DELAY_COUNT
                      - *average_delay / DT_DEV_AVERAGE_DELAY_COUNT);
 }
 
-
 /** duplicate an existing module */
 dt_iop_module_t *dt_dev_module_duplicate(dt_develop_t *dev, dt_iop_module_t *base)
 {
-  // we create the new module
   dt_iop_module_t *module = (dt_iop_module_t *)calloc(1, sizeof(dt_iop_module_t));
-  if(dt_iop_load_module(module, base->so, base->dev)) return NULL;
-  module->instance = base->instance;
+  if(dt_iop_load_module(module, base->so, base->dev))
+    return NULL;
 
+  module->instance = base->instance;
   // we set the multi-instance priority and the iop order
   GList *modules = g_list_first(base->dev->iop);
   int pmax = 0;
+
   while(modules)
   {
     dt_iop_module_t *mod = (dt_iop_module_t *)modules->data;
+
     if(mod->instance == base->instance)
-    {
-      if(pmax < mod->multi_priority) pmax = mod->multi_priority;
-    }
+      if(pmax < mod->multi_priority)
+        pmax = mod->multi_priority;
+
     modules = g_list_next(modules);
   }
   // create a unique multi-priority
   pmax += 1;
   dt_iop_update_multi_priority(module, pmax);
-
   // add this new module position into the iop-order-list
   dt_ioppr_insert_module_instance(dev, module);
-
   // since we do not rename the module we need to check that an old module does not have the same name. Indeed
   // the multi_priority
   // are always rebased to start from 0, to it may be the case that the same multi_name be generated when
@@ -2241,8 +2187,8 @@ dt_iop_module_t *dt_dev_module_duplicate(dt_develop_t *dev, dt_iop_module_t *bas
       pname++;
     else
       break;
-  } while(1);
 
+  } while(1);
   // the multi instance name
   g_strlcpy(module->multi_name, mname, sizeof(module->multi_name));
   // we insert this module into dev->iop
@@ -2313,10 +2259,10 @@ void dt_dev_module_remove(dt_develop_t *dev, dt_iop_module_t *module)
 
   if(dev->gui_attached && del)
   {
-    /* signal that history has changed */
+    // signal that history has changed
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE);
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_MODULE_REMOVE, module);
-    /* redraw */
+    // redraw
     dt_control_queue_redraw_center();
   }
 }
@@ -2373,7 +2319,7 @@ void dt_dev_modules_update_multishow(dt_develop_t *dev)
 gchar *dt_history_item_get_name(const struct dt_iop_module_t *module)
 {
   gchar *label;
-  /* create a history button and add to box */
+  // create a history button and add to box
   if(!module->multi_name[0] || strcmp(module->multi_name, "0") == 0)
     label = g_strdup_printf("%s", module->name());
   else
@@ -2385,7 +2331,7 @@ gchar *dt_history_item_get_name(const struct dt_iop_module_t *module)
 gchar *dt_history_item_get_name_html(const struct dt_iop_module_t *module)
 {
   gchar *label;
-  /* create a history button and add to box */
+  // create a history button and add to box
   if(!module->multi_name[0] || strcmp(module->multi_name, "0") == 0)
     label = g_strdup_printf("%s", module->name());
   else

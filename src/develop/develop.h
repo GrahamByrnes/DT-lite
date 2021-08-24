@@ -196,36 +196,15 @@ typedef struct dt_develop_t
   float full_preview_last_zoom_x, full_preview_last_zoom_y;
   struct dt_iop_module_t *full_preview_last_module;
   int full_preview_masks_state;
-
   // darkroom border size
   int32_t border_size;
   int32_t orig_width, orig_height;
-
   /* proxy for communication between plugins and develop/darkroom */
   struct
   {
     // list of exposure iop instances, with plugin hooks, used by histogram dragging functions
     // each element is dt_dev_proxy_exposure_t
     GList *exposure;
-
-    // modulegroups plugin hooks
-    struct
-    {
-      struct dt_lib_module_t *module;
-      /* switch module group */
-      void (*set)(struct dt_lib_module_t *self, uint32_t group);
-      /* get current module group */
-      uint32_t (*get)(struct dt_lib_module_t *self);
-      /* test if iop group flags matches modulegroup */
-      gboolean (*test)(struct dt_lib_module_t *self, uint32_t group, uint32_t iop_group);
-      /* switch to modulegroup */
-      void (*switch_group)(struct dt_lib_module_t *self, struct dt_iop_module_t *module);
-      /* update modulegroup visibility */
-      void (*update_visibility)(struct dt_lib_module_t *self);
-      /* set focus to the search module text box */
-      void (*search_text_focus)(struct dt_lib_module_t *self);
-    } modulegroups;
-
     // snapshots plugin hooks
     struct
     {
@@ -234,7 +213,6 @@ typedef struct dt_develop_t
       gboolean request;
       const gchar *filename;
     } snapshot;
-
     // masks plugin hooks
     struct
     {
@@ -248,55 +226,46 @@ typedef struct dt_develop_t
     } masks;
 
   } proxy;
-
   // for the overexposure indicator
   struct
   {
     guint timeout;
     GtkWidget *floating_window, *button; // yes, having gtk stuff in here is ugly. live with it.
-
     gboolean enabled;
     dt_dev_overexposed_colorscheme_t colorscheme;
     float lower;
     float upper;
   } overexposed;
-
   // for the raw overexposure indicator
   struct
   {
     guint timeout;
     GtkWidget *floating_window, *button; // yes, having gtk stuff in here is ugly. live with it.
-
     gboolean enabled;
     dt_dev_rawoverexposed_mode_t mode;
     dt_dev_rawoverexposed_colorscheme_t colorscheme;
     float threshold;
   } rawoverexposed;
-
   // for the overlay color indicator
   struct
   {
     guint timeout;
     GtkWidget *floating_window, *button, *colors; // yes, having gtk stuff in here is ugly. live with it.
-
     gboolean enabled;
     dt_dev_overlay_colors_t color;
   } overlay_color;
-
   // ISO 12646-compliant colour assessment conditions
   struct
   {
     GtkWidget *button; // yes, ugliness is the norm. what did you expect ?
     gboolean enabled;
   } iso_12646;
-
   // the display profile related things (softproof, gamut check, profiles ...)
   struct
   {
     guint timeout;
     GtkWidget *floating_window, *softproof_button, *gamut_button;
   } profile;
-
   // second darkroom window related things
   struct
   {
@@ -309,11 +278,9 @@ typedef struct dt_develop_t
     int closeup;
     float zoom_x, zoom_y;
     float zoom_scale;
-
     double button_x;
     double button_y;
   } second_window;
-
   int mask_form_selected_id; // select a mask inside an iop
   gboolean darkroom_skip_mouse_events; // skip mouse events for masks
 } dt_develop_t;
@@ -386,25 +353,7 @@ void dt_dev_exposure_set_black(dt_develop_t *dev, const float black);
 /** get exposure black level */
 float dt_dev_exposure_get_black(dt_develop_t *dev);
 
-/*
- * modulegroups plugin hooks
- */
-/** check if modulegroups hooks are available */
-gboolean dt_dev_modulegroups_available(dt_develop_t *dev);
-/** switch to modulegroup of module */
-void dt_dev_modulegroups_switch(dt_develop_t *dev, struct dt_iop_module_t *module);
-/** update modulegroup visibility */
-void dt_dev_modulegroups_update_visibility(dt_develop_t *dev);
-/** set the focus to modulegroup search text */
-void dt_dev_modulegroups_search_text_focus(dt_develop_t *dev);
-/** set the active modulegroup */
-void dt_dev_modulegroups_set(dt_develop_t *dev, uint32_t group);
-/** get the active modulegroup */
-uint32_t dt_dev_modulegroups_get(dt_develop_t *dev);
-/** test if iop group flags matches modulegroup */
-gboolean dt_dev_modulegroups_test(dt_develop_t *dev, uint32_t group, uint32_t iop_group);
-/** reorder the module list */
-void dt_dev_reorder_gui_module_list(dt_develop_t *dev);
+void dt_dev_reorder_gui_module_list(dt_develop_t *dev); /* *** */
 
 /** request snapshot */
 void dt_dev_snapshot_request(dt_develop_t *dev, const char *filename);

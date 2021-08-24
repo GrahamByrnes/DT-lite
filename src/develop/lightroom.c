@@ -1387,10 +1387,9 @@ void dt_lightroom_import(int imgid, dt_develop_t *dev, gboolean iauto)
 
     if(!iauto)
     {
-      /* signal history changed */
+      // signal history changed
       dt_dev_reload_history_items(dev);
-      dt_dev_modulegroups_set(darktable.develop, dt_dev_modulegroups_get(darktable.develop));
-      /* update xmp file */
+      // update xmp file
       dt_image_synch_xmp(imgid);
       dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE);
     }

@@ -860,8 +860,6 @@ dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_param
   }
 
   dt_iop_gui_update(module);
-  dt_dev_modulegroups_update_visibility(darktable.develop);
-
   return module;
 }
 
@@ -1036,9 +1034,6 @@ static void dt_iop_gui_off_callback(GtkToggleButton *togglebutton, gpointer user
   g_free(module_label);
   gtk_widget_set_tooltip_text(GTK_WIDGET(togglebutton), tooltip);
   gtk_widget_queue_draw(GTK_WIDGET(togglebutton));
-
-  if(module->enabled && !gtk_widget_is_visible(module->header))
-    dt_dev_modulegroups_update_visibility(darktable.develop);
 }
 
 gboolean dt_iop_so_is_hidden(dt_iop_module_so_t *module)
@@ -2049,7 +2044,6 @@ void dt_iop_so_gui_set_state(dt_iop_module_so_t *module, dt_iop_module_state_t s
   {
     if(!darktable.gui->reset)
     {
-      int once = 0;
       mods = g_list_first(darktable.develop->iop);
 
       while(mods)
@@ -2057,15 +2051,7 @@ void dt_iop_so_gui_set_state(dt_iop_module_so_t *module, dt_iop_module_state_t s
         dt_iop_module_t *mod = (dt_iop_module_t *)mods->data;
 
         if(mod->so == module && mod->expander)
-        {
           gtk_widget_show(GTK_WIDGET(mod->expander));
-
-          if(!once)
-          {
-            dt_dev_modulegroups_switch(darktable.develop, mod);
-            once = 1;
-          }
-        }
 
         mods = g_list_next(mods);
       }

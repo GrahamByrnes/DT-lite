@@ -740,10 +740,7 @@ int dt_history_copy_and_paste_on_image(const int32_t imgid, const int32_t dest_i
   dt_image_cache_set_change_timestamp(darktable.image_cache, dest_imgid);
   /* if current image in develop reload history */
   if(dt_dev_is_current_image(darktable.develop, dest_imgid))
-  {
     dt_dev_reload_history_items(darktable.develop);
-    dt_dev_modulegroups_set(darktable.develop, dt_dev_modulegroups_get(darktable.develop));
-  }
   // update xmp file
   dt_image_synch_xmp(dest_imgid);
   dt_mipmap_cache_remove(darktable.mipmap_cache, dest_imgid);

@@ -814,14 +814,13 @@ void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const 
 
     g_list_free_full(si_list, dt_style_item_free);
 
-    if (DT_IOP_ORDER_INFO) fprintf(stderr,"\nvvvvv --> look for written history below\n");
+    if (DT_IOP_ORDER_INFO)
+      fprintf(stderr,"\nvvvvv --> look for written history below\n");
 
     dt_ioppr_check_iop_order(dev_dest, newimgid, "dt_styles_apply_to_image 2");
-
     dt_undo_lt_history_t *hist = dt_history_snapshot_item_init();
     hist->imgid = newimgid;
     dt_history_snapshot_undo_create(hist->imgid, &hist->before, &hist->before_history_end);
-
     // write history and forms to db
     dt_dev_write_history_ext(dev_dest, newimgid);
 
@@ -830,12 +829,9 @@ void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const 
     dt_undo_record(darktable.undo, NULL, DT_UNDO_LT_HISTORY, (dt_undo_data_t)hist,
                    dt_history_snapshot_undo_pop, dt_history_snapshot_undo_lt_history_data_free);
     dt_undo_end_group(darktable.undo);
-
     dt_dev_cleanup(dev_dest);
-
     g_list_free(modules_used);
-
-    /* add tag */
+    // add tag
     guint tagid = 0;
     gchar ntag[512] = { 0 };
     g_snprintf(ntag, sizeof(ntag), "darktable|style|%s", name);
@@ -845,29 +841,23 @@ void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const 
       dt_tag_attach(tagid, newimgid, FALSE, FALSE);
       dt_image_cache_set_change_timestamp(darktable.image_cache, imgid);
     }
-
-    /* if current image in develop reload history */
+    // if current image in develop reload history
     if(dt_dev_is_current_image(darktable.develop, newimgid))
     {
       dt_dev_reload_history_items(darktable.develop);
-      dt_dev_modulegroups_set(darktable.develop, dt_dev_modulegroups_get(darktable.develop));
       dt_dev_modules_update_multishow(darktable.develop);
     }
-
-    /* update xmp file */
+    // update xmp file
     dt_image_synch_xmp(newimgid);
-
-    /* remove old obsolete thumbnails */
+    // remove old obsolete thumbnails
     dt_mipmap_cache_remove(darktable.mipmap_cache, newimgid);
     dt_image_reset_final_size(newimgid);
-
-    /* update the aspect ratio. recompute only if really needed for performance reasons */
+    // update the aspect ratio. recompute only if really needed for performance reasons
     if(darktable.collection->params.sort == DT_COLLECTION_SORT_ASPECT_RATIO)
       dt_image_set_aspect_ratio(newimgid, TRUE);
     else
       dt_image_reset_aspect_ratio(newimgid, TRUE);
-
-    /* redraw center view to update visible mipmaps */
+    // redraw center view to update visible mipmaps
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_MIPMAP_UPDATED, newimgid);
   }
 }
