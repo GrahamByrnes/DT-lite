@@ -636,7 +636,7 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
 
     const gboolean selected = (num == darktable.develop->history_end - 1);
 
-    if(hitem->enabled) /* *** */
+    if(hitem->enabled)
     {
       widget =  _lib_history_create_button(self, num, label,
                                           (hitem->enabled || (strcmp(hitem->op_name, "mask_manager") == 0)),
