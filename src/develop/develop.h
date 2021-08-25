@@ -333,11 +333,9 @@ void dt_dev_get_pointer_zoom_pos(dt_develop_t *dev, const float px, const float 
 
 void dt_dev_configure(dt_develop_t *dev, int wd, int ht);
 void dt_dev_invalidate_from_gui(dt_develop_t *dev);
-
 /*
  * exposure plugin hook, set the exposure and the black level
  */
-
 /** a function used to sort the list */
 gint dt_dev_exposure_hooks_sort(gconstpointer a, gconstpointer b);
 /** check if exposure iop hooks are available */
@@ -352,12 +350,9 @@ float dt_dev_exposure_get_exposure(dt_develop_t *dev);
 void dt_dev_exposure_set_black(dt_develop_t *dev, const float black);
 /** get exposure black level */
 float dt_dev_exposure_get_black(dt_develop_t *dev);
-
-void dt_dev_reorder_gui_module_list(dt_develop_t *dev); /* *** */
-
+void dt_dev_reorder_gui_module_list(dt_develop_t *dev);
 /** request snapshot */
 void dt_dev_snapshot_request(dt_develop_t *dev, const char *filename);
-
 /** update gliding average for pixelpipe delay */
 void dt_dev_average_delay_update(const dt_times_t *start, uint32_t *average_delay);
 

@@ -97,7 +97,6 @@ void dt_control_key_accelerators_off(struct dt_control_t *s)
   s->key_accelerators_on = 0;
 }
 
-
 int dt_control_is_key_accelerators_on(struct dt_control_t *s)
 {
   return s->key_accelerators_on;
@@ -396,14 +395,16 @@ void dt_control_button_pressed(double x, double y, double pressure, int which, i
   darktable.control->button_y = y;
   // adding pressure to this data structure is not needed right now. should the need ever arise: here is the
   // place to do it :)
-  //const float wd = darktable.control->width;
+  const float wd = darktable.control->width;  /* *** */
   const float ht = darktable.control->height;
 
   // ack log message:
   dt_pthread_mutex_lock(&darktable.control->log_mutex);
-  const float /*xc = wd/4.0-20,*/ yc = ht * 0.85 + 10;
+  //const float /*xc = wd/4.0-20,*/ yc = ht * 0.85 + 10;  /* *** */
+  const float xc = wd/4.0-20, yc = ht * 0.85 + 10;
   if(darktable.control->log_ack != darktable.control->log_pos)
-    if(which == 1 /*&& x > xc - 10 && x < xc + 10*/ && y > yc - 10 && y < yc + 10)
+    //if(which == 1 /*&& x > xc - 10 && x < xc + 10*/ && y > yc - 10 && y < yc + 10)  /* *** */
+    if(which == 1 && x > xc - 10 && x < xc + 10 && y > yc - 10 && y < yc + 10)
     {
       if(darktable.control->log_message_timeout_id)
       {
@@ -419,7 +420,8 @@ void dt_control_button_pressed(double x, double y, double pressure, int which, i
   // ack toast message:
   dt_pthread_mutex_lock(&darktable.control->toast_mutex);
   if(darktable.control->toast_ack != darktable.control->toast_pos)
-    if(which == 1 /*&& x > xc - 10 && x < xc + 10*/ && y > yc - 10 && y < yc + 10)
+    //if(which == 1 /*&& x > xc - 10 && x < xc + 10*/ && y > yc - 10 && y < yc + 10)  /* *** */
+    if(which == 1 && x > xc - 10 && x < xc + 10 && y > yc - 10 && y < yc + 10)
     {
       if(darktable.control->toast_message_timeout_id)
       {
@@ -519,7 +521,7 @@ void dt_control_toast_busy_leave()
 
 void dt_control_queue_redraw()
 {
-  dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_REDRAW_ALL);
+  dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_REDRAW_ALL); /* *** */
 }
 
 void dt_control_queue_redraw_center()
@@ -529,7 +531,7 @@ void dt_control_queue_redraw_center()
 
 void dt_control_navigation_redraw()
 {
-  dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_NAVIGATION_REDRAW);
+  dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_NAVIGATION_REDRAW); /* *** */
 }
 
 void dt_control_log_redraw()
@@ -773,6 +775,7 @@ int dt_control_get_dev_closeup()
   dt_pthread_mutex_unlock(&(darktable.control->global_mutex));
   return result;
 }
+
 void dt_control_set_dev_closeup(int value)
 {
   dt_pthread_mutex_lock(&(darktable.control->global_mutex));
@@ -787,13 +790,13 @@ dt_dev_zoom_t dt_control_get_dev_zoom()
   dt_pthread_mutex_unlock(&(darktable.control->global_mutex));
   return result;
 }
+
 void dt_control_set_dev_zoom(dt_dev_zoom_t value)
 {
   dt_pthread_mutex_lock(&(darktable.control->global_mutex));
   darktable.control->dev_zoom = value;
   dt_pthread_mutex_unlock(&(darktable.control->global_mutex));
 }
-
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
