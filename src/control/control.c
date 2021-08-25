@@ -393,17 +393,13 @@ void dt_control_button_pressed(double x, double y, double pressure, int which, i
   darktable.control->button_type = type;
   darktable.control->button_x = x;
   darktable.control->button_y = y;
-  // adding pressure to this data structure is not needed right now. should the need ever arise: here is the
-  // place to do it :)
-  const float wd = darktable.control->width;  /* *** */
+  const float wd = darktable.control->width;
   const float ht = darktable.control->height;
-
   // ack log message:
   dt_pthread_mutex_lock(&darktable.control->log_mutex);
-  //const float /*xc = wd/4.0-20,*/ yc = ht * 0.85 + 10;  /* *** */
   const float xc = wd/4.0-20, yc = ht * 0.85 + 10;
+  
   if(darktable.control->log_ack != darktable.control->log_pos)
-    //if(which == 1 /*&& x > xc - 10 && x < xc + 10*/ && y > yc - 10 && y < yc + 10)  /* *** */
     if(which == 1 && x > xc - 10 && x < xc + 10 && y > yc - 10 && y < yc + 10)
     {
       if(darktable.control->log_message_timeout_id)
@@ -415,12 +411,12 @@ void dt_control_button_pressed(double x, double y, double pressure, int which, i
       dt_pthread_mutex_unlock(&darktable.control->log_mutex);
       return;
     }
-  dt_pthread_mutex_unlock(&darktable.control->log_mutex);
 
+  dt_pthread_mutex_unlock(&darktable.control->log_mutex);
   // ack toast message:
   dt_pthread_mutex_lock(&darktable.control->toast_mutex);
+
   if(darktable.control->toast_ack != darktable.control->toast_pos)
-    //if(which == 1 /*&& x > xc - 10 && x < xc + 10*/ && y > yc - 10 && y < yc + 10)  /* *** */
     if(which == 1 && x > xc - 10 && x < xc + 10 && y > yc - 10 && y < yc + 10)
     {
       if(darktable.control->toast_message_timeout_id)
@@ -428,6 +424,7 @@ void dt_control_button_pressed(double x, double y, double pressure, int which, i
         g_source_remove(darktable.control->toast_message_timeout_id);
         darktable.control->toast_message_timeout_id = 0;
       }
+
       darktable.control->toast_ack = (darktable.control->toast_ack + 1) % DT_CTL_TOAST_SIZE;
       dt_pthread_mutex_unlock(&darktable.control->toast_mutex);
       return;
@@ -435,7 +432,8 @@ void dt_control_button_pressed(double x, double y, double pressure, int which, i
   dt_pthread_mutex_unlock(&darktable.control->toast_mutex);
 
   if(!dt_view_manager_button_pressed(darktable.view_manager, x, y, pressure, which, type, state))
-    if(type == GDK_2BUTTON_PRESS && which == 1) dt_ctl_switch_mode();
+    if(type == GDK_2BUTTON_PRESS && which == 1)
+      dt_ctl_switch_mode();
 }
 
 static gboolean _redraw_center(gpointer user_data)
