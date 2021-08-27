@@ -504,7 +504,6 @@ void dt_control_log_busy_leave()
   dt_pthread_mutex_lock(&darktable.control->log_mutex);
   darktable.control->log_busy--;
   dt_pthread_mutex_unlock(&darktable.control->log_mutex);
-  /* lets redraw */
   dt_control_queue_redraw_center();
 }
 
@@ -513,7 +512,6 @@ void dt_control_toast_busy_leave()
   dt_pthread_mutex_lock(&darktable.control->toast_mutex);
   darktable.control->toast_busy--;
   dt_pthread_mutex_unlock(&darktable.control->toast_mutex);
-  /* lets redraw */
   dt_control_queue_redraw_center();
 }
 
