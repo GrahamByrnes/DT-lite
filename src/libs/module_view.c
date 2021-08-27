@@ -39,7 +39,6 @@ typedef struct dt_lib_module_view_t
 {
   GtkButton *fav_button;
   gboolean choice;
-  dt_pthread_mutex_t view_lock;
   char *button_title[2];
 } dt_lib_module_view_t;
 
@@ -77,18 +76,7 @@ void gui_update(dt_lib_module_t *self)
 
 static void _lib_module_view_callback(gpointer instance, gpointer user_data)
 {
-  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
-  dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
-  dt_pthread_mutex_lock(&d->view_lock);
-  d->choice = dt_conf_get_bool("darkroom/ui/iop_view_default");
-  
-  for(GList *iter = g_list_first(darktable.iop); iter; iter = g_list_next(iter))
-  {
-    dt_iop_module_t *module = (dt_iop_module_t *)iter->data;
-    dt_iop_gui_update(module);
-  }
-
-  dt_pthread_mutex_unlock(&d->view_lock);
+  fprintf(stderr, "exiting module_view callback\n");
 }
 
 static void _lib_module_view_gui_update(dt_lib_module_t *self)
@@ -105,12 +93,13 @@ void fav_button_clicked(GtkWidget *widget, gpointer user_data)
   gtk_button_set_label(GTK_BUTTON(d->fav_button), d->button_title[!d->choice]);
 }
 
+
+
 #define ellipsize_button(button) gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(button))), PANGO_ELLIPSIZE_END);
 void gui_init(dt_lib_module_t *self)
 {
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)malloc(sizeof(dt_lib_module_view_t));
   self->data = (void *)d;
-  dt_pthread_mutex_init(&d->view_lock, 0);
   d->choice = dt_conf_get_bool("darkroom/ui/iop_view_default");
   d->button_title[0]="show all";
   d->button_title[1]="only favourites";
@@ -124,19 +113,18 @@ void gui_init(dt_lib_module_t *self)
   gtk_grid_attach(grid, GTK_WIDGET(d->fav_button), 0, 0, 1, 1);
 
   g_signal_connect(G_OBJECT(d->fav_button), "clicked", G_CALLBACK(fav_button_clicked), self);
-  darktable.view_manager->proxy.module_view.module = self;
-  darktable.view_manager->proxy.module_view.update = _lib_module_view_gui_update;
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_INITIALIZE,
                             G_CALLBACK(_lib_module_view_callback), self);
+  darktable.view_manager->proxy.module_view.module = self;
+  darktable.view_manager->proxy.module_view.update = _lib_module_view_gui_update;
+  
   _update(self);
 }
 #undef ellipsize_button
 
 void gui_cleanup(dt_lib_module_t *self)
 {
-  dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_lib_module_view_callback), self);
-  dt_pthread_mutex_destroy(&d->view_lock);
   free(self->data);
   self->data = NULL;
 }
