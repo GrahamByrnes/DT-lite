@@ -74,7 +74,6 @@ void gui_update(dt_lib_module_t *self)
   _update(self);
 }
 
-
 static void _lib_module_view_gui_update(dt_lib_module_t *self)
 {
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
@@ -87,6 +86,9 @@ void fav_button_clicked(GtkWidget *widget, gpointer user_data)
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
   d->choice = !d->choice;
   gtk_button_set_label(GTK_BUTTON(d->fav_button), d->button_title[!d->choice]);
+
+  dt_view_manager_switch(darktable.view_manager, "lighttable");
+  dt_view_manager_switch(darktable.view_manager, "darkroom"); /* *** there must be a more efficient way */
 }
 
 #define ellipsize_button(button) gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(button))), PANGO_ELLIPSIZE_END);
