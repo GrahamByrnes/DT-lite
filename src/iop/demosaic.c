@@ -3052,23 +3052,17 @@ void gui_update(struct dt_iop_module_t *self)
   }
   
   if(p->demosaicing_method == DT_IOP_DEMOSAIC_AMAZE || p->demosaicing_method == DT_IOP_DEMOSAIC_VNG4)
-  {
     gtk_widget_hide(g->median_thrs);
-  }
 
   dt_image_t *img = dt_image_cache_get(darktable.image_cache, self->dev->image_storage.id, 'w');
-  int changed = img->flags & DT_IMAGE_MONOCHROME_BAYER;
+  
   if((p->demosaicing_method == DT_IOP_DEMOSAIC_PASSTHROUGH_MONOCHROME) ||
      (p->demosaicing_method == DT_IOP_DEMOSAIC_PASSTHR_MONOX))
     img->flags |= DT_IMAGE_MONOCHROME_BAYER;
   else
-    img->flags &= ~DT_IMAGE_MONOCHROME_BAYER;   
-  const int mask_bw = dt_image_monochrome_flags(img);
-  changed ^= img->flags & DT_IMAGE_MONOCHROME_BAYER;
+    img->flags &= ~DT_IMAGE_MONOCHROME_BAYER;
 
   dt_image_cache_write_release(darktable.image_cache, img, DT_IMAGE_CACHE_RELAXED);
-  if(changed)
-    dt_imageio_update_monochrome_workflow_tag(self->dev->image_storage.id, mask_bw);
 
   dt_bauhaus_slider_set(g->median_thrs, p->median_thrs);
   dt_bauhaus_combobox_set(g->color_smoothing, p->color_smoothing);
@@ -3116,7 +3110,6 @@ void gui_changed(dt_iop_module_t *self, GtkWidget *w, void *previous)
     gtk_widget_set_visible(g->median_thrs, p->demosaicing_method == DT_IOP_DEMOSAIC_PPG);
 
   dt_image_t *img = dt_image_cache_get(darktable.image_cache, self->dev->image_storage.id, 'w');
-  int changed = img->flags & DT_IMAGE_MONOCHROME_BAYER;
 
   if((p->demosaicing_method == DT_IOP_DEMOSAIC_PASSTHROUGH_MONOCHROME) ||
      (p->demosaicing_method == DT_IOP_DEMOSAIC_PASSTHR_MONOX))
@@ -3124,12 +3117,7 @@ void gui_changed(dt_iop_module_t *self, GtkWidget *w, void *previous)
   else
     img->flags &= ~DT_IMAGE_MONOCHROME_BAYER;
 
-  const int mask_bw = dt_image_monochrome_flags(img);
-  changed ^= img->flags & DT_IMAGE_MONOCHROME_BAYER;
   dt_image_cache_write_release(darktable.image_cache, img, DT_IMAGE_CACHE_RELAXED);
-  if(changed)
-    dt_imageio_update_monochrome_workflow_tag(self->dev->image_storage.id, mask_bw);
-
   gtk_widget_set_visible(g->color_smoothing, extras);
   gtk_widget_set_visible(g->greeneq, extras);
 }
@@ -3138,14 +3126,15 @@ void gui_init(struct dt_iop_module_t *self)
 {
   self->gui_data = malloc(sizeof(dt_iop_demosaic_gui_data_t));
   dt_iop_demosaic_gui_data_t *g = (dt_iop_demosaic_gui_data_t *)self->gui_data;
-
   g->box_raw = self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, DT_BAUHAUS_SPACE);
   g->demosaic_method_bayer = dt_bauhaus_combobox_from_params(self, "demosaicing_method");
+
   for(int i=0;i<6;i++)
     dt_bauhaus_combobox_remove_at(g->demosaic_method_bayer, 5);
 
   gtk_widget_set_tooltip_text(g->demosaic_method_bayer, _("demosaicing raw data method"));
   g->demosaic_method_xtrans = dt_bauhaus_combobox_from_params(self, "demosaicing_method");
+
   for(int i=0;i<5;i++)
     dt_bauhaus_combobox_remove_at(g->demosaic_method_xtrans, 0);
 
@@ -3164,14 +3153,10 @@ void gui_init(struct dt_iop_module_t *self)
   dt_bauhaus_combobox_add(g->color_smoothing, _("four times"));
   dt_bauhaus_combobox_add(g->color_smoothing, _("five times"));
   gtk_widget_set_tooltip_text(g->color_smoothing, _("how many color smoothing median steps after demosaicing"));
-
   g->greeneq = dt_bauhaus_combobox_from_params(self, "green_eq");
   gtk_widget_set_tooltip_text(g->greeneq, _("green channels matching method"));
-
   self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, DT_BAUHAUS_SPACE);
-
   gtk_box_pack_start(GTK_BOX(self->widget), g->box_raw, FALSE, FALSE, 0);
-
   g->label_non_raw = gtk_label_new(_("demosaicing\nonly needed for raw images."));
   gtk_widget_set_halign(g->label_non_raw, GTK_ALIGN_START);
   gtk_box_pack_start(GTK_BOX(self->widget), g->label_non_raw, FALSE, FALSE, 0);
