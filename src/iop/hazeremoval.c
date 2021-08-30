@@ -206,12 +206,14 @@ static inline void pointer_swap_f(float *a, float *b)
 static inline void box_max_1d(int N, const float *x, float *y, size_t stride_y, int w)
 {
   float m = -(INFINITY);
+
   for(int i = 0, i_end = min_i(w + 1, N); i < i_end; i++)
     m = fmaxf(x[i], m);
 
   for(int i = 0; i < N; i++)
   {
     y[i * stride_y] = m;
+
     if(i - w >= 0 && x[i - w] == m)
     {
       m = -(INFINITY);
@@ -289,12 +291,14 @@ static void box_max(const gray_image img1, const gray_image img2, const int w)
 static inline void box_min_1d(int N, const float *x, float *y, size_t stride_y, int w)
 {
   float m = INFINITY;
+
   for(int i = 0, i_end = min_i(w + 1, N); i < i_end; i++)
     m = fminf(x[i], m);
     
   for(int i = 0; i < N; i++)
   {
     y[i * stride_y] = m;
+
     if(i - w >= 0 && x[i - w] == m)
     {
       m = INFINITY;
@@ -428,7 +432,8 @@ static float *partition(float *first, float *last, float val)
   for(; first != last; ++first)
     if(!((*first) < val)) break;
 
-  if(first == last) return first;
+  if(first == last)
+    return first;
 
   for(float *i = first + 1; i != last; ++i)
     if((*i) < val)
@@ -456,9 +461,16 @@ void quick_select(float *first, float *nth, float *last)
     float *p1 = first;
     float *pivot = first + (last - first) / 2;
     float *p3 = last - 1;
-    if(!(*p1 < *pivot)) pointer_swap_f(p1, pivot);
-    if(!(*p1 < *p3)) pointer_swap_f(p1, p3);
-    if(!(*pivot < *p3)) pointer_swap_f(pivot, p3);
+
+    if(!(*p1 < *pivot))
+      pointer_swap_f(p1, pivot);
+
+    if(!(*p1 < *p3))
+      pointer_swap_f(p1, p3);
+
+    if(!(*pivot < *p3))
+      pointer_swap_f(pivot, p3);
+
     pointer_swap_f(pivot, last - 1); // move pivot to end
     partition(first, last - 1, *(last - 1));
     pointer_swap_f(last - 1, pivot); // move pivot to its final place
@@ -635,8 +647,8 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
   /* *** */
   const float eps = sqrtf(0.025f);    // regularization parameter for guided filter
   const int w2 = 9; // window size (positive integer) for the guided filter
-  guided_filter(img_in.data, trans_map.data, trans_map_filtered.data, width, height, 4, w2,
-                eps, 1.f, -FLT_MAX, FLT_MAX);
+  guided_filter(img_in.data, trans_map.data, trans_map_filtered.data, width, height, 4,
+                w2, eps, 1.f, -FLT_MAX, FLT_MAX);
   /* *** */
   // finally, calculate the haze-free image
   const float t_min
@@ -654,6 +666,7 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
     float t = fmaxf(c_trans_map_filtered.data[i], t_min);
     const float *pixel_in = img_in.data + i * img_in.stride;
     float *pixel_out = img_out.data + i * img_out.stride;
+
     for(int j = 0; j < 3; j++)
       pixel_out[j] = (pixel_in[j] - c_A0[j]) / t + c_A0[j];
   }
