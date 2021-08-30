@@ -1217,6 +1217,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
 
       float sqrt_eps = 1.f;
       float guide_weight = 1.f;
+
       switch(cst)
       {
         case iop_cs_rgb:
@@ -1229,6 +1230,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
         default:
           assert(0);
       }
+
       float *mask_bak = dt_alloc_align(64, sizeof(*mask_bak) * buffsize);
       memcpy(mask_bak, mask, sizeof(*mask_bak) * buffsize);
       float *guide = d->feathering_guide == DEVELOP_MASK_GUIDE_IN ? (float *)ivoid : (float *)ovoid;
@@ -1246,6 +1248,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
           size_t oindex = (size_t)y * owidth * ch;
           memcpy(guide_tmp + oindex, (float *)ivoid + iindex, sizeof(*guide_tmp) * owidth * ch);
         }
+
         guide = guide_tmp;
       }
 
@@ -1348,7 +1351,7 @@ int dt_develop_blend_version(void)
   return DEVELOP_BLEND_VERSION;
 }
 
-/** report back specific memory requirements for blend step (only relevant for OpenCL path) */
+/** report back specific memory requirements for blend step (only relevant for OpenCL path) 
 void tiling_callback_blendop(struct dt_iop_module_t *self, struct dt_dev_pixelpipe_iop_t *piece,
                              const dt_iop_roi_t *roi_in, const dt_iop_roi_t *roi_out,
                              struct dt_develop_tiling_t *tiling)
@@ -1359,7 +1362,7 @@ void tiling_callback_blendop(struct dt_iop_module_t *self, struct dt_dev_pixelpi
   tiling->overlap = 0;
   tiling->xalign = 1;
   tiling->yalign = 1;
-}
+}*/
 
 gboolean _develop_blend_params_is_all_zero(const void *params, size_t length)
 {
@@ -1394,6 +1397,7 @@ int dt_develop_blend_legacy_params_from_so(dt_iop_module_so_t *module_so, const 
   // we need a dt_iop_module_t for dt_develop_blend_legacy_params()
   dt_iop_module_t *module;
   module = (dt_iop_module_t *)calloc(1, sizeof(dt_iop_module_t));
+
   if(dt_iop_load_module_by_so(module, module_so, NULL))
   {
     free(module);
