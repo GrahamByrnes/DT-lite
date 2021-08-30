@@ -78,16 +78,6 @@ typedef struct dt_iop_hazeremoval_gui_data_t
   dt_pthread_mutex_t lock;
 } dt_iop_hazeremoval_gui_data_t;
 
-typedef struct dt_iop_hazeremoval_global_data_t
-{
-  int kernel_hazeremoval_transision_map;
-  int kernel_hazeremoval_box_min_x;
-  int kernel_hazeremoval_box_min_y;
-  int kernel_hazeremoval_box_max_x;
-  int kernel_hazeremoval_box_max_y;
-  int kernel_hazeremoval_dehaze;
-} dt_iop_hazeremoval_global_data_t;
-
 const char *name()
 {
   return _("haze removal");
@@ -216,7 +206,9 @@ static inline void pointer_swap_f(float *a, float *b)
 static inline void box_max_1d(int N, const float *x, float *y, size_t stride_y, int w)
 {
   float m = -(INFINITY);
-  for(int i = 0, i_end = min_i(w + 1, N); i < i_end; i++) m = fmaxf(x[i], m);
+  for(int i = 0, i_end = min_i(w + 1, N); i < i_end; i++)
+    m = fmaxf(x[i], m);
+
   for(int i = 0; i < N; i++)
   {
     y[i * stride_y] = m;
@@ -225,6 +217,7 @@ static inline void box_max_1d(int N, const float *x, float *y, size_t stride_y, 
       m = -(INFINITY);
       for(int j = max_i(i - w + 1, 0), j_end = min_i(i + w + 2, N); j < j_end; j++) m = fmaxf(x[j], m);
     }
+
     if(i + w + 1 < N) m = fmaxf(x[i + w + 1], m);
   }
 }
@@ -234,6 +227,7 @@ static inline void box_max_1d(int N, const float *x, float *y, size_t stride_y, 
 static void box_max(const gray_image img1, const gray_image img2, const int w)
 {
   gray_image img2_bak;
+
   if(img1.data == img2.data)
   {
 #ifdef _OPENMP
@@ -251,6 +245,7 @@ static void box_max(const gray_image img1, const gray_image img2, const int w)
         memcpy(img2_bak.data, img2.data + (size_t)i1 * img2.width, sizeof(float) * img2.width);
         box_max_1d(img2.width, img2_bak.data, img2.data + (size_t)i1 * img2.width, 1, w);
       }
+
       free_gray_image(&img2_bak);
     }
   }
@@ -284,6 +279,7 @@ static void box_max(const gray_image img1, const gray_image img2, const int w)
       for(int i1 = 0; i1 < img1.height; i1++) img2_bak.data[i1] = img2.data[i0 + (size_t)i1 * img2.width];
       box_max_1d(img1.height, img2_bak.data, img2.data + i0, img1.width, w);
     }
+
     free_gray_image(&img2_bak);
   }
 }
@@ -316,6 +312,7 @@ static inline void box_min_1d(int N, const float *x, float *y, size_t stride_y, 
 static void box_min(const gray_image img1, const gray_image img2, const int w)
 {
   gray_image img2_bak;
+
   if(img1.data == img2.data)
   {
 #ifdef _OPENMP
@@ -328,11 +325,13 @@ static void box_min(const gray_image img1, const gray_image img2, const int w)
 #ifdef _OPENMP
 #pragma omp for schedule(static)
 #endif
+
       for(int i1 = 0; i1 < img2.height; i1++)
       {
         memcpy(img2_bak.data, img2.data + (size_t)i1 * img2.width, sizeof(float) * img2.width);
         box_min_1d(img2.width, img2_bak.data, img2.data + (size_t)i1 * img2.width, 1, w);
       }
+
       free_gray_image(&img2_bak);
     }
   }
@@ -361,11 +360,13 @@ static void box_min(const gray_image img1, const gray_image img2, const int w)
 #ifdef _OPENMP
 #pragma omp for schedule(static)
 #endif
+
     for(int i0 = 0; i0 < img1.width; i0++)
     {
       for(int i1 = 0; i1 < img1.height; i1++) img2_bak.data[i1] = img2.data[i0 + (size_t)i1 * img2.width];
       box_min_1d(img1.height, img2_bak.data, img2.data + i0, img1.width, w);
     }
+
     free_gray_image(&img2_bak);
   }
 }
@@ -380,6 +381,7 @@ static void dark_channel(const const_rgb_image img1, const gray_image img2, cons
   dt_omp_firstprivate(img1, img2, size) \
   schedule(static)
 #endif
+
   for(size_t i = 0; i < size; i++)
   {
     const float *pixel = img1.data + i * img1.stride;
@@ -388,6 +390,7 @@ static void dark_channel(const const_rgb_image img1, const gray_image img2, cons
     m = fminf(pixel[2], m);
     img2.data[i] = m;
   }
+
   box_min(img2, img2, w);
 }
 
@@ -402,6 +405,7 @@ static void transition_map(const const_rgb_image img1, const gray_image img2, co
   dt_omp_firstprivate(A0, img1, img2, size, strength) \
   schedule(static)
 #endif
+
   for(size_t i = 0; i < size; i++)
   {
     const float *pixel = img1.data + i * img1.stride;
@@ -410,6 +414,7 @@ static void transition_map(const const_rgb_image img1, const gray_image img2, co
     m = fminf(pixel[2] / A0[2], m);
     img2.data[i] = 1.f - m * strength;
   }
+
   box_max(img2, img2, w);
 }
 
@@ -421,18 +426,17 @@ static void transition_map(const const_rgb_image img1, const gray_image img2, co
 static float *partition(float *first, float *last, float val)
 {
   for(; first != last; ++first)
-  {
     if(!((*first) < val)) break;
-  }
+
   if(first == last) return first;
+
   for(float *i = first + 1; i != last; ++i)
-  {
     if((*i) < val)
     {
       pointer_swap_f(i, first);
       ++first;
     }
-  }
+
   return first;
 }
 
@@ -445,6 +449,7 @@ static float *partition(float *first, float *last, float val)
 void quick_select(float *first, float *nth, float *last)
 {
   if(first == last) return;
+
   for(;;)
   {
     // select pivot by median of three heuristic for better performance
@@ -457,6 +462,7 @@ void quick_select(float *first, float *nth, float *last)
     pointer_swap_f(pivot, last - 1); // move pivot to end
     partition(first, last - 1, *(last - 1));
     pointer_swap_f(last - 1, pivot); // move pivot to its final place
+
     if(nth == pivot)
       break;
     else if(nth < pivot)
@@ -489,6 +495,7 @@ static float ambient_light(const const_rgb_image img, int w1, rgb_pixel *pA0)
   quick_select(bright_hazy.data, bright_hazy.data + p, bright_hazy.data + size);
   const float crit_haze_level = bright_hazy.data[p];
   size_t N_most_hazy = 0;
+
   for(size_t i = 0; i < size; i++)
     if(dark_ch.data[i] >= crit_haze_level)
     {
@@ -497,6 +504,7 @@ static float ambient_light(const const_rgb_image img, int w1, rgb_pixel *pA0)
       bright_hazy.data[N_most_hazy] = pixel_in[0] + pixel_in[1] + pixel_in[2];
       N_most_hazy++;
     }
+
   p = (size_t)(N_most_hazy * bright_quantil);
   quick_select(bright_hazy.data, bright_hazy.data + p, bright_hazy.data + N_most_hazy);
   const float crit_brightness = bright_hazy.data[p];
@@ -512,9 +520,11 @@ static float ambient_light(const const_rgb_image img, int w1, rgb_pixel *pA0)
   schedule(static) \
   reduction(+ : N_bright_hazy, A0_r, A0_g, A0_b)
 #endif
+
   for(size_t i = 0; i < size; i++)
   {
     const float *pixel_in = img.data + i * img.stride;
+
     if((data[i] >= crit_haze_level) && (pixel_in[0] + pixel_in[1] + pixel_in[2] >= crit_brightness))
     {
       A0_r += pixel_in[0];
@@ -523,12 +533,14 @@ static float ambient_light(const const_rgb_image img, int w1, rgb_pixel *pA0)
       N_bright_hazy++;
     }
   }
+
   if(N_bright_hazy > 0)
   {
     A0_r /= N_bright_hazy;
     A0_g /= N_bright_hazy;
     A0_b /= N_bright_hazy;
   }
+
   (*pA0)[0] = A0_r;
   (*pA0)[1] = A0_g;
   (*pA0)[2] = A0_b;
@@ -553,22 +565,19 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
   const int height = roi_in->height;
   const size_t size = (size_t)width * height;
   const int w1 = 6; // window size (positive integer) for determining the dark channel and the transition map
-  const int w2 = 9; // window size (positive integer) for the guided filter
-
   // module parameters
   const float strength = d->strength; // strength of haze removal
   const float distance = d->distance; // maximal distance from camera to remove haze
-  const float eps = sqrtf(0.025f);    // regularization parameter for guided filter
-
   const const_rgb_image img_in = (const_rgb_image){ ivoid, width, height, 4 };
   const rgb_image img_out = (rgb_image){ ovoid, width, height, 4};
 
   // estimate diffusive ambient light and image depth
   rgb_pixel A0;
+
   for(int i = 0; i < 3; i++)
     A0[i] = NAN;
-  float distance_max = NAN;
 
+  float distance_max = NAN;
   // hazeremoval module needs the color and the haziness (which yields
   // distance_max) of the most hazy region of the image.  In pixelpipe
   // FULL we can not reliably get this value as the pixelpipe might
@@ -590,26 +599,31 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
        && !dt_dev_sync_pixelpipe_hash(self->dev, piece->pipe, self->iop_order, DT_DEV_TRANSFORM_DIR_BACK_INCL,
                                       &g->lock, &g->hash))
       dt_control_log(_("inconsistent output"));
+
     dt_pthread_mutex_lock(&g->lock);
+
     for(int i = 0; i < 3; i++)
       A0[i] = g->A0[i];
+
     distance_max = g->distance_max;
     dt_pthread_mutex_unlock(&g->lock);
   }
   // In all other cases we calculate distance_max and A0 here.
-  if(isnan(distance_max)) distance_max = ambient_light(img_in, w1, &A0);
+  if(isnan(distance_max))
+    distance_max = ambient_light(img_in, w1, &A0);
   // PREVIEW pixelpipe stores values.
   if(self->dev->gui_attached && g && (piece->pipe->type & DT_DEV_PIXELPIPE_PREVIEW) == DT_DEV_PIXELPIPE_PREVIEW)
   {
     uint64_t hash = dt_dev_hash_plus(self->dev, piece->pipe, self->iop_order, DT_DEV_TRANSFORM_DIR_BACK_INCL);
     dt_pthread_mutex_lock(&g->lock);
+
     for(int i = 0; i < 3; i++)
       g->A0[i] = A0[i];
+
     g->distance_max = distance_max;
     g->hash = hash;
     dt_pthread_mutex_unlock(&g->lock);
   }
-
   // calculate the transition map
   gray_image trans_map = new_gray_image(width, height);
   transition_map(img_in, trans_map, w1, A0, strength);
@@ -618,9 +632,12 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
   box_min(trans_map, trans_map, w1);
   gray_image trans_map_filtered = new_gray_image(width, height);
   // apply guided filter with no clipping
-  guided_filter(img_in.data, trans_map.data, trans_map_filtered.data, width, height, 4, w2, eps, 1.f, -FLT_MAX,
-                FLT_MAX);
-
+  /* *** */
+  const float eps = sqrtf(0.025f);    // regularization parameter for guided filter
+  const int w2 = 9; // window size (positive integer) for the guided filter
+  guided_filter(img_in.data, trans_map.data, trans_map_filtered.data, width, height, 4, w2,
+                eps, 1.f, -FLT_MAX, FLT_MAX);
+  /* *** */
   // finally, calculate the haze-free image
   const float t_min
       = fminf(fmaxf(expf(-distance * distance_max), 1.0f / 1024), 1.0f); // minimum allowed value for transition map
@@ -631,6 +648,7 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
   dt_omp_firstprivate(c_A0, c_trans_map_filtered, img_in, img_out, size, t_min) \
   schedule(static)
 #endif
+
   for(size_t i = 0; i < size; i++)
   {
     float t = fmaxf(c_trans_map_filtered.data[i], t_min);
