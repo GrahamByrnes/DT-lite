@@ -369,27 +369,6 @@ gboolean dt_image_get_final_size(const int32_t imgid, int *width, int *height)
     *height = img.final_height;
     return 0;
   }
-
-  // special case if we try to load embedded preview of raw file
-  // the orientation for this camera is not read correctly from exiv2, so we need
-  // to go the full path (as the thumbnail will be flipped the wrong way round)
-  const int incompatible = !strncmp(img.exif_maker, "Phase One", 9);
-
-  if(!img.verified_size && !dt_image_altered(imgid) && !dt_conf_get_bool("never_use_embedded_thumb")
-     && !incompatible)
-  {
-    // we want to be sure to have the real image size.
-    // some raw files need a pass via rawspeed to get it.
-    char filename[PATH_MAX] = { 0 };
-    gboolean from_cache = TRUE;
-    dt_image_full_path(imgid, filename, sizeof(filename), &from_cache);
-    imgtmp = dt_image_cache_get(darktable.image_cache, imgid, 'w');
-    dt_imageio_open(imgtmp, filename, NULL);
-    imgtmp->verified_size = 1;
-    img = *imgtmp;
-    dt_image_cache_write_release(darktable.image_cache, imgtmp, DT_IMAGE_CACHE_RELAXED);
-  }
-
   // and now we can do the pipe stuff to get final image size
   dt_develop_t dev;
   dt_dev_init(&dev, 0);

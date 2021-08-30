@@ -1151,9 +1151,8 @@ static void _init_8(uint8_t *buf, uint32_t *width, uint32_t *height, float *isca
   const uint32_t wd = *width, ht = *height;
   char filename[PATH_MAX] = { 0 };
   gboolean from_cache = TRUE;
-
-  /* do not even try to process file if it isn't available */
   dt_image_full_path(imgid, filename, sizeof(filename), &from_cache);
+
   if(!*filename || !g_file_test(filename, G_FILE_TEST_EXISTS))
   {
     *width = *height = 0;
@@ -1162,70 +1161,10 @@ static void _init_8(uint8_t *buf, uint32_t *width, uint32_t *height, float *isca
     return;
   }
 
-  const gboolean altered = !dt_image_basic(imgid);
   int res = 1;
 
   const dt_image_t *cimg = dt_image_cache_get(darktable.image_cache, imgid, 'r');
-  // the orientation for this camera is not read correctly from exiv2, so we need
-  // to go the full path (as the thumbnail will be flipped the wrong way round)
-  const int incompatible = !strncmp(cimg->exif_maker, "Phase One", 9);
   dt_image_cache_read_release(darktable.image_cache, cimg);
-
-  if(!altered && !dt_conf_get_bool("never_use_embedded_thumb") && !incompatible)
-  {
-    const dt_image_orientation_t orientation = dt_image_get_orientation(imgid);
-
-    // try to load the embedded thumbnail in raw
-    from_cache = TRUE;
-    memset(filename, 0, sizeof(filename));
-    dt_image_full_path(imgid, filename, sizeof(filename), &from_cache);
-
-    const char *c = filename + strlen(filename);
-    while(*c != '.' && c > filename) c--;
-    if(!strcasecmp(c, ".jpg"))
-    {
-      // try to load jpg
-      dt_imageio_jpeg_t jpg;
-      if(!dt_imageio_jpeg_read_header(filename, &jpg))
-      {
-        uint8_t *tmp = (uint8_t *)malloc(sizeof(uint8_t) * jpg.width * jpg.height * 4);
-        *color_space = dt_imageio_jpeg_read_color_space(&jpg);
-        if(!dt_imageio_jpeg_read(&jpg, tmp))
-        {
-          // scale to fit
-          dt_print(DT_DEBUG_CACHE, "[mipmap_cache] generate mip %d for image %d from jpeg\n", size, imgid);
-          dt_iop_flip_and_zoom_8(tmp, jpg.width, jpg.height, buf, wd, ht, orientation, width, height);
-          res = 0;
-        }
-        free(tmp);
-      }
-    }
-    else
-    {
-      uint8_t *tmp = 0;
-      int32_t thumb_width, thumb_height;
-      res = dt_imageio_large_thumbnail(filename, &tmp, &thumb_width, &thumb_height, color_space);
-      if(!res)
-      {
-        // if the thumbnail is not large enough, we compute one
-        const dt_image_t *img2 = dt_image_cache_get(darktable.image_cache, imgid, 'r');
-        const int imgwd = img2->width;
-        const int imght = img2->height;
-        dt_image_cache_read_release(darktable.image_cache, img2);
-        if(thumb_width < wd && thumb_height < ht && thumb_width < imgwd - 4 && thumb_height < imght - 4)
-        {
-          res = 1;
-        }
-        else
-        {
-          // scale to fit
-          dt_print(DT_DEBUG_CACHE, "[mipmap_cache] generate mip %d for image %d from embedded jpeg\n", size, imgid);
-          dt_iop_flip_and_zoom_8(tmp, thumb_width, thumb_height, buf, wd, ht, orientation, width, height);
-        }
-        dt_free_align(tmp);
-      }
-    }
-  }
 
   if(res)
   {
@@ -1273,14 +1212,9 @@ static void _init_8(uint8_t *buf, uint32_t *width, uint32_t *height, float *isca
       *color_space = dt_mipmap_cache_get_colorspace();
     }
   }
-
-  // fprintf(stderr, "[mipmap init 8] export image %u finished (sizes %d %d => %d %d)!\n", imgid, wd, ht,
-  // dat.head.width, dat.head.height);
-
-  // any errors?
+  
   if(res)
   {
-    // fprintf(stderr, "[mipmap_cache] could not process thumbnail!\n");
     *width = *height = 0;
     *iscale = 0.0f;
     *color_space = DT_COLORSPACE_NONE;
