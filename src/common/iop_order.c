@@ -285,7 +285,10 @@ dt_iop_order_t dt_ioppr_get_iop_order_list_kind(GList *iop_order_list)
     const dt_iop_order_entry_t *const restrict entry = (dt_iop_order_entry_t *)l->data;
 
     if(strcmp(v30_order[k].operation, entry->operation))
+    {
       ok = FALSE;
+      break:
+    }
     else
     {
       ok = TRUE;
