@@ -1251,7 +1251,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
 
         guide = guide_tmp;
       }
-/* **** */
+///////////////////////
       guided_filter(guide, mask_bak, mask, owidth, oheight, ch, w, sqrt_eps, guide_weight, 0.f, 1.f);
 
       if(!rois_equal && d->feathering_guide == DEVELOP_MASK_GUIDE_IN)
@@ -1349,19 +1349,6 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
 int dt_develop_blend_version(void)
 {
   return DEVELOP_BLEND_VERSION;
-}
-
-/** report back specific memory requirements for blend step (only relevant for OpenCL path) */
-void tiling_callback_blendop(struct dt_iop_module_t *self, struct dt_dev_pixelpipe_iop_t *piece,
-                             const dt_iop_roi_t *roi_in, const dt_iop_roi_t *roi_out,
-                             struct dt_develop_tiling_t *tiling)
-{
-  tiling->factor = 3.5f; // in + out + (guide, tmp) + two quarter buffers for the mask
-  tiling->maxbuf = 1.0f;
-  tiling->overhead = 0;
-  tiling->overlap = 0;
-  tiling->xalign = 1;
-  tiling->yalign = 1;
 }
 
 gboolean _develop_blend_params_is_all_zero(const void *params, size_t length)

@@ -59,10 +59,6 @@ void default_tiling_callback(struct dt_iop_module_t *self, struct dt_dev_pixelpi
                              const dt_iop_roi_t *roi_in, const dt_iop_roi_t *roi_out,
                              struct dt_develop_tiling_t *tiling);
 
-void tiling_callback_blendop(struct dt_iop_module_t *self, struct dt_dev_pixelpipe_iop_t *piece,
-                             const dt_iop_roi_t *roi_in, const dt_iop_roi_t *roi_out,
-                             struct dt_develop_tiling_t *tiling);
-
 void tiling_callback(struct dt_iop_module_t *self, struct dt_dev_pixelpipe_iop_t *piece,
                      const dt_iop_roi_t *roi_in, const dt_iop_roi_t *roi_out,
                      struct dt_develop_tiling_t *tiling);

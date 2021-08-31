@@ -1060,22 +1060,9 @@ static int dt_dev_pixelpipe_process_rec(dt_dev_pixelpipe_t *pipe, dt_develop_t *
 
       return 0;
     }
-    /* get tiling requirement of module */
+    // get tiling requirement of module
     dt_develop_tiling_t tiling = { 0 };
     module->tiling_callback(module, piece, &roi_in, roi_out, &tiling);
-    /* does this module involve blending? */
-    if(piece->blendop_data && ((dt_develop_blend_params_t *)piece->blendop_data)->mask_mode != DEVELOP_MASK_DISABLED)
-    {
-      /* get specific memory requirement for blending */
-      dt_develop_tiling_t tiling_blendop = { 0 };
-      tiling_callback_blendop(module, piece, &roi_in, roi_out, &tiling_blendop);
-      /* aggregate in structure tiling */
-      tiling.factor = fmax(tiling.factor, tiling_blendop.factor);
-      tiling.maxbuf = fmax(tiling.maxbuf, tiling_blendop.maxbuf);
-      tiling.overhead = fmax(tiling.overhead, tiling_blendop.overhead);
-    }
-
-    assert(tiling.factor > 0.0f);
 
     if(dt_atomic_get_int(&pipe->shutdown))
       return 1;
