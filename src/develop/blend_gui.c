@@ -551,7 +551,7 @@ static dt_iop_colorspace_type_t _blendop_blendif_get_picker_colorspace(dt_iop_gu
     if(bd->tab < 4)
       picker_cst = iop_cs_rgb;
     else
-      picker_cst = iop_cs_HSL;
+      bd->tab = 0;
   }
   else if(bd->csp == iop_cs_Lab)
   {
@@ -686,6 +686,7 @@ static void _blendop_blendif_update_tab(dt_iop_module_t *module, const int tab)
       opolarity ? GRADIENT_SLIDER_MARKER_LOWER_OPEN_BIG : GRADIENT_SLIDER_MARKER_UPPER_OPEN_BIG, 3);
 
   dt_pthread_mutex_lock(&data->lock);
+
   for(int k = 0; k < 4; k++)
   {
     dtgtk_gradient_slider_multivalue_set_value(data->lower_slider, iparameters[k], k);
@@ -693,6 +694,7 @@ static void _blendop_blendif_update_tab(dt_iop_module_t *module, const int tab)
     dtgtk_gradient_slider_multivalue_set_resetvalue(data->lower_slider, idefaults[k], k);
     dtgtk_gradient_slider_multivalue_set_resetvalue(data->upper_slider, odefaults[k], k);
   }
+
   dt_pthread_mutex_unlock(&data->lock);
 
   for(int k = 0; k < 4; k++)
@@ -716,8 +718,6 @@ static void _blendop_blendif_update_tab(dt_iop_module_t *module, const int tab)
 
   dtgtk_gradient_slider_multivalue_set_increment(data->lower_slider, data->increments[tab]);
   dtgtk_gradient_slider_multivalue_set_increment(data->upper_slider, data->increments[tab]);
-
-
   _update_gradient_slider_pickers(NULL, module);
 
   if(data->altdisplay[tab])
@@ -738,21 +738,19 @@ static void _blendop_blendif_tab_switch(GtkNotebook *notebook, GtkWidget *page, 
                                         dt_iop_gui_blend_data_t *data)
 {
   const int cst_old = _blendop_blendif_get_picker_colorspace(data);
-  data->tab = page_num;
+  data->tab = page_num;                     
 
   if(cst_old != _blendop_blendif_get_picker_colorspace(data) &&
      (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->colorpicker)) ||
       gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->colorpicker_set_values))))
-      
   {
     dt_iop_color_picker_set_cst(data->module, _blendop_blendif_get_picker_colorspace(data));
     dt_dev_reprocess_all(data->module->dev);
     dt_control_queue_redraw();
   }
 
-  const int tab = data->tab;
-  _blendop_blendif_update_tab(data->module, tab);
-}
+  _blendop_blendif_update_tab(data->module, data->tab);
+}  /* *** */
 
 static void _blendop_blendif_showmask_clicked(GtkWidget *button, GdkEventButton *event, dt_iop_module_t *module)
 {
@@ -761,10 +759,9 @@ static void _blendop_blendif_showmask_clicked(GtkWidget *button, GdkEventButton 
   if(event->button == 1)
   {
     const int has_mask_display = module->request_mask_display & (DT_DEV_PIXELPIPE_DISPLAY_MASK | DT_DEV_PIXELPIPE_DISPLAY_CHANNEL);
-
     module->request_mask_display &= ~(DT_DEV_PIXELPIPE_DISPLAY_MASK | DT_DEV_PIXELPIPE_DISPLAY_CHANNEL | DT_DEV_PIXELPIPE_DISPLAY_ANY);
-
     GdkModifierType modifiers = gtk_accelerator_get_default_mod_mask();
+    
     if((event->state & modifiers) == (GDK_CONTROL_MASK | GDK_SHIFT_MASK))
       module->request_mask_display |= (DT_DEV_PIXELPIPE_DISPLAY_MASK | DT_DEV_PIXELPIPE_DISPLAY_CHANNEL);
     else if((event->state & modifiers) == GDK_SHIFT_MASK)
@@ -795,8 +792,7 @@ static void _blendop_masks_modes_none_clicked(GtkWidget *button, GdkEventButton 
 
   if(event->button == 1 && data->selected_mask_mode != button)
   {
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->selected_mask_mode),
-                                 FALSE); // unsets currently toggled if any
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->selected_mask_mode), FALSE); // unsets currently toggled if any
     _blendop_masks_mode_callback(DEVELOP_MASK_DISABLED, data);
     data->selected_mask_mode = button;
     /* and finally remove hinter messages */
@@ -825,7 +821,7 @@ static void _blendop_masks_modes_toggle(GtkToggleButton *button, dt_iop_module_t
   {
     _blendop_masks_mode_callback(DEVELOP_MASK_DISABLED, data);
     data->selected_mask_mode = GTK_WIDGET(
-      g_list_nth_data(data->masks_modes_toggles,
+                      g_list_nth_data(data->masks_modes_toggles,
                       g_list_index(data->masks_modes, (gconstpointer)DEVELOP_MASK_DISABLED)));
   }
 }
@@ -864,7 +860,6 @@ static void _blendop_blendif_suppress_toggled(GtkToggleButton *togglebutton, dt_
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(module->off), TRUE);
 
   dt_iop_request_focus(module);
-
   dt_control_queue_redraw_widget(GTK_WIDGET(togglebutton));
   dt_iop_refresh_center(module);
 }
@@ -1365,13 +1360,13 @@ void dt_iop_gui_init_blendif(GtkBox *blendw, dt_iop_module_t *module)
   GtkWidget* event_box = gtk_event_box_new();
   dt_gui_add_help_link(GTK_WIDGET(event_box), "blending.html#parametric_mask");
   gtk_container_add(GTK_CONTAINER(blendw), event_box);
-  /* create and add blendif support if module supports it */
+  // create and add blendif support if module supports it
   if(bd->blendif_support)
   {
     char *Lab_labels[] = { "L", "a", "b" };
     char *Lab_tooltips[]
         = { _("sliders for L channel"), _("sliders for a channel"), _("sliders for b channel") };
-    char *rgb_labels[] = { _("g"), _("R"), _("G"), _("B") };
+    char *rgb_labels[] = { _("gr"), _("R"), _("G"), _("B") };
     char *rgb_tooltips[]
         = { _("sliders for gray value"), _("sliders for red channel"), _("sliders for green channel"),
             _("sliders for blue channel") };
@@ -1389,7 +1384,7 @@ void dt_iop_gui_init_blendif(GtkBox *blendw, dt_iop_module_t *module)
     switch(bd->csp)
     {
       case iop_cs_Lab:
-        maxchannels = 5;
+        maxchannels = 3;
         labels = Lab_labels;
         tooltips = Lab_tooltips;
         bd->scale_print[0] = _blendif_scale_print_L;
@@ -1425,7 +1420,7 @@ void dt_iop_gui_init_blendif(GtkBox *blendw, dt_iop_module_t *module)
         bd->altdisplay[3] = _blendop_blendif_disp_alternative_log;
         break;
       case iop_cs_rgb:
-        maxchannels = 7;
+        maxchannels = 4;
         labels = rgb_labels;
         tooltips = rgb_tooltips;
         bd->scale_print[0] = _blendif_scale_print_rgb;
@@ -1493,7 +1488,7 @@ void dt_iop_gui_init_blendif(GtkBox *blendw, dt_iop_module_t *module)
     bd->channel_tabs = GTK_NOTEBOOK(gtk_notebook_new());
 
     for(int ch = 0; ch < maxchannels; ch++)
-      dt_ui_notebook_page(bd->channel_tabs, labels[ch], tooltips[ch]);
+      dt_ui_notebook_page(bd->channel_tabs, labels[ch], tooltips[ch]);  /* *** */
 
     gtk_widget_show_all(GTK_WIDGET(gtk_notebook_get_nth_page(bd->channel_tabs, bd->tab)));
     gtk_notebook_set_current_page(GTK_NOTEBOOK(bd->channel_tabs), bd->tab);
@@ -1561,8 +1556,10 @@ void dt_iop_gui_init_blendif(GtkBox *blendw, dt_iop_module_t *module)
       gtk_box_pack_start(GTK_BOX(lowlabel), GTK_WIDGET(bd->lower_label[k]), FALSE, FALSE, 0);
     }
 
-    gtk_widget_set_tooltip_text(GTK_WIDGET(bd->lower_slider), _("double click to reset. press 'a' to toggle available slider modes.\npress 'c' to toggle view of channel data. press 'm' to toggle mask view."));
-    gtk_widget_set_tooltip_text(GTK_WIDGET(bd->upper_slider), _("double click to reset. press 'a' to toggle available slider modes.\npress 'c' to toggle view of channel data. press 'm' to toggle mask view."));
+    gtk_widget_set_tooltip_text(GTK_WIDGET(bd->lower_slider),
+      _("double click to reset. to toggle: press 'a' for slider.\npress 'c' for channel. press 'm' for mask view."));
+    gtk_widget_set_tooltip_text(GTK_WIDGET(bd->upper_slider),
+      _("double click to reset. to toggle: press 'a' for slider.\npress 'c' for channel. press 'm' for mask view."));
     gtk_widget_set_tooltip_text(GTK_WIDGET(bd->lower_head), ttinput);
     gtk_widget_set_tooltip_text(GTK_WIDGET(bd->upper_head), ttoutput);
 
@@ -2208,7 +2205,6 @@ void dt_iop_gui_init_blending(GtkWidget *iopw, dt_iop_module_t *module)
       }
     }
     else if(bd->csp == iop_cs_LCh ||
-            bd->csp == iop_cs_HSL ||
             bd->csp == iop_cs_NONE )
     {
     }
