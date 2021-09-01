@@ -109,20 +109,17 @@ static inline int64_t getts()
 static inline float ceil_fast(float x)
 {
   if(x <= 0.f)
-  {
     return (float)(int)x;
-  }
   else
-  {
     return -((float)(int)-x) + 1.f;
-  }
 }
 
 #if defined(__SSE2__)
 /** Compute absolute value
  * @param t Vector of 4 floats
  * @return Vector of their absolute values
- */ static inline __m128 _mm_abs_ps(__m128 t)
+ */ 
+static inline __m128 _mm_abs_ps(__m128 t)
 {
   static const uint32_t signmask[4] __attribute__((aligned(SSE_ALIGNMENT)))
   = { 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff };
@@ -140,42 +137,30 @@ static inline int clip(int i, int min, int max, enum border_mode mode)
   {
     case BORDER_REPLICATE:
       if(i < min)
-      {
         i = min;
-      }
       else if(i > max)
-      {
         i = max;
-      }
       break;
     case BORDER_MIRROR:
       if(i < min)
-      {
         i = min - i;
-      }
       else if(i > max)
-      {
         i = 2 * max - i;
-      }
       break;
+
     case BORDER_WRAP:
       if(i < min)
-      {
         i = max - (min - i);
-      }
       else if(i > max)
-      {
         i = min + (i - max);
-      }
       break;
+
     case BORDER_CLAMP:
       if(i < min || i > max)
-      {
         /* Should not be used as is, we prevent -1 usage, filtering the taps
          * we clip the sample indexes for. So understand this function is
          * specific to its caller. */
         i = -1;
-      }
       break;
   }
 
@@ -188,17 +173,15 @@ static inline void prepare_tap_boundaries(int *tap_first, int *tap_last, const e
   /* Check lower bound pixel index and skip as many pixels as necessary to
    * fall into range */
   *tap_first = 0;
+
   if(mode == BORDER_CLAMP && t < 0)
-  {
     *tap_first = -t;
-  }
 
   // Same for upper bound pixel
   *tap_last = filterwidth;
+
   if(mode == BORDER_CLAMP && t + filterwidth >= max)
-  {
     *tap_last = max - t;
-  }
 }
 
 /** Make sure an aligned chunk will not misalign its following chunk
@@ -250,6 +233,7 @@ static inline float sinf_fast(float t)
  * @param t Radian parameter
  * @return guess what
  */
+ 
 static inline __m128 sinf_fast_sse(__m128 t)
 {
   static const __m128 a
@@ -257,7 +241,7 @@ static inline __m128 sinf_fast_sse(__m128 t)
   static const __m128 p = { 0.225f, 0.225f, 0.225f, 0.225f };
   static const __m128 pi = { M_PI, M_PI, M_PI, M_PI };
 
-  // m4 = a*t*(M_PI - fabsf(t));
+  // m4 = a*t*(M_PI_F - fabsf(t));
   __m128 m1 = _mm_abs_ps(t);
   __m128 m2 = _mm_sub_ps(pi, m1);
   __m128 m3 = _mm_mul_ps(t, m2);
@@ -285,14 +269,12 @@ static inline float bilinear(float width, float t)
 {
   float r;
   t = fabsf(t);
+
   if(t > 1.f)
-  {
     r = 0.f;
-  }
   else
-  {
     r = 1.f - t;
-  }
+
   return r;
 }
 
@@ -313,9 +295,7 @@ static inline float bicubic(float width, float t)
   float r;
   t = fabsf(t);
   if(t >= 2.f)
-  {
     r = 0.f;
-  }
   else if(t > 1.f && t < 2.f)
   {
     float t2 = t * t;
@@ -326,6 +306,7 @@ static inline float bicubic(float width, float t)
     float t2 = t * t;
     r = 0.5f * (t * (3.f * t2 - 5.f * t) + 2.f);
   }
+
   return r;
 }
 
@@ -357,8 +338,7 @@ static inline __m128 bicubic_sse(__m128 width, __m128 t)
   __m128 b = _mm_add_ps(a, four);
   __m128 r12 = _mm_mul_ps(b, half);
 
-  /* Compute case < 1
-   * 0.5f*(t*(3.f*t2 - 5.f*t) + 2.f) */
+  // Compute case < 1 0.5f*(t*(3.f*t2 - 5.f*t) + 2.f) 
   __m128 t23 = _mm_mul_ps(three, t2);
   __m128 c = _mm_sub_ps(t23, t5);
   __m128 d = _mm_mul_ps(t, c);
@@ -384,23 +364,17 @@ static inline __m128 bicubic_sse(__m128 width, __m128 t)
 
 #if 0
 // Reference version left here for ... documentation
-static inline float
-lanczos(float width, float t)
+static inline float lanczos(float width, float t)
 {
   float r;
 
   if (t<-width || t>width)
-  {
     r = 0.f;
-  }
   else if (t>-DT_LANCZOS_EPSILON && t<DT_LANCZOS_EPSILON)
-  {
     r = 1.f;
-  }
   else
-  {
     r = width*sinf(M_PI*t)*sinf(M_PI*t/width)/(M_PI*M_PI*t*t);
-  }
+
   return r;
 }
 #endif
@@ -423,8 +397,7 @@ lanczos(float width, float t)
 
 static inline float lanczos(float width, float t)
 {
-  /* Compute a value for sinf(pi.t) in [-pi pi] for which the value will be
-   * correct */
+  // Compute a value for sinf(pi.t) in [-pi pi] for which the value will be correct
   int a = (int)t;
   float r = t - (float)a;
 
@@ -443,8 +416,7 @@ static inline float lanczos(float width, float t)
 #if defined(__SSE2__)
 static inline __m128 lanczos_sse2(__m128 width, __m128 t)
 {
-  /* Compute a value for sinf(pi.t) in [-pi pi] for which the value will be
-   * correct */
+  // Compute a value for sinf(pi.t) in [-pi pi] for which the value will be correct
   __m128i a = _mm_cvtps_epi32(t);
   __m128 r = _mm_sub_ps(t, _mm_cvtepi32_ps(a));
 
@@ -490,6 +462,7 @@ static const struct dt_interpolation dt_interpolator[] = {
    .name = "bilinear",
    .width = 1,
    .func = &bilinear,
+
 #if defined(__SSE2__)
    .funcsse = &bilinear_sse
 #endif
@@ -498,6 +471,7 @@ static const struct dt_interpolation dt_interpolator[] = {
    .name = "bicubic",
    .width = 2,
    .func = &bicubic,
+
 #if defined(__SSE2__)
    .funcsse = &bicubic_sse
 #endif
@@ -506,6 +480,7 @@ static const struct dt_interpolation dt_interpolator[] = {
    .name = "lanczos2",
    .width = 2,
    .func = &lanczos,
+
 #if defined(__SSE2__)
    .funcsse = &lanczos_sse2
 #endif
@@ -514,6 +489,7 @@ static const struct dt_interpolation dt_interpolator[] = {
    .name = "lanczos3",
    .width = 3,
    .func = &lanczos,
+
 #if defined(__SSE2__)
    .funcsse = &lanczos_sse2
 #endif
@@ -705,23 +681,19 @@ static inline void compute_downsampling_kernel_sse(const struct dt_interpolation
   /* Compute the phase difference between output pixel and its
    * input corresponding input pixel */
   float xin = ceil_fast(((float)xout - w) / outoinratio);
+
   if(first)
-  {
     *first = (int)xin;
-  }
 
   // Compute first interpolator parameter
   float t = xin * outoinratio - (float)xout;
-
   // Compute all filter taps
   *taps = (int)((w - t) / outoinratio);
-
   // Bootstrap vector t
   static const __m128 bootstrap = { 0.f, 1.f, 2.f, 3.f };
   const __m128 iter = _mm_set_ps1(4.f * outoinratio);
   const __m128 vw = _mm_set_ps1(w);
   __m128 vt = _mm_add_ps(_mm_set_ps1(t), _mm_mul_ps(_mm_set_ps1(outoinratio), bootstrap));
-
   // Prepare counters (math kept stupid for understanding)
   int i = 0;
   int runs = (*taps + 3) / 4;
@@ -730,28 +702,27 @@ static inline void compute_downsampling_kernel_sse(const struct dt_interpolation
   {
     // Compute the values
     __m128 vr = itor->funcsse(vw, vt);
-
     // Save result
     *(__m128 *)kernel = vr;
-
     // Prepare next iteration
     vt = _mm_add_ps(vt, iter);
     kernel += 4;
     i++;
   }
-
   // compute norm now
   if(norm)
   {
     float n = 0.f;
     i = 0;
     kernel -= 4 * runs;
+
     while(i < *taps)
     {
       n += *kernel;
       kernel++;
       i++;
     }
+
     *norm = n;
   }
 }
@@ -813,13 +784,14 @@ float dt_interpolation_compute_sample(const struct dt_interpolation *itor, const
     for(int i = 0; i < 2 * itor->width; i++)
     {
       float h = 0.0f;
+
       for(int j = 0; j < 2 * itor->width; j++)
-      {
         h += kernelh[j] * in[j * samplestride];
-      }
+
       s += kernelv[i] * h;
       in += linestride;
     }
+
     r = s / (normh * normv);
   }
   else if(ix >= 0 && iy >= 0 && ix < width && iy < height)
@@ -830,7 +802,6 @@ float dt_interpolation_compute_sample(const struct dt_interpolation *itor, const
     // Point to the upper left pixel index wise
     iy -= itor->width - 1;
     ix -= itor->width - 1;
-
     static const enum border_mode bordermode = INTERPOLATION_BORDER_MODE;
     assert(bordermode != BORDER_CLAMP); // XXX in clamp mode, norms would be wrong
 
@@ -844,26 +815,27 @@ float dt_interpolation_compute_sample(const struct dt_interpolation *itor, const
 
     // Apply the kernel
     float s = 0.f;
+
     for(int i = ytap_first; i < ytap_last; i++)
     {
       int clip_y = clip(iy + i, 0, height - 1, bordermode);
       float h = 0.0f;
+
       for(int j = xtap_first; j < xtap_last; j++)
       {
         int clip_x = clip(ix + j, 0, width - 1, bordermode);
         const float *ipixel = in + clip_y * linestride + clip_x * samplestride;
         h += kernelh[j] * ipixel[0];
       }
+
       s += kernelv[i] * h;
     }
 
     r = s / (normh * normv);
   }
-  else
-  {
-    // invalid coordinate
+  else // invalid coordinate
     r = 0.0f;
-  }
+
   return r;
 }
 
@@ -908,18 +880,22 @@ static void dt_interpolation_compute_pixel4c_plain(const struct dt_interpolation
 
     // Apply the kernel
     float pixel[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
     for(int i = 0; i < 2 * itor->width; i++)
     {
       float h[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
       for(int j = 0; j < 2 * itor->width; j++)
-      {
         for(int c = 0; c < 3; c++) h[c] += kernelh[j] * in[j * 4 + c];
-      }
-      for(int c = 0; c < 3; c++) pixel[c] += kernelv[i] * h[c];
+
+      for(int c = 0; c < 3; c++)
+        pixel[c] += kernelv[i] * h[c];
+
       in += linestride;
     }
 
-    for(int c = 0; c < 3; c++) out[c] = oonorm * pixel[c];
+    for(int c = 0; c < 3; c++)
+      out[c] = oonorm * pixel[c];
   }
   else if(ix >= 0 && iy >= 0 && ix < width && iy < height)
   {
@@ -928,7 +904,6 @@ static void dt_interpolation_compute_pixel4c_plain(const struct dt_interpolation
     // Point to the upper left pixel index wise
     iy -= itor->width - 1;
     ix -= itor->width - 1;
-
     static const enum border_mode bordermode = INTERPOLATION_BORDER_MODE;
     assert(bordermode != BORDER_CLAMP); // XXX in clamp mode, norms would be wrong
 
@@ -939,28 +914,32 @@ static void dt_interpolation_compute_pixel4c_plain(const struct dt_interpolation
     int ytap_first;
     int ytap_last;
     prepare_tap_boundaries(&ytap_first, &ytap_last, bordermode, 2 * itor->width, iy, height);
-
     // Apply the kernel
     float pixel[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
     for(int i = ytap_first; i < ytap_last; i++)
     {
       int clip_y = clip(iy + i, 0, height - 1, bordermode);
       float h[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
       for(int j = xtap_first; j < xtap_last; j++)
       {
         int clip_x = clip(ix + j, 0, width - 1, bordermode);
         const float *ipixel = in + clip_y * linestride + clip_x * 4;
-        for(int c = 0; c < 3; c++) h[c] += kernelh[j] * ipixel[c];
+
+        for(int c = 0; c < 3; c++)
+          h[c] += kernelh[j] * ipixel[c];
       }
-      for(int c = 0; c < 3; c++) pixel[c] += kernelv[i] * h[c];
+
+      for(int c = 0; c < 3; c++)
+        pixel[c] += kernelv[i] * h[c];
     }
 
-    for(int c = 0; c < 3; c++) out[c] = oonorm * pixel[c];
+    for(int c = 0; c < 3; c++)
+      out[c] = oonorm * pixel[c];
   }
   else
-  {
     for(int c = 0; c < 3; c++) out[c] = 0.0f;
-  }
 }
 
 #if defined(__SSE2__)
@@ -969,7 +948,6 @@ static void dt_interpolation_compute_pixel4c_sse(const struct dt_interpolation *
                                                  const int height, const int linestride)
 {
   assert(itor->width < (MAX_HALF_FILTER_WIDTH + 1));
-
   // Quite a bit of space for kernels
   float kernelh[MAX_KERNEL_REQ] __attribute__((aligned(SSE_ALIGNMENT)));
   float kernelv[MAX_KERNEL_REQ] __attribute__((aligned(SSE_ALIGNMENT)));
@@ -1010,13 +988,13 @@ static void dt_interpolation_compute_pixel4c_sse(const struct dt_interpolation *
 
     // Apply the kernel
     __m128 pixel = _mm_setzero_ps();
+
     for(int i = 0; i < 2 * itor->width; i++)
     {
       __m128 h = _mm_setzero_ps();
       for(int j = 0; j < 2 * itor->width; j++)
-      {
         h = _mm_add_ps(h, _mm_mul_ps(vkernelh[j], *(__m128 *)&in[j * 4]));
-      }
+
       pixel = _mm_add_ps(pixel, _mm_mul_ps(vkernelv[i], h));
       in += linestride;
     }
@@ -1026,14 +1004,12 @@ static void dt_interpolation_compute_pixel4c_sse(const struct dt_interpolation *
   else if(ix >= 0 && iy >= 0 && ix < width && iy < height)
   {
     // At least a valid coordinate
-
     // Point to the upper left pixel index wise
     iy -= itor->width - 1;
     ix -= itor->width - 1;
 
     static const enum border_mode bordermode = INTERPOLATION_BORDER_MODE;
     assert(bordermode != BORDER_CLAMP); // XXX in clamp mode, norms would be wrong
-
     int xtap_first;
     int xtap_last;
     prepare_tap_boundaries(&xtap_first, &xtap_last, bordermode, 2 * itor->width, ix, width);
@@ -1044,25 +1020,26 @@ static void dt_interpolation_compute_pixel4c_sse(const struct dt_interpolation *
 
     // Apply the kernel
     __m128 pixel = _mm_setzero_ps();
+
     for(int i = ytap_first; i < ytap_last; i++)
     {
       int clip_y = clip(iy + i, 0, height - 1, bordermode);
       __m128 h = _mm_setzero_ps();
+
       for(int j = xtap_first; j < xtap_last; j++)
       {
         int clip_x = clip(ix + j, 0, width - 1, bordermode);
         const float *ipixel = in + clip_y * linestride + clip_x * 4;
         h = _mm_add_ps(h, _mm_mul_ps(vkernelh[j], *(__m128 *)ipixel));
       }
+
       pixel = _mm_add_ps(pixel, _mm_mul_ps(vkernelv[i], h));
     }
 
     *(__m128 *)out = _mm_mul_ps(pixel, oonorm);
   }
   else
-  {
     *(__m128 *)out = _mm_set_ps1(0.0f);
-  }
 }
 #endif
 
@@ -1117,13 +1094,14 @@ static void dt_interpolation_compute_pixel1c_plain(const struct dt_interpolation
 
     // Apply the kernel
     float pixel = 0.0f;
+
     for(int i = 0; i < 2 * itor->width; i++)
     {
       float h = 0.0f;
+
       for(int j = 0; j < 2 * itor->width; j++)
-      {
         h += kernelh[j] * in[j];
-      }
+
       pixel += kernelv[i] * h;
       in += linestride;
     }
@@ -1137,7 +1115,6 @@ static void dt_interpolation_compute_pixel1c_plain(const struct dt_interpolation
     // Point to the upper left pixel index wise
     iy -= itor->width - 1;
     ix -= itor->width - 1;
-
     static const enum border_mode bordermode = INTERPOLATION_BORDER_MODE;
     assert(bordermode != BORDER_CLAMP); // XXX in clamp mode, norms would be wrong
 
@@ -1148,28 +1125,28 @@ static void dt_interpolation_compute_pixel1c_plain(const struct dt_interpolation
     int ytap_first;
     int ytap_last;
     prepare_tap_boundaries(&ytap_first, &ytap_last, bordermode, 2 * itor->width, iy, height);
-
     // Apply the kernel
     float pixel = 0.0f;
+
     for(int i = ytap_first; i < ytap_last; i++)
     {
       int clip_y = clip(iy + i, 0, height - 1, bordermode);
       float h = 0.0f;
+
       for(int j = xtap_first; j < xtap_last; j++)
       {
         int clip_x = clip(ix + j, 0, width - 1, bordermode);
         const float *ipixel = in + clip_y * linestride + clip_x;
         h += kernelh[j] * *ipixel;
       }
+
       pixel += kernelv[i] * h;
     }
 
     *out = oonorm * pixel;
   }
   else
-  {
     *out = 0.0f;
-  }
 }
 
 void dt_interpolation_compute_pixel1c(const struct dt_interpolation *itor, const float *in, float *out,
@@ -1836,9 +1813,9 @@ static void dt_interpolation_resample_1c_plain(const struct dt_interpolation *it
 #endif
     for(int y = 0; y < roi_out->height; y++)
     {
-      float *i = (float *)((char *)in + (size_t)in_stride * (y + roi_out->y) + x0);
-      float *o = (float *)((char *)out + (size_t)out_stride * y);
-      memcpy(o, i, out_stride);
+      memcpy((char *)out + (size_t)out_stride * y,
+             (char *)in + (size_t)in_stride * (y + roi_out->y) + x0,
+             out_stride);
     }
 #if DEBUG_RESAMPLING_TIMING
     ts_resampling = getts() - ts_resampling;
