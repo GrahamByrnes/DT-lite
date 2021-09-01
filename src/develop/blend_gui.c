@@ -750,7 +750,8 @@ static void _blendop_blendif_tab_switch(GtkNotebook *notebook, GtkWidget *page, 
     dt_control_queue_redraw();
   }
 
-  _blendop_blendif_update_tab(data->module, data->tab);
+  const int tab = data->tab;
+  _blendop_blendif_update_tab(data->module, tab);
 }
 
 static void _blendop_blendif_showmask_clicked(GtkWidget *button, GdkEventButton *event, dt_iop_module_t *module)

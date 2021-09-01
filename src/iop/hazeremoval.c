@@ -641,19 +641,7 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
   transition_map(img_in, trans_map, w1, A0, strength);
   // refine the transition map
   box_min(trans_map, trans_map, w1);
-
-/* 
-  // apply guided filter with no clipping
-  gray_image trans_map_filtered = new_gray_image(width, height);
-  const float eps = sqrtf(0.025f);    // regularization parameter for guided filter
-  const int w2 = 9; // window size (positive integer) for the guided filter
-  guided_filter(img_in.data, trans_map.data, trans_map_filtered.data, width, height, 4,
-                w2, eps, 1.f, -FLT_MAX, FLT_MAX);
-  const gray_image c_trans_map_filtered = trans_map_filtered;
- */
-
   const gray_image c_trans_map_filtered = trans_map; // !!!!
-
   // finally, calculate the haze-free image
   const float t_min
       = fminf(fmaxf(expf(-distance * distance_max), 1.0f / 1024), 1.0f); // minimum allowed value for transition map
@@ -675,7 +663,6 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
   }
 
   free_gray_image(&trans_map);
-  //free_gray_image(&trans_map_filtered);
 
   if(piece->pipe->mask_display & DT_DEV_PIXELPIPE_DISPLAY_MASK)
     dt_iop_alpha_copy(ivoid, ovoid, roi_out->width, roi_out->height);

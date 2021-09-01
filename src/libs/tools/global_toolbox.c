@@ -691,8 +691,6 @@ static void _lib_help_button_clicked(GtkWidget *widget, gpointer user_data)
   gdk_event_handler_set(_main_do_event, user_data, NULL);
 }
 
-
-
 void init_key_accels(dt_lib_module_t *self)
 {
   dt_accel_register_global(NC_("accel", "grouping"), 0, 0);
