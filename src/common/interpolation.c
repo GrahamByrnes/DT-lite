@@ -44,58 +44,9 @@ enum border_mode
  * unnecessary modes in interpolation codepath */
 #define INTERPOLATION_BORDER_MODE BORDER_MIRROR
 
-// Defines minimum alignment requirement for critical SIMD code
-#define SSE_ALIGNMENT 64
-
 // Defines the maximum kernel half length
 // !! Make sure to sync this with the filter array !!
 #define MAX_HALF_FILTER_WIDTH 3
-
-// Add code for timing resampling function
-#define DEBUG_RESAMPLING_TIMING 0
-
-// Add debug info messages to stderr
-#define DEBUG_PRINT_INFO 0
-
-// Add *verbose* (like one msg per pixel out) debug message to stderr
-#define DEBUG_PRINT_VERBOSE 0
-
-/* --------------------------------------------------------------------------
- * Debug helpers
- * ------------------------------------------------------------------------*/
-
-#if DEBUG_RESAMPLING_TIMING
-#include <sys/time.h>
-#endif
-
-#if DEBUG_PRINT_INFO
-#define debug_info(...)                                                                                      \
-  do                                                                                                         \
-  {                                                                                                          \
-    fprintf(stderr, __VA_ARGS__);                                                                            \
-  } while(0)
-#else
-#define debug_info(...)
-#endif
-
-#if DEBUG_PRINT_VERBOSE
-#define debug_extra(...)                                                                                     \
-  do                                                                                                         \
-  {                                                                                                          \
-    fprintf(stderr, __VA_ARGS__);                                                                            \
-  } while(0)
-#else
-#define debug_extra(...)
-#endif
-
-#if DEBUG_RESAMPLING_TIMING
-static inline int64_t getts()
-{
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  return t.tv_sec * INT64_C(1000000) + t.tv_usec;
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * Generic helpers
@@ -207,10 +158,6 @@ static inline float sinf_fast(float t)
 }
 
 /* --------------------------------------------------------------------------
- * Interpolation kernels
- * ------------------------------------------------------------------------*/
-
-/* --------------------------------------------------------------------------
  * Bilinear interpolation
  * ------------------------------------------------------------------------*/
 
@@ -274,21 +221,9 @@ static inline float lanczos(float width, float t)
 }
 #endif
 
-/* Fast lanczos version, no calls to math.h functions, too accurate, too slow
- *
- * Based on a forum entry at
+/* Based on a forum entry at
  * http://devmaster.net/forums/topic/4648-fast-and-accurate-sinecosine/
- *
- * Apart the fast sine function approximation, the only trick is to compute:
- * sin(pi.t) = sin(a.pi + r.pi) where t = a + r = trunc(t) + r
- *           = sin(a.pi).cos(r.pi) + sin(r.pi).cos(a.pi)
- *           =         0*cos(r.pi) + sin(r.pi).cos(a.pi)
- *           = sign.sin(r.pi) where sign =  1 if the a is even
- *                                       = -1 if the a is odd
- *
- * Of course we know that lanczos func will only be called for
- * the range -width < t < width so we can additionally avoid the
- * range check.  */
+ *  */
 
 static inline float lanczos(float width, float t)
 {
@@ -829,7 +764,7 @@ static int prepare_resampling_plan(const struct dt_interpolation *itor, int in, 
 
   void *blob = NULL;
   size_t totalreq = kernelreq + lengthreq + indexreq + scratchreq + metareq;
-  blob = dt_alloc_align(SSE_ALIGNMENT, totalreq);
+  blob = dt_alloc_align(64, totalreq);
 
   if(!blob)
     return 1;
@@ -958,18 +893,11 @@ static void dt_interpolation_resample_plain(const struct dt_interpolation *itor,
   float *vkernel = NULL;
   int *vmeta = NULL;
   int r;
-
-  debug_info("resampling %p (%dx%d@%dx%d scale %f) -> %p (%dx%d@%dx%d scale %f)\n", in, roi_in->width,
-             roi_in->height, roi_in->x, roi_in->y, roi_in->scale, out, roi_out->width, roi_out->height,
-             roi_out->x, roi_out->y, roi_out->scale);
-
   // Fast code path for 1:1 copy, only cropping area can change
   if(roi_out->scale == 1.f)
   {
     const int x0 = roi_out->x * 4 * sizeof(float);
-#if DEBUG_RESAMPLING_TIMING
-    int64_t ts_resampling = getts();
-#endif
+
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
     dt_omp_firstprivate(in, in_stride, out_stride, roi_out, x0) \
@@ -981,17 +909,9 @@ static void dt_interpolation_resample_plain(const struct dt_interpolation *itor,
              (char *)in + (size_t)in_stride * (y + roi_out->y) + x0,
              out_stride);
     }
-#if DEBUG_RESAMPLING_TIMING
-    ts_resampling = getts() - ts_resampling;
-    fprintf(stderr, "resampling %p plan:0us resampling:%" PRId64 "us\n", in, ts_resampling);
-#endif
+
     return;
   }
-
-#if DEBUG_RESAMPLING_TIMING
-  int64_t ts_plan = getts();
-#endif
-
   // Prepare resampling plans once and for all
   r = prepare_resampling_plan(itor, roi_in->width, roi_in->x, roi_out->width, roi_out->x, roi_out->scale,
                               &hlength, &hkernel, &hindex, NULL);
@@ -1002,14 +922,6 @@ static void dt_interpolation_resample_plain(const struct dt_interpolation *itor,
                               &vlength, &vkernel, &vindex, &vmeta);
   if(r)
     goto exit;
-
-#if DEBUG_RESAMPLING_TIMING
-  ts_plan = getts() - ts_plan;
-#endif
-
-#if DEBUG_RESAMPLING_TIMING
-  int64_t ts_resampling = getts();
-#endif
 
 // Process each output line
 #ifdef _OPENMP
@@ -1032,8 +944,6 @@ static void dt_interpolation_resample_plain(const struct dt_interpolation *itor,
     // Process each output column
     for(int ox = 0; ox < roi_out->width; ox++)
     {
-      debug_extra("output %p [% 4d % 4d]\n", out, ox, oy);
-      // This will hold the resulting pixel
       float vs[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
       // Number of horizontal samples contributing to the output
       int hl = hlength[hlidx++]; // H(orizontal) L(ength)
@@ -1070,11 +980,6 @@ static void dt_interpolation_resample_plain(const struct dt_interpolation *itor,
       hkidx += hl;
     }
   }
-
-#if DEBUG_RESAMPLING_TIMING
-  ts_resampling = getts() - ts_resampling;
-  fprintf(stderr, "resampling %p plan:%" PRId64 "us resampling:%" PRId64 "us\n", in, ts_plan, ts_resampling);
-#endif
 
 exit:
   dt_free_align(hlength);
@@ -1123,16 +1028,10 @@ static void dt_interpolation_resample_1c_plain(const struct dt_interpolation *it
   float *vkernel = NULL;
   int *vmeta = NULL;
   int r;
-  debug_info("resampling %p (%dx%d@%dx%d scale %f) -> %p (%dx%d@%dx%d scale %f)\n", in, roi_in->width,
-             roi_in->height, roi_in->x, roi_in->y, roi_in->scale, out, roi_out->width, roi_out->height,
-             roi_out->x, roi_out->y, roi_out->scale);
   // Fast code path for 1:1 copy, only cropping area can change
   if(roi_out->scale == 1.f)
   {
     const int x0 = roi_out->x * sizeof(float);
-#if DEBUG_RESAMPLING_TIMING
-    int64_t ts_resampling = getts();
-#endif
 
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
@@ -1140,22 +1039,12 @@ static void dt_interpolation_resample_1c_plain(const struct dt_interpolation *it
     shared(out)
 #endif
     for(int y = 0; y < roi_out->height; y++)
-    {
       memcpy((char *)out + (size_t)out_stride * y,
              (char *)in + (size_t)in_stride * (y + roi_out->y) + x0,
              out_stride);
-    }
-#if DEBUG_RESAMPLING_TIMING
-    ts_resampling = getts() - ts_resampling;
-    fprintf(stderr, "resampling %p plan:0us resampling:%" PRId64 "us\n", in, ts_resampling);
-#endif
+
     return;
   }
-
-#if DEBUG_RESAMPLING_TIMING
-  int64_t ts_plan = getts();
-#endif
-
   // Prepare resampling plans once and for all
   r = prepare_resampling_plan(itor, roi_in->width, roi_in->x, roi_out->width, roi_out->x, roi_out->scale,
                               &hlength, &hkernel, &hindex, NULL);
@@ -1166,14 +1055,6 @@ static void dt_interpolation_resample_1c_plain(const struct dt_interpolation *it
                               &vlength, &vkernel, &vindex, &vmeta);
   if(r)
     goto exit;
-
-#if DEBUG_RESAMPLING_TIMING
-  ts_plan = getts() - ts_plan;
-#endif
-
-#if DEBUG_RESAMPLING_TIMING
-  int64_t ts_resampling = getts();
-#endif
 
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
@@ -1195,8 +1076,6 @@ static void dt_interpolation_resample_1c_plain(const struct dt_interpolation *it
     // Process each output column
     for(int ox = 0; ox < roi_out->width; ox++)
     {
-      debug_extra("output %p [% 4d % 4d]\n", out, ox, oy);
-      // This will hold the resulting pixel
       float vs = 0.0f;
       // Number of horizontal samples contributing to the output
       int hl = hlength[hlidx++]; // H(orizontal) L(ength)
@@ -1232,11 +1111,6 @@ static void dt_interpolation_resample_1c_plain(const struct dt_interpolation *it
       hkidx += hl;
     }
   }
-
-#if DEBUG_RESAMPLING_TIMING
-  ts_resampling = getts() - ts_resampling;
-  fprintf(stderr, "resampling %p plan:%" PRId64 "us resampling:%" PRId64 "us\n", in, ts_plan, ts_resampling);
-#endif
 
   exit:
   dt_free_align(hlength);

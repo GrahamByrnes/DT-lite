@@ -19,10 +19,6 @@
 #pragma once
 
 #include "develop/pixelpipe_hb.h"
-
-#if defined(__SSE__)
-#include <xmmintrin.h>
-#endif
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
