@@ -622,8 +622,8 @@ static void dt_interpolation_compute_pixel1c_plain(const struct dt_interpolation
 {
   assert(itor->width < (MAX_HALF_FILTER_WIDTH + 1));
   // Quite a bit of space for kernels
-  float kernelh[MAX_KERNEL_REQ]; //__attribute__((aligned(SSE_ALIGNMENT)));
-  float kernelv[MAX_KERNEL_REQ]; //__attribute__((aligned(SSE_ALIGNMENT)));
+  float kernelh[MAX_KERNEL_REQ];
+  float kernelv[MAX_KERNEL_REQ];
   // Compute both horizontal and vertical kernels
   float normh;
   float normv;
@@ -820,9 +820,9 @@ static int prepare_resampling_plan(const struct dt_interpolation *itor, int in, 
   int nlengths = out;
   int nindex = maxtapsapixel * out;
   int nkernel = maxtapsapixel * out;
-  size_t lengthreq = increase_for_alignment(nlengths * sizeof(int), SSE_ALIGNMENT);
-  size_t indexreq = increase_for_alignment(nindex * sizeof(int), SSE_ALIGNMENT);
-  size_t kernelreq = increase_for_alignment(nkernel * sizeof(float), SSE_ALIGNMENT);
+  size_t lengthreq = nlengths * sizeof(int);
+  size_t indexreq = nindex * sizeof(int);
+  size_t kernelreq = nkernel * sizeof(float);
   size_t scratchreq = maxtapsapixel * sizeof(float) + 4 * sizeof(float);
   // NB: because sse versions compute four taps a time
   size_t metareq = pmeta ? 3 * sizeof(int) * out : 0;
