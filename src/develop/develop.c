@@ -1346,23 +1346,6 @@ static gboolean _dev_auto_apply_presets(dt_develop_t *dev)
     return FALSE;
   }
 
-  //add scene-referred workflow
-  if(dt_image_is_matrix_correction_supported(image)
-     && strcmp(dt_conf_get_string("plugins/darkroom/workflow"), "scene-referred") == 0)
-  {
-    for(GList *modules = dev->iop; modules; modules = g_list_next(modules))
-    {
-      dt_iop_module_t *module = (dt_iop_module_t *)modules->data;
-
-      if(!dt_history_check_module_exists(imgid, module->op)
-         && strcmp(module->op, "filmicrgb") == 0
-         && !(module->flags() & IOP_FLAGS_NO_HISTORY_STACK))
-      {
-        _dev_insert_module(dev, module, imgid);
-      }
-    }
-  }
-
   // select all presets from one of the following table and add them into memory.history. Note that
   // this is appended to possibly already present default modules.
   const char *preset_table[2] = { "data.presets", "main.legacy_presets" };

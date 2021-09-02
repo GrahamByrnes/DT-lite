@@ -44,24 +44,14 @@ enum dt_interpolation_type
   DT_INTERPOLATION_USERPREF /**< can be specified so that user setting is chosen */
 };
 
-/** Interpolation function */
 typedef float (*dt_interpolation_func)(float width, float t);
 
-#if defined(__SSE2__)
-/** Interpolation function (SSE) */
-typedef __m128 (*dt_interpolation_sse_func)(__m128 width, __m128 t);
-#endif
-
-/** Interpolation structure */
 struct dt_interpolation
 {
   enum dt_interpolation_type id;     /**< Id such as defined by the dt_interpolation_type */
   const char *name;                  /**< internal name  */
   int width;                         /**< Half width of its kernel support */
   dt_interpolation_func func;        /**< Kernel function */
-#if defined(__SSE2__)
-  dt_interpolation_sse_func funcsse; /**< Kernel function (four params a time) */
-#endif
 };
 
 /** Compute a single interpolated sample.
