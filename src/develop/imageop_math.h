@@ -74,7 +74,6 @@ void dt_iop_clip_and_zoom_demosaic_half_size_f(float *out, const float *const in
                                                const int32_t in_stride, const uint32_t filters);
 
 /** x-trans sensor downscaling */
-
 void dt_iop_clip_and_zoom_demosaic_third_size_xtrans_f(float *out, const float *const in,
                                                        const struct dt_iop_roi_t *const roi_out,
                                                        const struct dt_iop_roi_t *const roi_in,
@@ -135,29 +134,7 @@ static inline void dt_iop_estimate_exp(const float *const x, const float *const 
   coeff[2] = g;
 }
 
-
-__DT_CLONE_TARGETS__
-static inline void dt_simd_memcpy(const float *const __restrict__ in,
-                                  float *const __restrict__ out,
-                                  const size_t num_elem)
-{
-  // Perform a parallel vectorized memcpy on 64-bits aligned
-  // contiguous buffers. This is several times faster than the original memcpy
-
-#ifdef _OPENMP
-#pragma omp parallel for simd default(none) \
-dt_omp_firstprivate(in, out, num_elem) \
-schedule(simd:static) aligned(in, out:64)
-#endif
-  for(size_t k = 0; k < num_elem; k++)
-    out[k] = in[k];
-}
-
-
 /** evaluates the exp fit. */
-#ifdef _OPENMP
-#pragma omp declare simd
-#endif
 static inline float dt_iop_eval_exp(const float *const coeff, const float x)
 {
   return coeff[1] * powf(x * coeff[0], coeff[2]);
@@ -165,9 +142,6 @@ static inline float dt_iop_eval_exp(const float *const coeff, const float x)
 
 
 /** Copy alpha channel 1:1 from input to output */
-#ifdef _OPENMP
-#pragma omp declare simd uniform(width, height) aligned(ivoid, ovoid:64)
-#endif
 static inline void dt_iop_alpha_copy(const void *const ivoid,
                                      void *const ovoid,
                                      const size_t width, const size_t height)
@@ -176,7 +150,7 @@ static inline void dt_iop_alpha_copy(const void *const ivoid,
   float *const __restrict__ out = (float *const)ovoid;
 
 #ifdef _OPENMP
-#pragma omp parallel for simd default(none) aligned(out, in:64)\
+#pragma omp parallel for default(none)\
   dt_omp_firstprivate(height, width, out, in) \
   schedule(static)
 #endif
@@ -211,10 +185,6 @@ static inline int FCxtrans(const int row, const int col, const dt_iop_roi_t *con
   return xtrans[irow % 6][icol % 6];
 }
 
-
-#ifdef _OPENMP
-#pragma omp declare simd
-#endif
 static inline int fcol(const int row, const int col, const uint32_t filters, const uint8_t (*const xtrans)[6])
 {
   if(filters == 9)
