@@ -191,11 +191,17 @@ static void _image_get_infos(dt_thumbnail_t *thumb)
 
 static gboolean _thumb_expose_again(gpointer user_data)
 {
-  if(!user_data || !GTK_IS_WIDGET(user_data)) 
+  dt_thumbnail_t *thumb = (dt_thumbnail_t *)user_data;
+  gpointer w_image = thumb->w_image;
+
+  if(!thumb)
     return FALSE;
 
-  GtkWidget *widget = (GtkWidget *)user_data;
-   gtk_widget_queue_draw(widget);
+  if(!w_image || !GTK_IS_WIDGET(w_image))
+    return FALSE;
+
+  thumb->expose_again_timeout_id = 0;
+  gtk_widget_queue_draw((GtkWidget *)w_image);
   return FALSE;
 }
 
@@ -407,7 +413,8 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
       if(res)
       {
         // if the image is missing, we reload it again
-        g_timeout_add(250, _thumb_expose_again, widget);
+       if(!thumb->expose_again_timeout_id)
+          thumb->expose_again_timeout_id = g_timeout_add(250, _thumb_expose_again, thumb);
         // we still draw the thumb to avoid flickering
         _thumb_draw_image(thumb, cr);
         return TRUE;
@@ -1206,9 +1213,10 @@ dt_thumbnail_t *dt_thumbnail_new(int width, int height, int imgid, int rowid, dt
   thumb->zoom = 1.0f;
   thumb->overlay_timeout_duration = dt_conf_get_int("plugins/lighttable/overlay_timeout");
   thumb->tooltip = tooltip;
-
+  thumb->expose_again_timeout_id = 0;
   // we read and cache all the infos from dt_image_t that we need
   const dt_image_t *img = dt_image_cache_get(darktable.image_cache, thumb->imgid, 'r');
+
   if(img)
   {
     thumb->filename = g_strdup(img->filename);
@@ -1217,6 +1225,7 @@ dt_thumbnail_t *dt_thumbnail_new(int width, int height, int imgid, int rowid, dt
 
     dt_image_cache_read_release(darktable.image_cache, img);
   }
+
   if(thumb->over == DT_THUMBNAIL_OVERLAYS_ALWAYS_EXTENDED || thumb->over == DT_THUMBNAIL_OVERLAYS_HOVER_EXTENDED
      || over == DT_THUMBNAIL_OVERLAYS_MIXED || thumb->over == DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK)
     _thumb_update_extended_infos_line(thumb);
@@ -1255,6 +1264,7 @@ dt_thumbnail_t *dt_thumbnail_new(int width, int height, int imgid, int rowid, dt
 void dt_thumbnail_destroy(dt_thumbnail_t *thumb)
 {
   if(thumb->overlay_timeout_id > 0) g_source_remove(thumb->overlay_timeout_id);
+  if(thumb->expose_again_timeout_id != 0) g_source_remove(thumb->expose_again_timeout_id);
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_dt_selection_changed_callback), thumb);
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_dt_active_images_callback), thumb);
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_dt_mipmaps_updated_callback), thumb);
