@@ -252,7 +252,8 @@ static inline float lanczos(float width, float t)
  * of this filter list. Otherwise bad things will happen
  * !!! !!! !!!
  */
-static const struct dt_interpolation dt_interpolator[] = {
+static const struct dt_interpolation
+  dt_interpolator[] = {
   {.id = DT_INTERPOLATION_BILINEAR,
    .name = "bilinear",
    .width = 1,
@@ -384,10 +385,7 @@ float dt_interpolation_compute_sample(const struct dt_interpolation *itor, const
   int ix = (int)x;
   int iy = (int)y;
 
-  /* Now 2 cases, the pixel + filter width goes outside the image
-   * in that case we have to use index clipping to keep all reads
-   * in the input image (slow path) or we are sure it won't fall
-   * outside and can do more simple code */
+  // clip if pixel + filter outside image
   float r;
   if(ix >= (itor->width - 1) && iy >= (itor->width - 1) && ix < (width - itor->width)
      && iy < (height - itor->width))
@@ -470,10 +468,7 @@ static void dt_interpolation_compute_pixel4c_plain(const struct dt_interpolation
   compute_upsampling_kernel(itor, kernelv, &normv, NULL, y);
   // Precompute the inverse of the filter norm for later use
   const float oonorm = (1.f / (normh * normv));
-  /* Now 2 cases, the pixel + filter width goes outside the image
-   * in that case we have to use index clipping to keep all reads
-   * in the input image (slow path) or we are sure it won't fall
-   * outside and can do more simple code */
+  // Must clip if falls outside image
   int ix = (int)x;
   int iy = (int)y;
 
@@ -849,8 +844,8 @@ static void dt_interpolation_resample_plain(const struct dt_interpolation *itor,
 
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
-  dt_omp_firstprivate(in, in_stride, out_stride, roi_out) \
-  shared(out, hindex, hlength, hkernel, vindex, vlength, vkernel, vmeta, ch)
+  dt_omp_firstprivate(in, in_stride, out_stride, roi_out, ch) \
+  shared(out, hindex, hlength, hkernel, vindex, vlength, vkernel, vmeta)
 #endif
   for(int oy = 0; oy < roi_out->height; oy++)
   {
@@ -939,7 +934,7 @@ void dt_interpolation_resample_roi(const struct dt_interpolation *itor, float *o
   dt_iop_roi_t iroi = *roi_in;
   iroi.x = iroi.y = 0;
 
-  dt_interpolation_resample(itor, out, &oroi, out_stride, in, &iroi, in_stride);
+  dt_interpolation_resample_plain(itor, out, &oroi, out_stride, in, &iroi, in_stride, 4);
 }
 
 /** Applies resampling (re-scaling) on *full* input and output buffers.
@@ -967,7 +962,7 @@ void dt_interpolation_resample_roi_1c(const struct dt_interpolation *itor, float
   dt_iop_roi_t iroi = *roi_in;
   iroi.x = iroi.y = 0;
 
-  dt_interpolation_resample_1c(itor, out, &oroi, out_stride, in, &iroi, in_stride);
+  dt_interpolation_resample_plain(itor, out, &oroi, out_stride, in, &iroi, in_stride, 1);
 }
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
