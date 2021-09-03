@@ -921,7 +921,21 @@
     </type>
     <default>at most PPG (reasonable)</default>
     <shortdescription>demosaicing for zoomed out darkroom mode</shortdescription>
-    <longdescription>interpolation when not in 1:1 in darkroom: bilinear fastest, middle ground is PPG + interpolation modes on the 'pixel interpolator' option (processing tab), full will use the settings for full-size export. X-Trans sensors use VNG rather than PPG as middle ground.</longdescription>
+    <longdescription>interpolation when not in 1:1 in darkroom: bilinear fastest, middle ground is PPG + interpolation modes on the 'pixel interpolator' option, full will use the settings for full-size export. X-Trans sensors use VNG rather than PPG as middle ground.</longdescription>
+  </dtconfig>
+  <dtconfig prefs="darkroom">
+    <name>plugins/lighttable/export/pixel_interpolator</name>
+    <type>
+      <enum>
+        <option>bilinear</option>
+        <option>bicubic</option>
+        <option>lanczos2</option>
+        <option>lanczos3</option>
+      </enum>
+    </type>
+    <default>lanczos3</default>
+    <shortdescription>pixel interpolator</shortdescription>
+    <longdescription>pixel interpolator used in rotation and lens correction, also darkroom with PPG.</longdescription>
   </dtconfig>
   <dtconfig prefs="darkroom" >
     <name>preview_downsampling</name>
@@ -1566,20 +1580,6 @@
     <default>1600</default>
     <shortdescription>crossover iso for X-Trans fdc demosaicing</shortdescription>
     <longdescription>up to, and including, this iso, X-Trans frequency domain chroma demosaicing uses the hybrid mode for determining chroma; for all higher iso values the pure fdc is used.</longdescription>
-  </dtconfig>
-  <dtconfig prefs="processing">
-    <name>plugins/lighttable/export/pixel_interpolator</name>
-    <type>
-      <enum>
-        <option>bilinear</option>
-        <option>bicubic</option>
-        <option>lanczos2</option>
-        <option>lanczos3</option>
-      </enum>
-    </type>
-    <default>lanczos3</default>
-    <shortdescription>pixel interpolator</shortdescription>
-    <longdescription>pixel interpolator used in rotation and lens correction (bilinear, bicubic, lanczos2, lanczos3).</longdescription>
   </dtconfig>
   <dtconfig>
     <name>plugins/lighttable/export/dimensions_type</name>
