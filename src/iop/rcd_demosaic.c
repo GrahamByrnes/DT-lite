@@ -309,9 +309,9 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
 
   rcd_ppg_border(out, in, width, height, filters, RCD_MARGIN);
 
-  const float scaler = fmaxf(piece->pipe->dsc.processed_maximum[0], fmaxf(piece->pipe->dsc.processed_maximum[1], piece->pipe->dsc.processed_maximum[2]));
+  const float scaler = fmaxf(piece->pipe->dsc.processed_maximum[0], fmaxf(piece->pipe->dsc.processed_maximum[1],
+                             piece->pipe->dsc.processed_maximum[2]));
   const float revscaler = 1.0f / scaler;
-
   const int num_vertical = 1 + (height - 2 * RCD_BORDER -1) / RCD_TILEVALID;
   const int num_horizontal = 1 + (width - 2 * RCD_BORDER -1) / RCD_TILEVALID;
 
@@ -320,15 +320,15 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
   dt_omp_firstprivate(width, height, filters, out, in, scaler, revscaler)
 #endif
   {
-    float *const VH_Dir = dt_alloc_align(64, (size_t) RCD_TILESIZE * RCD_TILESIZE * sizeof(float));
+    float *const VH_Dir = dt_alloc_align_float((size_t) RCD_TILESIZE * RCD_TILESIZE);
     // ensure that border elements which are read but never actually set below are zeroed out
     memset(VH_Dir, 0, sizeof(*VH_Dir) * RCD_TILESIZE * RCD_TILESIZE);
-    float *const PQ_Dir = dt_alloc_align(64, (size_t) RCD_TILESIZE * RCD_TILESIZE * sizeof(float) / 2);
-    float *const cfa =    dt_alloc_align(64, (size_t) RCD_TILESIZE * RCD_TILESIZE * sizeof(float));
-    float *const P_CDiff_Hpf = dt_alloc_align(64, (size_t) RCD_TILESIZE * RCD_TILESIZE * sizeof(float) / 2);
-    float *const Q_CDiff_Hpf = dt_alloc_align(64, (size_t) RCD_TILESIZE * RCD_TILESIZE * sizeof(float) / 2);
+    float *const PQ_Dir = dt_alloc_align_float((size_t) RCD_TILESIZE * RCD_TILESIZE / 2);
+    float *const cfa =    dt_alloc_align_float((size_t) RCD_TILESIZE * RCD_TILESIZE);
+    float *const P_CDiff_Hpf = dt_alloc_align_float((size_t) RCD_TILESIZE * RCD_TILESIZE / 2);
+    float *const Q_CDiff_Hpf = dt_alloc_align_float((size_t) RCD_TILESIZE * RCD_TILESIZE / 2);
 
-    float (*const rgb)[RCD_TILESIZE * RCD_TILESIZE] = (void *)dt_alloc_align(64, (size_t)3 * RCD_TILESIZE * RCD_TILESIZE * sizeof(float));
+    float (*const rgb)[RCD_TILESIZE * RCD_TILESIZE] = (void *)dt_alloc_align_float((size_t)3 * RCD_TILESIZE * RCD_TILESIZE);
 
     // No overlapping use so re-use same buffer
     float *const lpf = PQ_Dir;
@@ -364,22 +364,18 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
         {
           const int c0 = FC(row, colStart, filters);
           const int c1 = FC(row, colStart + 1, filters);
-          for(int col = colStart, indx = (row - rowStart) * RCD_TILESIZE, in_indx = row * width + colStart; col < colEnd; col++, indx++, in_indx++)
-          {
+          for(int col = colStart, indx = (row - rowStart) * RCD_TILESIZE, 
+                                          in_indx = row * width + colStart; col < colEnd; col++, indx++, in_indx++)
             cfa[indx] = rgb[c0][indx] = rgb[c1][indx] = safe_in(in[in_indx], revscaler);
-          }
         }
 
         // STEP 1: Find vertical and horizontal interpolation directions
         float bufferV[3][RCD_TILESIZE - 8];
         // Step 1.1: Calculate the square of the vertical and horizontal color difference high pass filter
         for(int row = 3; row < MIN(tileRows - 3, 5); row++ )
-        {
           for(int col = 4, indx = row * RCD_TILESIZE + col; col < tileCols - 4; col++, indx++ )
-          {
-            bufferV[row - 3][col - 4] = sqrf((cfa[indx - w3] - cfa[indx - w1] - cfa[indx + w1] + cfa[indx + w3]) - 3.0f * (cfa[indx - w2] + cfa[indx + w2]) + 6.0f * cfa[indx]);
-          }
-        }
+            bufferV[row - 3][col - 4] = sqrf((cfa[indx - w3] - cfa[indx - w1] - cfa[indx + w1] 
+                                        + cfa[indx + w3]) - 3.0f * (cfa[indx - w2] + cfa[indx + w2]) + 6.0f * cfa[indx]);
 
         // Step 1.2: Obtain the vertical and horizontal directional discrimination strength
         float DT_ALIGNED_PIXEL bufferH[RCD_TILESIZE];
@@ -392,13 +388,13 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
         for(int row = 4; row < tileRows - 4; row++ )
         {
           for(int col = 3, indx = row * RCD_TILESIZE + col; col < tileCols - 3; col++, indx++)
-          {
-            bufferH[col - 3] = sqrf((cfa[indx -  3] - cfa[indx -  1] - cfa[indx +  1] + cfa[indx +  3]) - 3.0f * (cfa[indx -  2] + cfa[indx +  2]) + 6.0f * cfa[indx]);
-          }
+            bufferH[col - 3] = sqrf((cfa[indx -  3] - cfa[indx -  1] - cfa[indx +  1] + cfa[indx +  3]) 
+                               - 3.0f * (cfa[indx -  2] + cfa[indx +  2]) + 6.0f * cfa[indx]);
+
           for(int col = 4, indx = (row + 1) * RCD_TILESIZE + col; col < tileCols - 4; col++, indx++)
-          {
-            V2[col - 4] = sqrf((cfa[indx - w3] - cfa[indx - w1] - cfa[indx + w1] + cfa[indx + w3]) - 3.0f * (cfa[indx - w2] + cfa[indx + w2]) + 6.0f * cfa[indx]);
-          }
+            V2[col - 4] = sqrf((cfa[indx - w3] - cfa[indx - w1] - cfa[indx + w1] + cfa[indx + w3]) 
+                          - 3.0f * (cfa[indx - w2] + cfa[indx + w2]) + 6.0f * cfa[indx]);
+
           for(int col = 4, indx = row * RCD_TILESIZE + col; col < tileCols - 4; col++, indx++ )
           {
             const float V_Stat = fmaxf(epssq,      V0[col - 4] +      V1[col - 4] +      V2[col - 4]);
@@ -412,28 +408,28 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
         // STEP 2: Calculate the low pass filter
         // Step 2.1: Low pass filter incorporating green, red and blue local samples from the raw data
         for(int row = 2; row < tileRows - 2; row++)
-        {
-          for(int col = 2 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, lp_indx = indx / 2; col < tileCols - 2; col += 2, indx +=2, lp_indx++)
-          {
+          for(int col = 2 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, lp_indx = indx / 2;
+                             col < tileCols - 2; col += 2, indx +=2, lp_indx++)
             lpf[lp_indx] = cfa[indx]
                         + 0.5f * (cfa[indx - w1]     + cfa[indx + w1] +     cfa[indx - 1] +      cfa[indx + 1])
                        + 0.25f * (cfa[indx - w1 - 1] + cfa[indx - w1 + 1] + cfa[indx + w1 - 1] + cfa[indx + w1 + 1]);
-          }
-        }
 
         // STEP 3: Populate the green channel
         // Step 3.1: Populate the green channel at blue and red CFA positions
         for(int row = 4; row < tileRows - 4; row++)
-        {
           for(int col = 4 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, lpindx = indx / 2; col < tileCols - 4; col += 2, indx += 2, lpindx++)
           {
             const float cfai = cfa[indx];
 
             // Cardinal gradients
-            const float N_Grad = eps + fabs(cfa[indx - w1] - cfa[indx + w1]) + fabs(cfai - cfa[indx - w2]) + fabs(cfa[indx - w1] - cfa[indx - w3]) + fabs(cfa[indx - w2] - cfa[indx - w4]);
-            const float S_Grad = eps + fabs(cfa[indx - w1] - cfa[indx + w1]) + fabs(cfai - cfa[indx + w2]) + fabs(cfa[indx + w1] - cfa[indx + w3]) + fabs(cfa[indx + w2] - cfa[indx + w4]);
-            const float W_Grad = eps + fabs(cfa[indx -  1] - cfa[indx +  1]) + fabs(cfai - cfa[indx -  2]) + fabs(cfa[indx -  1] - cfa[indx -  3]) + fabs(cfa[indx -  2] - cfa[indx -  4]);
-            const float E_Grad = eps + fabs(cfa[indx -  1] - cfa[indx +  1]) + fabs(cfai - cfa[indx +  2]) + fabs(cfa[indx +  1] - cfa[indx +  3]) + fabs(cfa[indx +  2] - cfa[indx +  4]);
+            const float N_Grad = eps + fabs(cfa[indx - w1] - cfa[indx + w1]) + fabs(cfai - cfa[indx - w2])
+                                 + fabs(cfa[indx - w1] - cfa[indx - w3]) + fabs(cfa[indx - w2] - cfa[indx - w4]);
+            const float S_Grad = eps + fabs(cfa[indx - w1] - cfa[indx + w1]) + fabs(cfai - cfa[indx + w2])
+                                 + fabs(cfa[indx + w1] - cfa[indx + w3]) + fabs(cfa[indx + w2] - cfa[indx + w4]);
+            const float W_Grad = eps + fabs(cfa[indx -  1] - cfa[indx +  1]) + fabs(cfai - cfa[indx -  2])
+                                 + fabs(cfa[indx -  1] - cfa[indx -  3]) + fabs(cfa[indx -  2] - cfa[indx -  4]);
+            const float E_Grad = eps + fabs(cfa[indx -  1] - cfa[indx +  1]) + fabs(cfai - cfa[indx +  2])
+                                 + fabs(cfa[indx +  1] - cfa[indx +  3]) + fabs(cfa[indx +  2] - cfa[indx +  4]);
 
             // Cardinal pixel estimations
             const float lpfi = lpf[lpindx];
@@ -454,34 +450,34 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
 
             rgb[1][indx] = intp(VH_Disc, H_Est, V_Est);
           }
-        }
 
         // STEP 4: Populate the red and blue channels
 
         // Step 4.0: Calculate the square of the P/Q diagonals color difference high pass filter
         for(int row = 3; row < tileRows - 3; row++)
-        {
           for(int col = 3, indx = row * RCD_TILESIZE + col, indx2 = indx / 2; col < tileCols - 3; col+=2, indx+=2, indx2++)
           {
-            P_CDiff_Hpf[indx2] = sqrf((cfa[indx - w3 - 3] - cfa[indx - w1 - 1] - cfa[indx + w1 + 1] + cfa[indx + w3 + 3]) - 3.0f * (cfa[indx - w2 - 2] + cfa[indx + w2 + 2]) + 6.0f * cfa[indx]);
-            Q_CDiff_Hpf[indx2] = sqrf((cfa[indx - w3 + 3] - cfa[indx - w1 + 1] - cfa[indx + w1 - 1] + cfa[indx + w3 - 3]) - 3.0f * (cfa[indx - w2 + 2] + cfa[indx + w2 - 2]) + 6.0f * cfa[indx]);
+            P_CDiff_Hpf[indx2] = sqrf((cfa[indx - w3 - 3] - cfa[indx - w1 - 1] - cfa[indx + w1 + 1] + cfa[indx + w3 + 3])
+                                 - 3.0f * (cfa[indx - w2 - 2] + cfa[indx + w2 + 2]) + 6.0f * cfa[indx]);
+            Q_CDiff_Hpf[indx2] = sqrf((cfa[indx - w3 + 3] - cfa[indx - w1 + 1] - cfa[indx + w1 - 1] + cfa[indx + w3 - 3])
+                                 - 3.0f * (cfa[indx - w2 + 2] + cfa[indx + w2 - 2]) + 6.0f * cfa[indx]);
           }
-        }
+
         // Step 4.1: Obtain the P/Q diagonals directional discrimination strength
         for(int row = 4; row < tileRows - 4; row++)
-        {
-          for(int col = 4 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, indx2 = indx / 2, indx3 = (indx - w1 - 1) / 2, indx4 = (indx + w1 - 1) / 2; col < tileCols - 4; col += 2, indx += 2, indx2++, indx3++, indx4++ )
+          for(int col = 4 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, indx2 = indx / 2, 
+                        indx3 = (indx - w1 - 1) / 2, indx4 = (indx + w1 - 1) / 2; col < tileCols - 4; col += 2, indx += 2, indx2++, indx3++, indx4++ )
           {
             const float P_Stat = fmaxf(epssq, P_CDiff_Hpf[indx3]     + P_CDiff_Hpf[indx2] + P_CDiff_Hpf[indx4 + 1]);
             const float Q_Stat = fmaxf(epssq, Q_CDiff_Hpf[indx3 + 1] + Q_CDiff_Hpf[indx2] + Q_CDiff_Hpf[indx4]);
             PQ_Dir[indx2] = P_Stat / (P_Stat + Q_Stat);
           }
-        }
 
         // Step 4.2: Populate the red and blue channels at blue and red CFA positions
         for(int row = 4; row < tileRows - 4; row++)
-        {
-          for(int col = 4 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, c = 2 - FC(row, col, filters), pqindx = indx / 2, pqindx2 = (indx - w1 - 1) / 2, pqindx3 = (indx + w1 - 1) / 2; col < tileCols - 4; col += 2, indx += 2, pqindx++, pqindx2++, pqindx3++)
+          for(int col = 4 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, c = 2 - FC(row, col, filters), 
+                             pqindx = indx / 2, pqindx2 = (indx - w1 - 1) / 2, pqindx3 = (indx + w1 - 1) / 2; col < tileCols - 4; col += 2,
+                             indx += 2, pqindx++, pqindx2++, pqindx3++)
           {
             // Refined P/Q diagonal local discrimination
             const float PQ_Central_Value   = PQ_Dir[pqindx];
@@ -508,11 +504,9 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
             // R@B and B@R interpolation
             rgb[c][indx] = rgb[1][indx] + intp(PQ_Disc, Q_Est, P_Est);
           }
-        }
 
         // Step 4.3: Populate the red and blue channels at green CFA positions
         for(int row = 4; row < tileRows - 4; row++)
-        {
           for(int col = 4 + (FC(row, 1, filters) & 1), indx = row * RCD_TILESIZE + col; col < tileCols - 4; col += 2, indx +=2)
           {
             // Refined vertical and horizontal local discrimination
@@ -555,15 +549,14 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
               rgb[c][indx] = rgb1 + intp(VH_Disc, H_Est, V_Est);
             }
           }
-        }
 
         // For the outermost tiles in all directions we can use a smaller border margin
         const int first_vertical =   rowStart + ((tile_vertical == 0) ? RCD_MARGIN : RCD_BORDER);
         const int last_vertical =    rowEnd   - ((tile_vertical == num_vertical - 1)     ? RCD_MARGIN : RCD_BORDER);
         const int first_horizontal = colStart + ((tile_horizontal == 0) ? RCD_MARGIN : RCD_BORDER);
         const int last_horizontal =  colEnd   - ((tile_horizontal == num_horizontal - 1) ? RCD_MARGIN : RCD_BORDER);
+
         for(int row = first_vertical; row < last_vertical; row++)
-        {
           for(int col = first_horizontal, idx = (row - rowStart) * RCD_TILESIZE + col - colStart, o_idx = (row * width + col) * 4; col < last_horizontal; col++, o_idx += 4, idx++)
           {
             out[o_idx]   = scaler * fmaxf(0.0f, rgb[0][idx]);
@@ -571,9 +564,9 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
             out[o_idx+2] = scaler * fmaxf(0.0f, rgb[2][idx]);
             out[o_idx+3] = 0.0f;
           }
-        }
       }
     }
+
     dt_free_align(cfa);
     dt_free_align(rgb);
     dt_free_align(VH_Dir);

@@ -2871,6 +2871,7 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
     else
     {
       float *in = (float *)pixels;
+      float *aux;
 
       if(!(img->flags & DT_IMAGE_4BAYER) && data->green_eq != DT_IOP_GREEN_EQ_NO)
       {
@@ -2884,6 +2885,14 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
           case DT_IOP_GREEN_EQ_LOCAL:
             green_equilibration_lavg(in, pixels, roi_in->width, roi_in->height, piece->pipe->dsc.filters,
                                      roi_in->x, roi_in->y, threshold);
+            break;
+          case DT_IOP_GREEN_EQ_BOTH:
+            aux = dt_alloc_align_float((size_t)roi_in->height * roi_in->width);
+            green_equilibration_favg(aux, pixels, roi_in->width, roi_in->height, piece->pipe->dsc.filters,
+                                     roi_in->x, roi_in->y);
+            green_equilibration_lavg(in, aux, roi_in->width, roi_in->height, piece->pipe->dsc.filters, roi_in->x,
+                                     roi_in->y, threshold);
+            dt_free_align(aux);
             break;
         }
       }
