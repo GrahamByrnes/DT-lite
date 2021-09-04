@@ -44,9 +44,6 @@
 *    x86/64 machines, tested on Xeon E-2288G, i5-8250U.
 */
 
-#include "control/control.h"
-#include "develop/imageop_math.h"
-
 #ifndef RCD_TILESIZE
   #define RCD_TILESIZE 112
 #endif
