@@ -47,6 +47,7 @@
 // some shorthand to make code more legible
 // if we have OpenMP simd enabled, declare a vectorizable for loop;
 // otherwise, just leave it a plain for()
+/*
 #if defined(_OPENMP) && defined(OPENMP_SIMD_)
 #define SIMD_FOR \
   _Pragma("omp simd") \
@@ -59,6 +60,7 @@
 #ifndef __SSE2__
 # define _mm_prefetch(where,hint)
 #endif
+*/
 
 // the filter does internal tiling to keep memory requirements reasonable, so this structure
 // defines the position of the tile being processed
@@ -156,13 +158,13 @@ static inline void box_mean_1d_4ch(int N, const float *x, float *y, size_t strid
   {
     for(int i = 0, i_end = w + 1; i < i_end; i++)
     {
-      SIMD_FOR (int k = 0; k < 4; k++)
+      for(int k = 0; k < 4; k++)
         m[k] = Kahan_sum(m[k], &c[k], x[4*i+k]);
       n_box++;
     }
     for(int i = 0, i_end = w; i < i_end; i++)
     {
-      SIMD_FOR (int k = 0; k < 4; k++)
+      for(int k = 0; k < 4; k++)
       {
         y[i * stride_y + k] = m[k] / n_box;
         m[k] = Kahan_sum(m[k], &c[k], x[4*(i + w + 1) + k]);
@@ -171,7 +173,7 @@ static inline void box_mean_1d_4ch(int N, const float *x, float *y, size_t strid
     }
     for(int i = w, i_end = N - w - 1; i < i_end; i++)
     {
-      SIMD_FOR (int k = 0; k < 4; k++)
+      for(int k = 0; k < 4; k++)
       {
         y[i * stride_y + k] = m[k] / n_box;
         m[k] = Kahan_sum(m[k], &c[k], x[4*(i + w + 1) + k]);
@@ -180,7 +182,7 @@ static inline void box_mean_1d_4ch(int N, const float *x, float *y, size_t strid
     }
     for(int i = N - w - 1, i_end = N; i < i_end; i++)
     {
-      SIMD_FOR (int k = 0; k < 4; k++)
+      for(int k = 0; k < 4; k++)
       {
         y[i * stride_y + k] = m[k] / n_box;
         m[k] = Kahan_sum(m[k], &c[k], -x[4*(i - w) + k]);
@@ -192,7 +194,7 @@ static inline void box_mean_1d_4ch(int N, const float *x, float *y, size_t strid
   {
     for(int i = 0, i_end = min_i(w + 1, N); i < i_end; i++)
     {
-      SIMD_FOR (int k = 0; k < 4; k++)
+      for(int k = 0; k < 4; k++)
       {
         m[k] = Kahan_sum(m[k], &c[k], x[4*i + k]);
       }
@@ -200,17 +202,17 @@ static inline void box_mean_1d_4ch(int N, const float *x, float *y, size_t strid
     }
     for(int i = 0; i < N; i++)
     {
-      SIMD_FOR (int k = 0; k < 4; k++)
+      for(int k = 0; k < 4; k++)
         y[i * stride_y + k] = m[k] / n_box;
       if(i - w >= 0)
       {
-        SIMD_FOR (int k = 0; k < 4; k++)
+        for(int k = 0; k < 4; k++)
           m[k] = Kahan_sum(m[k], &c[k], -x[4*(i - w)+k]);
         n_box--;
       }
       if(i + w + 1 < N)
       {
-        SIMD_FOR (int k = 0; k < 4; k++)
+        for(int k = 0; k < 4; k++)
           m[k] = Kahan_sum(m[k], &c[k], x[4*(i + w + 1)+k]);
         n_box++;
       }
@@ -250,7 +252,7 @@ static void box_mean_4ch(color_image img, int w)
   for(int i0 = 0; i0 < img.width; i0++)
   {
     for(int i1 = 0; i1 < img.height; i1++)
-      SIMD_FOR (int k = 0; k < 4; k++)
+      for(int k = 0; k < 4; k++)
         img_bak.data[4*i1+k] = img.data[4*(i0 + (size_t)i1 * img.width)+k];
     box_mean_1d_4ch(img.height, img_bak.data, img.data + 4*i0, width, w);
   }

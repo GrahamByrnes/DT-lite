@@ -287,7 +287,7 @@ static const struct dt_interpolation
  * @param norm [out] Kernel norm
  * @param first [out] first input sample index used
  * @param t [in] Interpolated coordinate */
-static inline void compute_upsampling_kernel_plain(const struct dt_interpolation *itor, float *kernel,
+static inline void compute_upsampling_kernel(const struct dt_interpolation *itor, float *kernel,
                                                    float *norm, int *first, float t)
 {
   int f = (int)t - itor->width + 1;
@@ -310,12 +310,6 @@ static inline void compute_upsampling_kernel_plain(const struct dt_interpolation
     *norm = n;
 }
 
-static inline void compute_upsampling_kernel(const struct dt_interpolation *itor, float *kernel, float *norm,
-                                             int *first, float t)
-{
-  return compute_upsampling_kernel_plain(itor, kernel, norm, first, t);
-}
-
 /** Computes a downsampling filtering kernel
  *
  * @param itor [in] Interpolator used
@@ -325,7 +319,7 @@ static inline void compute_upsampling_kernel(const struct dt_interpolation *itor
  * @param first [out] index of the first sample for which the kernel is to be applied
  * @param outoinratio [in] "out samples" over "in samples" ratio
  * @param xout [in] Output coordinate */
-static inline void compute_downsampling_kernel_plain(const struct dt_interpolation *itor, int *taps,
+static inline void compute_downsampling_kernel(const struct dt_interpolation *itor, int *taps,
                                                      int *first, float *kernel, float *norm,
                                                      float outoinratio, int xout)
 {
@@ -355,12 +349,6 @@ static inline void compute_downsampling_kernel_plain(const struct dt_interpolati
     *norm = n;
 }
 
-static inline void compute_downsampling_kernel(const struct dt_interpolation *itor, int *taps, int *first,
-                                               float *kernel, float *norm, float outoinratio, int xout)
-{
-    return compute_downsampling_kernel_plain(itor, taps, first, kernel, norm, outoinratio, xout);
-}
-
 /* --------------------------------------------------------------------------
  * Sample interpolation function (see usage in iop/lens.c and iop/clipping.c)
  * ------------------------------------------------------------------------*/
@@ -375,32 +363,31 @@ float dt_interpolation_compute_sample(const struct dt_interpolation *itor, const
 
   float kernelh[MAX_KERNEL_REQ];
   float kernelv[MAX_KERNEL_REQ];
-
   // Compute both horizontal and vertical kernels
   float normh;
   float normv;
   compute_upsampling_kernel(itor, kernelh, &normh, NULL, x);
   compute_upsampling_kernel(itor, kernelv, &normv, NULL, y);
-
   int ix = (int)x;
   int iy = (int)y;
-
   // clip if pixel + filter outside image
   float r;
-  if(ix >= (itor->width - 1) && iy >= (itor->width - 1) && ix < (width - itor->width)
-     && iy < (height - itor->width))
+  const int itwidth = itor->width;
+
+  if(ix >= (itwidth - 1) && iy >= (itwidth - 1) && ix < (width - itwidth)
+     && iy < (height - itwidth))
   {
     // Inside image boundary case
     in = (float *)in + linestride * iy + ix * samplestride;
-    in = in - (itor->width - 1) * (samplestride + linestride);
+    in = in - (itwidth - 1) * (samplestride + linestride);
     // Apply the kernel
     float s = 0.f;
 
-    for(int i = 0; i < 2 * itor->width; i++)
+    for(int i = 0; i < 2 * itwidth; i++)
     {
       float h = 0.0f;
 
-      for(int j = 0; j < 2 * itor->width; j++)
+      for(int j = 0; j < 2 * itwidth; j++)
         h += kernelh[j] * in[j * samplestride];
 
       s += kernelv[i] * h;
@@ -412,18 +399,18 @@ float dt_interpolation_compute_sample(const struct dt_interpolation *itor, const
   else if(ix >= 0 && iy >= 0 && ix < width && iy < height)
   {
     // Point to the upper left pixel index wise
-    iy -= itor->width - 1;
-    ix -= itor->width - 1;
+    iy -= itwidth - 1;
+    ix -= itwidth - 1;
     static const enum border_mode bordermode = INTERPOLATION_BORDER_MODE;
     assert(bordermode != BORDER_CLAMP); // XXX in clamp mode, norms would be wrong
 
     int xtap_first;
     int xtap_last;
-    prepare_tap_boundaries(&xtap_first, &xtap_last, bordermode, 2 * itor->width, ix, width);
+    prepare_tap_boundaries(&xtap_first, &xtap_last, bordermode, 2 * itwidth, ix, width);
 
     int ytap_first;
     int ytap_last;
-    prepare_tap_boundaries(&ytap_first, &ytap_last, bordermode, 2 * itor->width, iy, height);
+    prepare_tap_boundaries(&ytap_first, &ytap_last, bordermode, 2 * itwidth, iy, height);
     // Apply the kernel
     float s = 0.f;
 
@@ -454,7 +441,7 @@ float dt_interpolation_compute_sample(const struct dt_interpolation *itor, const
  * Pixel interpolation function (see usage in iop/lens.c and iop/clipping.c)
  * ------------------------------------------------------------------------*/
 
-static void dt_interpolation_compute_pixel4c_plain(const struct dt_interpolation *itor, const float *in,
+static void dt_interpolation_compute_pixel_plain(const struct dt_interpolation *itor, const float *in,
                                                    float *out, const float x, const float y, const int width,
                                                    const int height, const int linestride, const int ch)
 {
@@ -553,14 +540,14 @@ void dt_interpolation_compute_pixel4c(const struct dt_interpolation *itor, const
                                       const float x, const float y, const int width, const int height,
                                       const int linestride)
 {
-    return dt_interpolation_compute_pixel4c_plain(itor, in, out, x, y, width, height, linestride, 4);
+    return dt_interpolation_compute_pixel_plain(itor, in, out, x, y, width, height, linestride, 4);
 }
 
 void dt_interpolation_compute_pixel1c(const struct dt_interpolation *itor, const float *in, float *out,
                                       const float x, const float y, const int width, const int height,
                                       const int linestride)
 {
-  return dt_interpolation_compute_pixel4c_plain(itor, in, out, x, y, width, height, linestride, 1);
+  return dt_interpolation_compute_pixel_plain(itor, in, out, x, y, width, height, linestride, 1);
 }
 
 /* --------------------------------------------------------------------------
@@ -916,7 +903,7 @@ void dt_interpolation_resample(const struct dt_interpolation *itor, float *out,
                                const float *const in, const dt_iop_roi_t *const roi_in,
                                const int32_t in_stride)
 {
-    return dt_interpolation_resample_plain(itor, out, roi_out, out_stride, in, roi_in, in_stride, 4);
+  return dt_interpolation_resample_plain(itor, out, roi_out, out_stride, in, roi_in, in_stride, 4);
 }
 
 /** Applies resampling (re-scaling) on a specific region-of-interest of an image. The input
@@ -930,7 +917,6 @@ void dt_interpolation_resample_roi(const struct dt_interpolation *itor, float *o
 {
   dt_iop_roi_t oroi = *roi_out;
   oroi.x = oroi.y = 0;
-
   dt_iop_roi_t iroi = *roi_in;
   iroi.x = iroi.y = 0;
 
