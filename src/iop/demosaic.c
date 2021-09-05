@@ -3114,6 +3114,7 @@ void reload_defaults(dt_iop_module_t *module)
   else
     d->demosaicing_method = DT_IOP_DEMOSAIC_RCD;
 
+  module->hide_enable_button = 1;
   module->default_enabled = dt_image_is_raw(&module->dev->image_storage);
 }
 
