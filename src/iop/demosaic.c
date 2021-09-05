@@ -2440,8 +2440,7 @@ static void passthrough_color(float *out, const float *const in, dt_iop_roi_t *c
   {
     #ifdef _OPENMP
       #pragma omp parallel for default(none) \
-      dt_omp_firstprivate(in, roi_out, roi_in, xtrans) \
-      shared(out) \
+      dt_omp_firstprivate(in, out, roi_out, roi_in, xtrans) \
       schedule(static) \
       collapse(2)
     #endif
@@ -2516,8 +2515,7 @@ static void demosaic_ppg(float *const out, const float *const in, const dt_iop_r
 // for all pixels: interpolate green into float array, or copy color.
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
-  dt_omp_firstprivate(filters, out, roi_in, roi_out) \
-  shared(input) \
+  dt_omp_firstprivate(filters, input, out, roi_in, roi_out) \
   schedule(static)
 #endif
   for(int j = 3; j < roi_out->height - 3; j++)
@@ -2870,7 +2868,7 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
 
       if(!(img->flags & DT_IMAGE_4BAYER) && data->green_eq != DT_IOP_GREEN_EQ_NO)
       {
-        in = (float *)dt_alloc_align(64, (size_t)roi_in->height * roi_in->width * sizeof(float));
+        in = (float *)dt_alloc_align_float((size_t)roi_in->height * roi_in->width);
         switch(data->green_eq)
         {
           case DT_IOP_GREEN_EQ_FULL:
