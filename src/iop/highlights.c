@@ -22,9 +22,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined(__SSE__)
-#include <xmmintrin.h>
-#endif
 #include "bauhaus/bauhaus.h"
 #include "control/control.h"
 #include "develop/develop.h"
@@ -32,7 +29,6 @@
 #include "develop/imageop_math.h"
 #include "develop/imageop_gui.h"
 #include "develop/tiling.h"
-//#include "gui/accelerators.h"
 #include "gui/gtk.h"
 #include "iop/iop_api.h"
 
@@ -646,9 +642,7 @@ static void process_clip_plain(dt_dev_pixelpipe_iop_t *piece, const void *const 
     schedule(static)
 #endif
     for(size_t k = 0; k < (size_t)roi_out->width * roi_out->height; k++)
-    {
       out[k] = MIN(clip, in[k]);
-    }
   }
   else
   {
@@ -658,67 +652,16 @@ static void process_clip_plain(dt_dev_pixelpipe_iop_t *piece, const void *const 
     schedule(static)
 #endif
     for(size_t k = 0; k < (size_t)4 * roi_out->width * roi_out->height; k++)
-    {
       out[k] = MIN(clip, in[k]);
-    }
   }
 }
-
-#if defined(__SSE__)
-static void process_clip_sse2(dt_dev_pixelpipe_iop_t *piece, const void *const ivoid, void *const ovoid,
-                              const dt_iop_roi_t *const roi_in, const dt_iop_roi_t *const roi_out,
-                              const float clip)
-{
-  if(piece->pipe->dsc.filters)
-  { // raw mosaic
-    const __m128 clipm = _mm_set1_ps(clip);
-    const size_t n = (size_t)roi_out->height * roi_out->width;
-    float *const out = (float *)ovoid;
-    float *const in = (float *)ivoid;
-#ifdef _OPENMP
-#pragma omp parallel for default(none) \
-    dt_omp_firstprivate(clipm, in, n, out) \
-    schedule(static)
-#endif
-    for(size_t j = 0; j < (n & ~3u); j += 4) _mm_stream_ps(out + j, _mm_min_ps(clipm, _mm_load_ps(in + j)));
-    _mm_sfence();
-    // lets see if there's a non-multiple of four rest to process:
-    if(n & 3)
-      for(size_t j = n & ~3u; j < n; j++) out[j] = MIN(clip, in[j]);
-  }
-  else
-  {
-    const __m128 clipm = _mm_set1_ps(clip);
-
-#ifdef _OPENMP
-#pragma omp parallel for default(none) \
-    dt_omp_firstprivate(clipm, ivoid, ovoid, roi_in, roi_out) \
-    schedule(static)
-#endif
-    for(int j = 0; j < roi_out->height; j++)
-    {
-      float *out = (float *)ovoid + (size_t)4 * roi_out->width * j;
-      float *in = (float *)ivoid + (size_t)4 * roi_in->width * j;
-      for(int i = 0; i < roi_out->width; i++, in += 4, out += 4)
-      {
-        _mm_stream_ps(out, _mm_min_ps(clipm, _mm_set_ps(in[3], in[2], in[1], in[0])));
-      }
-    }
-    _mm_sfence();
-  }
-}
-#endif
-
 
 static void process_clip(dt_dev_pixelpipe_iop_t *piece, const void *const ivoid, void *const ovoid,
                          const dt_iop_roi_t *const roi_in, const dt_iop_roi_t *const roi_out,
                          const float clip)
 {
-  if(darktable.codepath.OPENMP_SIMD) process_clip_plain(piece, ivoid, ovoid, roi_in, roi_out, clip);
-#if defined(__SSE__)
-  else if(darktable.codepath.SSE2)
-    process_clip_sse2(piece, ivoid, ovoid, roi_in, roi_out, clip);
-#endif
+  if(darktable.codepath.OPENMP_SIMD)
+    process_clip_plain(piece, ivoid, ovoid, roi_in, roi_out, clip);
   else
     dt_unreachable_codepath();
 }

@@ -83,10 +83,6 @@
 #include <locale.h>
 #include <limits.h>
 
-#if defined(__SSE__)
-#include <xmmintrin.h>
-#endif
-
 #ifdef HAVE_GRAPHICSMAGICK
 #include <magick/api.h>
 #elif defined HAVE_IMAGEMAGICK
@@ -331,31 +327,11 @@ static void dt_codepaths_init()
 
   // second, apply overrides from conf
   // NOTE: all intrinsics sets can only be overridden to OFF
-  if(!dt_conf_get_bool("codepaths/sse2")) darktable.codepath.SSE2 = 0;
+  if(!dt_conf_get_bool("codepaths/sse2"))
+    darktable.codepath.SSE2 = 0;
 
-  // last: do we have any intrinsics sets enabled?
-  darktable.codepath._no_intrinsics = !(darktable.codepath.SSE2);
-
-// if there is no SSE, we must enable plain codepath by default,
-// else, enable it conditionally.
-#if defined(__SSE__)
-  // disabled by default, needs to be manually enabled if needed.
-  // disabling all optimized codepaths enables it automatically.
-  if(dt_conf_get_bool("codepaths/openmp_simd") || darktable.codepath._no_intrinsics)
-#endif
-  {
-    darktable.codepath.OPENMP_SIMD = 1;
-    fprintf(stderr, "[dt_codepaths_init] will be using HIGHLY EXPERIMENTAL plain OpenMP SIMD codepath.\n");
-  }
-
-#if defined(__SSE__)
-  if(darktable.codepath._no_intrinsics)
-#endif
-  {
-    fprintf(stderr, "[dt_codepaths_init] SSE2-optimized codepath is disabled or unavailable.\n");
-    fprintf(stderr,
-            "[dt_codepaths_init] expect a LOT of functionality to be broken. you have been warned.\n");
-  }
+  darktable.codepath.OPENMP_SIMD = 1;
+  fprintf(stderr, "[dt_codepaths_init] will be using HIGHLY EXPERIMENTAL plain OpenMP SIMD codepath.\n");
 }
 
 int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load_data, lua_State *L)
@@ -366,11 +342,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   if(getuid() == 0 || geteuid() == 0)
     printf(
         "WARNING: either your user id or the effective user id are 0. are you running darktable as root?\n");
-#endif
-
-#if defined(__SSE__)
-  // make everything go a lot faster.
-  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 #endif
 
   dt_set_signal_handlers();
@@ -483,8 +454,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 #ifdef USE_LUA
   char *lua_command = NULL;
 #endif
-
-  darktable.num_openmp_threads = 1;
 #ifdef _OPENMP
   darktable.num_openmp_threads = omp_get_num_procs();
 #endif

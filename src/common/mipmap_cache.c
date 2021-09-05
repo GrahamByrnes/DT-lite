@@ -42,9 +42,6 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
-#if defined(__SSE__)
-#include <xmmintrin.h>
-#endif
 
 #if !defined(_WIN32)
 #include <sys/statvfs.h>
@@ -153,18 +150,6 @@ static inline void dead_image_f(dt_mipmap_buffer_t *buf)
 
     memcpy(buf->buf, image, sizeof(float) * 4 * 64);
   }
-#if defined(__SSE__)
-  else if(darktable.codepath.SSE2)
-  {
-    const __m128 X = _mm_set1_ps(1.0f);
-    const __m128 o = _mm_set1_ps(0.0f);
-    const __m128 image[]
-        = { o, o, o, o, o, o, o, o, o, o, X, X, X, X, o, o, o, X, o, X, X, o, X, o, o, X, X, X, X, X, X, o,
-            o, o, X, o, o, X, o, o, o, o, o, o, o, o, o, o, o, o, X, X, X, X, o, o, o, o, o, o, o, o, o, o };
-
-    memcpy(buf->buf, image, sizeof(__m128) * 64);
-  }
-#endif
   else
     dt_unreachable_codepath();
 }

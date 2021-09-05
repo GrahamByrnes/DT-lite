@@ -40,11 +40,6 @@
 
 #include "rcd_demosaic.c"
 
-// we assume people have -msee support.
-#if defined(__SSE__)
-#include <xmmintrin.h>
-#endif
-
 DT_MODULE_INTROSPECTION(3, dt_iop_demosaic_params_t)
 
 #define DEMOSAIC_XTRANS 1024 // masks for non-Bayer demosaic ops

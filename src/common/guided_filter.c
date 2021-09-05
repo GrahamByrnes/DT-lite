@@ -47,20 +47,6 @@
 // some shorthand to make code more legible
 // if we have OpenMP simd enabled, declare a vectorizable for loop;
 // otherwise, just leave it a plain for()
-/*
-#if defined(_OPENMP) && defined(OPENMP_SIMD_)
-#define SIMD_FOR \
-  _Pragma("omp simd") \
-  for
-#else
-#define SIMD_FOR for
-#endif
-
-// avoid cluttering the scalar codepath with #ifdefs by hiding the dependency on SSE2
-#ifndef __SSE2__
-# define _mm_prefetch(where,hint)
-#endif
-*/
 
 // the filter does internal tiling to keep memory requirements reasonable, so this structure
 // defines the position of the tile being processed

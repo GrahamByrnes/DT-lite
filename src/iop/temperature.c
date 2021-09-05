@@ -629,7 +629,6 @@ static void gui_update_from_coeffs(dt_iop_module_t *self)
 {
   dt_iop_temperature_gui_data_t *g = (dt_iop_temperature_gui_data_t *)self->gui_data;
   dt_iop_temperature_params_t *p = (dt_iop_temperature_params_t *)self->params;
-
   double TempK, tint;
   mul2temp(self, p->coeffs, &TempK, &tint);
 
@@ -719,12 +718,10 @@ static void apply_preset(dt_iop_module_t *self)
   dt_iop_color_picker_reset(self, TRUE);
   dt_iop_temperature_params_t *p = (dt_iop_temperature_params_t *)self->params;
   dt_iop_temperature_params_t *fp = (dt_iop_temperature_params_t *)self->default_params;
-  
-  //const int tune = dt_bauhaus_slider_get(g->finetune);
   const int pos = dt_bauhaus_combobox_get(g->presets);
   switch(pos)
   {
-    case -1: // just un-setting.
+    case -1:
       return;
     case 0: // camera wb
       for(int k = 0; k < 4; k++)
@@ -741,7 +738,7 @@ static void apply_preset(dt_iop_module_t *self)
         
       //g_signal_emit_by_name(G_OBJECT(g->colorpicker), "quad-pressed");
       break;
-    case 3: // directly changing one of the coeff sliders also changes the mod_coeff so it can be read here
+    case 3: // directly changing one of the coeff sliders also changes the mod_coeff
       for(int k = 0; k < 4; k++)
         p->coeffs[k] = g->mod_coeff[k];
       break;      
@@ -756,9 +753,6 @@ static void presets_changed(GtkWidget *widget, gpointer user_data)
 {
   dt_iop_module_t *self = (dt_iop_module_t *)user_data;
   apply_preset(self);
-  //const int pos = dt_bauhaus_combobox_get(widget);
-  //dt_iop_temperature_gui_data_t *g = (dt_iop_temperature_gui_data_t *)self->gui_data;
-  //gtk_widget_set_sensitive(g->finetune, pos >= DT_IOP_NUM_OF_STD_TEMP_PRESETS);
 }
 
 static void gui_sliders_update(struct dt_iop_module_t *self)
@@ -863,17 +857,6 @@ void gui_init(struct dt_iop_module_t *self)
   dt_bauhaus_widget_set_label(g->presets, NULL, _("preset"));
   gtk_box_pack_start(GTK_BOX(g->box_enabled), g->presets, TRUE, TRUE, 0);
   gtk_widget_set_tooltip_text(g->presets, _("choose white balance preset from camera"));
-  // create hidden color picker to be able to send its signal when spot selected
-//  g->colorpicker = dt_color_picker_new(self, DT_COLOR_PICKER_AREA, dt_bauhaus_combobox_new(self));
-//  gtk_stack_add_named(GTK_STACK(g->stack), g->colorpicker, "hidden");  
-  
-/*  g->finetune = dt_bauhaus_slider_new_with_range(self, -9.0, 9.0, 1.0, 0.0, 0);
-  dt_bauhaus_widget_set_label(g->finetune, NULL, _("finetune"));
-  dt_bauhaus_slider_set_format(g->finetune, _("%.0f mired")); 
-  // initially doesn't have fine tuning stuff (camera wb)
-  gtk_widget_set_sensitive(g->finetune, FALSE);
-  gtk_box_pack_start(GTK_BOX(g->box_enabled), g->finetune, TRUE, TRUE, 0);
-  gtk_widget_set_tooltip_text(g->finetune, _("fine tune white balance preset"));*/
 
   gtk_widget_show_all(g->box_enabled);
   gtk_stack_add_named(GTK_STACK(g->stack), g->box_enabled, "enabled");
