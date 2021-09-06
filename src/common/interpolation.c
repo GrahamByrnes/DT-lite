@@ -95,9 +95,9 @@ static inline int clip(int i, int min, int max, enum border_mode mode)
 
     case BORDER_CLAMP:
       if(i < min || i > max)
-        /* Should not be used as is, we prevent -1 usage, filtering the taps
-         * we clip the sample indexes for. So understand this function is
-         * specific to its caller. */
+        // Should not be used as is, we prevent -1 usage, filtering the taps
+        // we clip the sample indexes for. So understand this function is
+        // specific to its caller.
         i = -1;
       break;
   }
@@ -108,8 +108,7 @@ static inline int clip(int i, int min, int max, enum border_mode mode)
 static inline void prepare_tap_boundaries(int *tap_first, int *tap_last, const enum border_mode mode,
                                           const int filterwidth, const int t, const int max)
 {
-  /* Check lower bound pixel index and skip as many pixels as necessary to
-   * fall into range */
+  // Check lower bound pixel index and skip as many pixels as necessary tofall into range
   *tap_first = 0;
 
   if(mode == BORDER_CLAMP && t < 0)
@@ -121,14 +120,8 @@ static inline void prepare_tap_boundaries(int *tap_first, int *tap_last, const e
     *tap_last = max - t;
 }
 
-/** Make sure an aligned chunk will not misalign its following chunk
- * proposing an adapted length
- *
- * @param l Length required for current chunk
- * @param align Required alignment for next chunk
- *
- * @return Required length for keeping alignment ok if chaining data chunks
- */
+//  @param l Length required for current chunk
+//  @param align Required alignment for next chunk
 static inline size_t increase_for_alignment(size_t l, size_t align)
 {
   align -= 1;
@@ -272,8 +265,8 @@ static inline void compute_upsampling_kernel(const struct dt_interpolation *itor
   int f = (int)t - itor->width + 1;
   if(first)
     *first = f;
-  /* Find closest integer position and then offset that to match first
-   * filtered sample position */
+  // Find closest integer position and then offset that to match first
+  // filtered sample position
   t = t - (float)f;
   // Will hold kernel norm
   float n = 0.f;
@@ -304,8 +297,7 @@ static inline void compute_downsampling_kernel(const struct dt_interpolation *it
 {
   // Keep this at hand
   float w = (float)itor->width;
-  /* Compute the phase difference between output pixel and its
-   * input corresponding input pixel */
+  // Compute the phase difference between output pixel and its input corresponding input pixel
   float xin = ceil_fast(((float)xout - w) / outoinratio);
   if(first)
     *first = (int)xin;
@@ -458,7 +450,6 @@ static void dt_interpolation_compute_pixel_plain(const struct dt_interpolation *
         *(pixel + c) += kernelv[i] * *(h + c);
 
       free(h);
-
       in += linestride;
     }
 
@@ -643,8 +634,7 @@ static int prepare_resampling_plan(const struct dt_interpolation *itor, int in, 
   size_t lengthreq = nlengths * sizeof(int);
   size_t indexreq = nindex * sizeof(int);
   size_t kernelreq = nkernel * sizeof(float);
-  size_t scratchreq = maxtapsapixel * sizeof(float) + 4 * sizeof(float);
-  // NB: because sse versions compute four taps a time
+  size_t scratchreq = maxtapsapixel * sizeof(float);
   size_t metareq = pmeta ? 3 * sizeof(int) * out : 0;
 
   void *blob = NULL;
@@ -663,7 +653,6 @@ static int prepare_resampling_plan(const struct dt_interpolation *itor, int in, 
   float *scratchpad = scratchreq ? (float *)blob : NULL;
   blob = (char *)blob + scratchreq;
   int *meta = metareq ? (int *)blob : NULL;
-
   // setting this as a const should help the compilers trim all unnecessary codepaths
   const enum border_mode bordermode = RESAMPLING_BORDER_MODE;
   
@@ -687,8 +676,8 @@ static int prepare_resampling_plan(const struct dt_interpolation *itor, int in, 
       // Compute the filter kernel at that position
       int first;
       compute_upsampling_kernel(itor, scratchpad, NULL, &first, fx);
-      /* Check lower and higher bound pixel index and skip as many pixels as
-       * necessary to fall into range */
+      // Check lower and higher bound pixel index and skip as many pixels as
+      // necessary to fall into range
       int tap_first;
       int tap_last;
       prepare_tap_boundaries(&tap_first, &tap_last, bordermode, 2 * itor->width, first, in);
@@ -729,8 +718,8 @@ static int prepare_resampling_plan(const struct dt_interpolation *itor, int in, 
       int taps;
       int first;
       compute_downsampling_kernel(itor, &taps, &first, scratchpad, NULL, scale, out_x0 + x);
-      /* Check lower and higher bound pixel index and skip as many pixels as
-       * necessary to fall into range */
+      // Check lower and higher bound pixel index and skip as many pixels as
+      // necessary to fall into range
       int tap_first;
       int tap_last;
       prepare_tap_boundaries(&tap_first, &tap_last, bordermode, taps, first, in);
