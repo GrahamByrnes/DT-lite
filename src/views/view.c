@@ -99,6 +99,9 @@ void dt_view_manager_cleanup(dt_view_manager_t *vm)
 {
   for(GList *iter = vm->views; iter; iter = g_list_next(iter))
     dt_view_unload_module((dt_view_t *)iter->data);
+
+  g_list_free_full(vm->views, free);
+  vm->views = NULL;
 }
 
 const dt_view_t *dt_view_manager_get_current_view(dt_view_manager_t *vm)
@@ -504,15 +507,15 @@ void dt_view_manager_expose(dt_view_manager_t *vm, cairo_t *cr, int32_t width, i
 
     cairo_restore(cr);
     /* expose plugins */
-    GList *plugins = g_list_last(darktable.lib->plugins);
-    while(plugins)
+    for(const GList *plugins = g_list_last(darktable.lib->plugins); plugins; plugins = g_list_previous(plugins))
     {
       dt_lib_module_t *plugin = (dt_lib_module_t *)(plugins->data);
+
       /* does this module belong to current view ?*/
-      if(plugin->gui_post_expose && dt_lib_is_visible_in_view(plugin, vm->current_view))
-        plugin->gui_post_expose(plugin, cr, vm->current_view->width, vm->current_view->height, px, py);
-      /* get next plugin */
-      plugins = g_list_previous(plugins);
+      if(plugin->gui_post_expose
+         && dt_lib_is_visible_in_view(plugin, vm->current_view))
+        plugin->gui_post_expose(plugin, cr, vm->current_view->width,
+                                vm->current_view->height, px, py);
     }
   }
 }
@@ -562,19 +565,15 @@ void dt_view_manager_mouse_moved(dt_view_manager_t *vm, double x, double y, doub
   dt_view_t *v = vm->current_view;
   /* lets check if any plugins want to handle mouse move */
   gboolean handled = FALSE;
-  GList *plugins = g_list_last(darktable.lib->plugins);
-  while(plugins)
+    for(const GList *plugins = g_list_last(darktable.lib->plugins);
+      plugins; plugins = g_list_previous(plugins))
   {
     dt_lib_module_t *plugin = (dt_lib_module_t *)(plugins->data);
-    /* does this module belong to current view ?*/
+    // does this module belong to current view ?
     if(plugin->mouse_moved && dt_lib_is_visible_in_view(plugin, v))
-      if(plugin->mouse_moved(plugin, x, y, pressure, which))
-        handled = TRUE;
-
-    /* get next plugin */
-    plugins = g_list_previous(plugins);
+      if(plugin->mouse_moved(plugin, x, y, pressure, which)) handled = TRUE;
   }
-  /* if not handled by any plugin let pass to view handler*/
+  // if not handled by any plugin let pass to view handler
   if(!handled && v->mouse_moved)
     v->mouse_moved(v, x, y, pressure, which);
 }
@@ -587,15 +586,14 @@ int dt_view_manager_button_released(dt_view_manager_t *vm, double x, double y, i
   dt_view_t *v = vm->current_view;
   /* lets check if any plugins want to handle button press */
   gboolean handled = FALSE;
-  GList *plugins = g_list_last(darktable.lib->plugins);
-  while(plugins)
+  for(const GList *plugins = g_list_last(darktable.lib->plugins);
+      plugins;
+      plugins = g_list_previous(plugins))
   {
     dt_lib_module_t *plugin = (dt_lib_module_t *)(plugins->data);
     /* does this module belong to current view ?*/
     if(plugin->button_released && dt_lib_is_visible_in_view(plugin, v))
-      if(plugin->button_released(plugin, x, y, which, state)) handled = TRUE;
-    /* get next plugin */
-    plugins = g_list_previous(plugins);
+      if(plugin->button_released(plugin, x, y, which, state)) handled = TRUE;                                     
   }
 
   if(handled)
@@ -614,17 +612,17 @@ int dt_view_manager_button_pressed(dt_view_manager_t *vm, double x, double y, do
     return 0;
     
   dt_view_t *v = vm->current_view;
-  /* lets check if any plugins want to handle button press */
+  // lets check if any plugins want to handle button press 
   gboolean handled = FALSE;
-  GList *plugins = g_list_last(darktable.lib->plugins);
-  while(plugins && !handled)
+
+  for(const GList *plugins = g_list_last(darktable.lib->plugins);
+      plugins && !handled;
+      plugins = g_list_previous(plugins))
   {
     dt_lib_module_t *plugin = (dt_lib_module_t *)(plugins->data);
-    /* does this module belong to current view ?*/
+    // does this module belong to current view ?
     if(plugin->button_pressed && dt_lib_is_visible_in_view(plugin, v))
-      if(plugin->button_pressed(plugin, x, y, pressure, which, type, state)) handled = TRUE;
-    /* get next plugin */
-    plugins = g_list_previous(plugins);
+      if(plugin->button_pressed(plugin, x, y, pressure, which, type, state)) handled = TRUE;                                   
   }
 
   if(handled)
@@ -1147,7 +1145,7 @@ void dt_view_filter_reset(const dt_view_manager_t *vm, gboolean smart_filter)
 
 void dt_view_active_images_reset(gboolean raise)
 {
-  if(g_slist_length(darktable.view_manager->active_images) < 1)
+  if(!darktable.view_manager->active_images)
     return;
 
   g_slist_free(darktable.view_manager->active_images);
@@ -1439,13 +1437,13 @@ void dt_view_accels_refresh(dt_view_manager_t *vm)
 
   // drop all existing tables
   GList *lw = gtk_container_get_children(GTK_CONTAINER(vm->accels_window.flow_box));
-  while(lw)
-  {
-    GtkWidget *w = (GtkWidget *)lw->data;
-    gtk_widget_destroy(w);
-    lw = g_list_next(lw);
-  }
 
+  for(const GList *lw_iter = lw; lw_iter; lw_iter = g_list_next(lw_iter))
+  {
+    GtkWidget *w = (GtkWidget *)lw_iter->data;
+    gtk_widget_destroy(w);
+  }
+  g_list_free(lw);
   // get the list of valid accel for this view
   const dt_view_t *cv = dt_view_manager_get_current_view(vm);
   const dt_view_type_flags_t v = cv->view(cv);
