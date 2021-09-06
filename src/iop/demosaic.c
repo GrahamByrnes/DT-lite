@@ -2713,8 +2713,9 @@ void modify_roi_in(struct dt_iop_module_t *self, struct dt_dev_pixelpipe_iop_t *
 
 static int get_quality()
 {
-  int qual = 1;
+  int qual = 0;
   const gchar *quality = dt_conf_get_string("plugins/darkroom/demosaic/quality");
+
   if(quality)
   {
     if(!strcmp(quality, "always bilinear (fast)"))

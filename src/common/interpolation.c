@@ -887,9 +887,6 @@ void dt_interpolation_resample_roi(const struct dt_interpolation *itor, float *o
   dt_interpolation_resample_plain(itor, out, &oroi, out_stride, in, &iroi, in_stride, 4);
 }
 
-/** Applies resampling (re-scaling) on *full* input and output buffers.
- *  roi_in and roi_out define the part of the buffers that is affected.
- */
 void dt_interpolation_resample_1c(const struct dt_interpolation *itor, float *out,
                                   const dt_iop_roi_t *const roi_out, const int32_t out_stride,
                                   const float *const in, const dt_iop_roi_t *const roi_in,
@@ -898,10 +895,6 @@ void dt_interpolation_resample_1c(const struct dt_interpolation *itor, float *ou
   return dt_interpolation_resample_plain(itor, out, roi_out, out_stride, in, roi_in, in_stride, 1);
 }
 
-/** Applies resampling (re-scaling) on a specific region-of-interest of an image. The input
- *  and output buffers hold exactly those roi's. roi_in and roi_out define the relative
- *  positions of the roi's within the full input and output image, respectively.
- */
 void dt_interpolation_resample_roi_1c(const struct dt_interpolation *itor, float *out,
                                       const dt_iop_roi_t *const roi_out, const int32_t out_stride,
                                       const float *const in, const dt_iop_roi_t *const roi_in,

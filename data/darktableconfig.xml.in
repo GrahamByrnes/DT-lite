@@ -915,7 +915,6 @@
     <type>
       <enum>
         <option>always bilinear (fast)</option>
-        <option>at most PPG (reasonable)</option>
         <option>full (possibly slow)</option>
       </enum>
     </type>

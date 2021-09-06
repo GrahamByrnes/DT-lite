@@ -422,9 +422,7 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 
   // init all pointers to 0:
   memset(&darktable, 0, sizeof(darktable_t));
-
   darktable.start_wtime = start_wtime;
-
   darktable.progname = argv[0];
 
   // FIXME: move there into dt_database_t
@@ -786,17 +784,20 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   for(int i = 1; i < argc; i++)
   {
     int k;
+
     for(k = i; k < argc; k++)
       if(argv[k] != NULL) break;
 
     if(k > i)
     {
       k -= i;
+
       for(int j = i + k; j < argc; j++)
       {
         argv[j-k] = argv[j];
         argv[j] = NULL;
       }
+
       argc -= k;
     }
   }
@@ -886,6 +887,7 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   darktable.color_profiles = dt_colorspaces_init();
   // initialize the database
   darktable.db = dt_database_init(dbfilename_from_command, load_data, init_gui);
+
   if(darktable.db == NULL)
   {
     printf("ERROR : cannot open database\n");
@@ -900,6 +902,7 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
       // send the images to the other instance via dbus
       fprintf(stderr, "trying to open the images in the running instance\n");
       GDBusConnection *connection = NULL;
+
       for(int i = 1; i < argc; i++)
       {
         // make the filename absolute ...
@@ -977,7 +980,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   dt_image_cache_init(darktable.image_cache);
   darktable.mipmap_cache = (dt_mipmap_cache_t *)calloc(1, sizeof(dt_mipmap_cache_t));
   dt_mipmap_cache_init(darktable.mipmap_cache);
-
   // The GUI must be initialized before the views, because the init()
   // functions of the views depend on darktable.control->accels_* to register
   // their keyboard accelerators
@@ -1077,6 +1079,7 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
     time(&now);
     struct tm lt;
     localtime_r(&now, &lt);
+
     if(lt.tm_mon == 3 && lt.tm_mday == 1)
     {
       const int current_year = lt.tm_year + 1900;
@@ -1256,7 +1259,10 @@ void *dt_alloc_align(size_t alignment, size_t size)
   return _aligned_malloc(aligned_size, alignment);
 #else
   void *ptr = NULL;
-  if(posix_memalign(&ptr, alignment, aligned_size)) return NULL;
+
+  if(posix_memalign(&ptr, alignment, aligned_size))
+    return NULL;
+
   return ptr;
 #endif
 }
@@ -1304,6 +1310,7 @@ void dt_show_times_f(const dt_times_t *start, const char *prefix, const char *su
     char buf[160]; /* Arbitrary size, should be lots big enough for everything used in DT */
     const int n = snprintf(buf, sizeof(buf), "%s took %.3f secs (%.3f CPU) ", prefix, end.clock - start->clock,
                            end.user - start->user);
+
     if(n < sizeof(buf) - 1)
     {
       va_list ap;
@@ -1311,6 +1318,7 @@ void dt_show_times_f(const dt_times_t *start, const char *prefix, const char *su
       vsnprintf(buf + n, sizeof(buf) - n, suffix, ap);
       va_end(ap);
     }
+
     dt_print(DT_DEBUG_PERF, "%s\n", buf);
   }
 }
@@ -1322,9 +1330,9 @@ void dt_configure_performance()
   const size_t mem = dt_get_total_memory();
   const size_t bits = CHAR_BIT * sizeof(void *);
   gchar *demosaic_quality = dt_conf_get_string("plugins/darkroom/demosaic/quality");
-
   fprintf(stderr, "[defaults] found a %zu-bit system with %zu kb ram and %d cores (%d atom based)\n",
           bits, mem, threads, atom_cores);
+
   if(mem >= (8lu << 20) && threads > 4 && atom_cores == 0)
   {
     // CONFIG 1: at least 8GB RAM, and more than 4 CPU cores, no atom
@@ -1336,7 +1344,7 @@ void dt_configure_performance()
     dt_conf_set_int("host_memory_limit", MAX(mem >> 11, dt_conf_get_int("host_memory_limit")));
     dt_conf_set_int("singlebuffer_limit", MAX(16, dt_conf_get_int("singlebuffer_limit")));
     if(demosaic_quality == NULL || !strcmp(demosaic_quality, "always bilinear (fast)"))
-      dt_conf_set_string("plugins/darkroom/demosaic/quality", "at most PPG (reasonable)");
+      dt_conf_set_string("plugins/darkroom/demosaic/quality", "always bilinear (fast)");
     dt_conf_set_bool("plugins/lighttable/low_quality_thumbnails", FALSE);
     dt_conf_set_bool("ui/performance", FALSE);
   }
@@ -1350,7 +1358,7 @@ void dt_configure_performance()
     dt_conf_set_int("host_memory_limit", MAX(1500, dt_conf_get_int("host_memory_limit")));
     dt_conf_set_int("singlebuffer_limit", MAX(16, dt_conf_get_int("singlebuffer_limit")));
     if(demosaic_quality == NULL ||!strcmp(demosaic_quality, "always bilinear (fast)"))
-      dt_conf_set_string("plugins/darkroom/demosaic/quality", "at most PPG (reasonable)");
+      dt_conf_set_string("plugins/darkroom/demosaic/quality", "always bilinear (fast)");
     dt_conf_set_bool("plugins/lighttable/low_quality_thumbnails", FALSE);
     dt_conf_set_bool("ui/performance", FALSE);
   }
@@ -1374,7 +1382,7 @@ void dt_configure_performance()
     dt_conf_set_int("worker_threads", 2);
     dt_conf_set_int("host_memory_limit", 1500);
     dt_conf_set_int("singlebuffer_limit", 16);
-    dt_conf_set_string("plugins/darkroom/demosaic/quality", "at most PPG (reasonable)");
+    dt_conf_set_string("plugins/darkroom/demosaic/quality", "always bilinear (fast)");
     dt_conf_set_bool("plugins/lighttable/low_quality_thumbnails", FALSE);
     dt_conf_set_bool("ui/performance", FALSE);
   }
@@ -1394,9 +1402,8 @@ int dt_capabilities_check(char *capability)
   while(capabilities)
   {
     if(!strcmp(capabilities->data, capability))
-    {
       return TRUE;
-    }
+
     capabilities = g_list_next(capabilities);
   }
   return FALSE;
@@ -1415,9 +1422,7 @@ void dt_capabilities_add(char *capability)
 void dt_capabilities_remove(char *capability)
 {
   dt_pthread_mutex_lock(&darktable.capabilities_threadsafe);
-
   darktable.capabilities = g_list_remove(darktable.capabilities, capability);
-
   dt_pthread_mutex_unlock(&darktable.capabilities_threadsafe);
 }
 
@@ -1426,8 +1431,3 @@ void dt_capabilities_cleanup()
   while(darktable.capabilities)
     darktable.capabilities = g_list_delete_link(darktable.capabilities, darktable.capabilities);
 }
-
-
-// modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
-// vim: shiftwidth=2 expandtab tabstop=2 cindent
-// kate: tab-indents: off; indent-width 2; replace-tabs on; indent-mode cstyle; remove-trailing-spaces modified;
