@@ -204,23 +204,6 @@ static inline float bicubic(float width, float t)
 
 #define DT_LANCZOS_EPSILON (1e-9f)
 
-#if 0
-// Reference version left here for ... documentation
-static inline float lanczos(float width, float t)
-{
-  float r;
-
-  if (t<-width || t>width)
-    r = 0.f;
-  else if (t>-DT_LANCZOS_EPSILON && t<DT_LANCZOS_EPSILON)
-    r = 1.f;
-  else
-    r = width*sinf(M_PI*t)*sinf(M_PI*t/width)/(M_PI*M_PI*t*t);
-
-  return r;
-}
-#endif
-
 /* Based on a forum entry at
  * http://devmaster.net/forums/topic/4648-fast-and-accurate-sinecosine/
  *  */
@@ -247,11 +230,7 @@ static inline float lanczos(float width, float t)
  * All our known interpolators
  * ------------------------------------------------------------------------*/
 
-/* !!! !!! !!!
- * Make sure MAX_HALF_FILTER_WIDTH is at least equal to the maximum width
- * of this filter list. Otherwise bad things will happen
- * !!! !!! !!!
- */
+ // Make sure MAX_HALF_FILTER_WIDTH is at least equal to the maximum width
 static const struct dt_interpolation
   dt_interpolator[] = {
   {.id = DT_INTERPOLATION_BILINEAR,
@@ -648,13 +627,11 @@ static int prepare_resampling_plan(const struct dt_interpolation *itor, int in, 
     *pmeta = NULL;
 
   if(scale == 1.f)
-    // No resampling required
     return 0;
   // Compute common upsampling/downsampling memory requirements
   int maxtapsapixel;
 
   if(scale > 1.f)
-    // Upscale... the easy one. The values are exact
     maxtapsapixel = 2 * itor->width;
   else
     // Downscale... going for worst case values memory wise
@@ -687,12 +664,9 @@ static int prepare_resampling_plan(const struct dt_interpolation *itor, int in, 
   blob = (char *)blob + scratchreq;
   int *meta = metareq ? (int *)blob : NULL;
 
-  /* setting this as a const should help the compilers trim all unnecessary
-   * codepaths */
+  // setting this as a const should help the compilers trim all unnecessary codepaths
   const enum border_mode bordermode = RESAMPLING_BORDER_MODE;
-  /* Upscale and downscale differ in subtle points, getting rid of code
-   * duplication might have been tricky and i prefer keeping the code
-   * as straight as possible */
+  
   if(scale > 1.f)
   {
     int kidx = 0;
@@ -742,6 +716,7 @@ static int prepare_resampling_plan(const struct dt_interpolation *itor, int in, 
     int iidx = 0;
     int lidx = 0;
     int midx = 0;
+
     for(int x = 0; x < out; x++)
     {
       if(meta)
@@ -950,7 +925,3 @@ void dt_interpolation_resample_roi_1c(const struct dt_interpolation *itor, float
 
   dt_interpolation_resample_plain(itor, out, &oroi, out_stride, in, &iroi, in_stride, 1);
 }
-
-// modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
-// vim: shiftwidth=2 expandtab tabstop=2 cindent
-// kate: tab-indents: off; indent-width 2; replace-tabs on; indent-mode cstyle; remove-trailing-spaces modified;
