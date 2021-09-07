@@ -167,12 +167,7 @@ static cairo_status_t write_snapshot_data(void *closure, const unsigned char *da
 
 static dt_darkroom_layout_t _lib_darkroom_get_layout(dt_view_t *self)
 {
-  dt_develop_t *dev = (dt_develop_t *)self->data;
-
-  if(dev->iso_12646.enabled)
-    return DT_DARKROOM_LAYOUT_EDITING;
-  else
-    return DT_DARKROOM_LAYOUT_EDITING;
+  return DT_DARKROOM_LAYOUT_EDITING;// does this need to have an if... else ?
 }
 
 void expose(dt_view_t *self, cairo_t *cri, int32_t width, int32_t height,int32_t pointerx,int32_t pointery)
