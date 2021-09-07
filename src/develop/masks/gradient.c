@@ -1113,8 +1113,8 @@ static int dt_gradient_get_mask(dt_iop_module_t *module, dt_dev_pixelpipe_iop_t 
   const float hwscale = 1.0f / sqrtf(wd * wd + ht * ht);
   const float ihwscale = 1.0f / hwscale;
   const float v = (-gradient->rotation / 180.0f) * M_PI;
-  const float sinv = sin(v);
-  const float cosv = cos(v);
+  const float sinv = sinf(v);
+  const float cosv = cosf(v);
   const float xoffset = cosv * gradient->anchor[0] * wd + sinv * gradient->anchor[1] * ht;
   const float yoffset = sinv * gradient->anchor[0] * wd - cosv * gradient->anchor[1] * ht;
   const float compression = fmaxf(gradient->compression, 0.001f);
@@ -1135,7 +1135,7 @@ static int dt_gradient_get_mask(dt_iop_module_t *module, dt_dev_pixelpipe_iop_t 
 #if !defined(__SUNOS__) && !defined(__NetBSD__)
 #pragma omp parallel for default(none) \
   dt_omp_firstprivate(lutsize, lutmax, hwscale, state, normf, compression) \
-  shared(lut)
+  shared(lut) schedule(static)
 #else
 #pragma omp parallel for shared(points)
 #endif
@@ -1155,7 +1155,7 @@ static int dt_gradient_get_mask(dt_iop_module_t *module, dt_dev_pixelpipe_iop_t 
 #if !defined(__SUNOS__) && !defined(__NetBSD__)
 #pragma omp parallel for default(none) \
   dt_omp_firstprivate(gh, gw, sinv, cosv, xoffset, yoffset, hwscale, ihwscale, curvature, compression) \
-  shared(points, clut)
+  shared(points, clut) schedule(static) collapse(2)
 #else
 #pragma omp parallel for shared(points)
 #endif
@@ -1284,8 +1284,8 @@ static int dt_gradient_get_mask_roi(dt_iop_module_t *module, dt_dev_pixelpipe_io
   const float hwscale = 1.0f / sqrtf(wd * wd + ht * ht);
   const float ihwscale = 1.0f / hwscale;
   const float v = (-gradient->rotation / 180.0f) * M_PI;
-  const float sinv = sin(v);
-  const float cosv = cos(v);
+  const float sinv = sinf(v);
+  const float cosv = cosf(v);
   const float xoffset = cosv * gradient->anchor[0] * wd + sinv * gradient->anchor[1] * ht;
   const float yoffset = sinv * gradient->anchor[0] * wd - cosv * gradient->anchor[1] * ht;
   const float compression = fmaxf(gradient->compression, 0.001f);
@@ -1295,7 +1295,7 @@ static int dt_gradient_get_mask_roi(dt_iop_module_t *module, dt_dev_pixelpipe_io
 
   const int lutmax = ceilf(4 * compression * ihwscale);
   const int lutsize = 2 * lutmax + 2;
-  float *lut = dt_alloc_align(64, lutsize * sizeof(float));
+  float *lut = dt_alloc_align_float((size_t)lutsize);
   if(lut == NULL)
   {
     dt_free_align(points);
@@ -1306,7 +1306,7 @@ static int dt_gradient_get_mask_roi(dt_iop_module_t *module, dt_dev_pixelpipe_io
 #if !defined(__SUNOS__) && !defined(__NetBSD__)
 #pragma omp parallel for default(none) \
   dt_omp_firstprivate(lutsize, lutmax, hwscale, state, normf, compression) \
-  shared(lut)
+  shared(lut) schedule(static)
 #else
 #pragma omp parallel for shared(points)
 #endif
@@ -1325,7 +1325,7 @@ static int dt_gradient_get_mask_roi(dt_iop_module_t *module, dt_dev_pixelpipe_io
 #if !defined(__SUNOS__) && !defined(__NetBSD__)
 #pragma omp parallel for default(none) \
   dt_omp_firstprivate(gh, gw, sinv, cosv, xoffset, yoffset, hwscale, ihwscale, curvature, compression) \
-  shared(points, clut)
+  shared(points, clut) schedule(static) collapse(2)
 #else
 #pragma omp parallel for shared(points)
 #endif
@@ -1354,7 +1354,7 @@ static int dt_gradient_get_mask_roi(dt_iop_module_t *module, dt_dev_pixelpipe_io
 #if !defined(__SUNOS__) && !defined(__NetBSD__)
 #pragma omp parallel for default(none) \
   dt_omp_firstprivate(h, w, grid, gw) \
-  shared(buffer, points)
+  shared(buffer, points) schedule(simd:static)
 #else
 #pragma omp parallel for shared(points, buffer)
 #endif
