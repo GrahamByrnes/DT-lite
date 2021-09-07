@@ -105,12 +105,6 @@
     <shortdescription>maximum width of the side panels in pixels</shortdescription>
     <longdescription>(needs a restart)</longdescription>
   </dtconfig>
-  <dtconfig prefs="lighttable" section="slideshow">
-    <name>slideshow_delay</name>
-    <type>int</type>
-    <default>5</default>
-    <shortdescription>waiting time between each picture in slideshow</shortdescription>
-  </dtconfig>
   <dtconfig prefs="cpugpu" restart="true">
     <name>cache_memory</name>
     <type factor="(1.0 / (1024.0 * 1024.0))" min="(1024 * 1024 * 100)">int64</type>
@@ -123,35 +117,35 @@
     <type>bool</type>
     <default>true</default>
     <shortdescription>enable disk backend for thumbnail cache</shortdescription>
-    <longdescription>if enabled, write thumbnails to disk (.cache/darktable/) when evicted from the memory cache. note that this can take a lot of memory (several gigabytes for 20k images) and will never delete cached thumbnails again. it's safe though to delete these manually, if you want. light table performance will be increased greatly when browsing a lot. to generate all thumbnails of your entire collection offline, run 'darktable-generate-cache'.</longdescription>
+    <longdescription>if enabled, write thumbnails to disk (.cache/darktable/) when evicted from the memory cache. note that this can take a lot of memory.</longdescription>
   </dtconfig>
   <dtconfig prefs="cpugpu">
     <name>cache_disk_backend_full</name>
     <type>bool</type>
     <default>false</default>
     <shortdescription>enable disk backend for full preview cache</shortdescription>
-    <longdescription>if enabled, write full preview to disk (.cache/darktable/) when evicted from the memory cache. note that this can take a lot of memory (several gigabytes for 20k images) and will never delete cached thumbnails again. it's safe though to delete these manually, if you want. light table performance will be increased greatly when zooming image in full preview mode.</longdescription>
+    <longdescription>if enabled, write full preview to disk (.cache/darktable/) when evicted from the memory cache. note that this can take a lot of memory.</longdescription>
   </dtconfig>
   <dtconfig prefs="lighttable">
     <name>cache_color_managed</name>
     <type>bool</type>
     <default>true</default>
     <shortdescription>color manage cached thumbnails</shortdescription>
-    <longdescription>if enabled, cached thumbnails will be color managed so that lighttable and filmstrip can show correct colors. otherwise the results may look wrong once the display profile gets changed.</longdescription>
+    <longdescription>if enabled, cached thumbnails will be color managed so that lighttable and filmstrip can show correct colors. otherwise the results depend on the display profile.</longdescription>
   </dtconfig>
   <dtconfig prefs="cpugpu" restart="true">
     <name>worker_threads</name>
     <type min="1" max="64">int</type>
     <default>2</default>
     <shortdescription>number of background threads</shortdescription>
-    <longdescription>this controls for example how many threads are used to create thumbnails during import. the cache will grow to a maximum of twice this number of full resolution image buffers (needs a restart).</longdescription>
+    <longdescription>this controls for example how many threads are used to create thumbnails during import. the cache will grow to a maximum of twice this number of full resolution image buffers.</longdescription>
   </dtconfig>
   <dtconfig prefs="cpugpu" restart="true">
     <name>host_memory_limit</name>
     <type>int</type>
     <default>1500</default>
     <shortdescription>host memory limit (in MB) for tiling</shortdescription>
-    <longdescription>this variable controls the maximum amount of memory (in MB) a module may use during image processing. lower values will force memory hungry modules to process image with increasing number of tiles. setting this to 0 will omit any limit. values below 500 will be treated as 500 (needs a restart).</longdescription>
+    <longdescription>this variable controls the maximum amount of memory (in MB) a module may use during image processing. lower values will force more tiles. setting this to 0 will omit any limit. values below 500 will be treated as 500.</longdescription>
   </dtconfig>
   <dtconfig prefs="cpugpu" restart="true">
     <name>singlebuffer_limit</name>
@@ -750,34 +744,23 @@
     <shortdescription>pattern for the thumbnail tooltip (empty to disable)</shortdescription>
     <longdescription>see manual to know all the tags you can use.</longdescription>
   </dtconfig>
-  <dtconfig prefs="darkroom">
-    <name>pressure_sensitivity</name>
-    <type>
-      <enum>
-        <option>off</option>
-        <option>hardness (relative)</option>
-        <option>hardness (absolute)</option>
-        <option>opacity (relative)</option>
-        <option>opacity (absolute)</option>
-        <option>brush size (relative)</option>
-      </enum>
-    </type>
-    <default>off</default>
-    <shortdescription>pen pressure control for brush masks</shortdescription>
-    <longdescription>off - pressure reading ignored, hardness/opacity/brush size - pressure reading controls specified attribute, absolute/relative - pressure reading is taken directly as attribute value or multiplied with pre-defined setting.</longdescription>
+  <dtconfig prefs="lighttable">
+    <name>ui/performance_slideshow</name>
+    <type>bool</type>
+    <default>false</default>
+    <shortdescription>performance mode for thumbs, previews</shortdescription>
   </dtconfig>
-  <dtconfig prefs="darkroom">
-    <name>brush_smoothing</name>
-    <type>
-      <enum>
-        <option>low</option>
-        <option>medium</option>
-        <option>high</option>
-      </enum>
-    </type>
-    <default>medium</default>
-    <shortdescription>smoothing of brush strokes</shortdescription>
-    <longdescription>sets level for smoothing of brush strokes. stronger smoothing leads to less nodes and easier editing but with lower control of accuracy.</longdescription>
+  <dtconfig prefs="lighttable" section="slideshow">
+    <name>ui/performance_slideshow</name>
+    <type>bool</type>
+    <default>false</default>
+    <shortdescription>performance mode for slideshow</shortdescription>
+  </dtconfig>
+  <dtconfig prefs="lighttable" section="slideshow">
+    <name>slideshow_delay</name>
+    <type>int</type>
+    <default>5</default>
+    <shortdescription>waiting time between each picture in slideshow</shortdescription>
   </dtconfig>
   <dtconfig prefs="darkroom">
     <name>channel_display</name>
@@ -922,20 +905,6 @@
     <shortdescription>demosaicing for zoomed out darkroom mode</shortdescription>
     <longdescription>interpolation when not in 1:1 in darkroom: bilinear fastest, middle ground is PPG + interpolation modes on the 'pixel interpolator' option, full will use the settings for full-size export. X-Trans sensors use VNG rather than PPG as middle ground.</longdescription>
   </dtconfig>
-  <dtconfig prefs="darkroom">
-    <name>plugins/lighttable/export/pixel_interpolator</name>
-    <type>
-      <enum>
-        <option>bilinear</option>
-        <option>bicubic</option>
-        <option>lanczos2</option>
-        <option>lanczos3</option>
-      </enum>
-    </type>
-    <default>lanczos3</default>
-    <shortdescription>pixel interpolator</shortdescription>
-    <longdescription>pixel interpolator used in rotation and lens correction, also darkroom with PPG.</longdescription>
-  </dtconfig>
   <dtconfig prefs="darkroom" >
     <name>preview_downsampling</name>
     <type>
@@ -950,6 +919,36 @@
     <shortdescription>reduce resolution of preview image</shortdescription>
     <longdescription>decrease to speed up preview rendering, may hinder accurate masking</longdescription>
   </dtconfig>
+    <dtconfig prefs="darkroom">
+    <name>pressure_sensitivity</name>
+    <type>
+      <enum>
+        <option>off</option>
+        <option>hardness (relative)</option>
+        <option>hardness (absolute)</option>
+        <option>opacity (relative)</option>
+        <option>opacity (absolute)</option>
+        <option>brush size (relative)</option>
+      </enum>
+    </type>
+    <default>off</default>
+    <shortdescription>pen pressure control for brush masks</shortdescription>
+    <longdescription>off - pressure reading ignored, hardness/opacity/brush size - pressure reading controls specified attribute, absolute/relative - pressure reading is taken directly as attribute value or multiplied with pre-defined setting.</longdescription>
+  </dtconfig>
+  <dtconfig prefs="darkroom">
+    <name>brush_smoothing</name>
+    <type>
+      <enum>
+        <option>low</option>
+        <option>medium</option>
+        <option>high</option>
+      </enum>
+    </type>
+    <default>medium</default>
+    <shortdescription>smoothing of brush strokes</shortdescription>
+    <longdescription>sets level for smoothing of brush strokes. stronger smoothing leads to less nodes and easier editing but with lower control of accuracy.</longdescription>
+  </dtconfig>
+ 
   <dtconfig>
     <name>database_cache_quality</name>
     <type>int</type>
@@ -1509,6 +1508,27 @@
     <default>false</default>
     <shortdescription>always use LittleCMS 2 to apply output color profile</shortdescription>
     <longdescription>this is slower than the default.</longdescription>
+  </dtconfig>
+  <dtconfig prefs="processing">
+    <name>ui/detect_mono_exif</name>
+    <type>bool</type>
+    <default>false</default>
+    <shortdescription>detect monochrome previews</shortdescription>
+    <longdescription>many monochrome images can be identified via exif and preview data. beware: this slows down imports and reading exif data</longdescription>
+ </dtconfig>
+  <dtconfig prefs="processing">
+    <name>plugins/lighttable/export/pixel_interpolator</name>
+    <type>
+      <enum>
+        <option>bilinear</option>
+        <option>bicubic</option>
+        <option>lanczos2</option>
+        <option>lanczos3</option>
+      </enum>
+    </type>
+    <default>lanczos3</default>
+    <shortdescription>pixel interpolator</shortdescription>
+    <longdescription>pixel interpolator used in rotation and lens correction, also darkroom.</longdescription>
   </dtconfig>
   <dtconfig>
     <name>plugins/lighttable/export/high_quality_processing</name>
@@ -2074,25 +2094,12 @@
     <shortdescription>look for updated xmp files on startup</shortdescription>
     <longdescription>check file modification times of all xmp files on startup to check if any got updated in the meantime</longdescription>
   </dtconfig>
-  <dtconfig prefs="processing">
-    <name>ui/detect_mono_exif</name>
-    <type>bool</type>
-    <default>false</default>
-    <shortdescription>detect monochrome previews</shortdescription>
-    <longdescription>many monochrome images can be identified via exif and preview data. beware: this slows down imports and reading exif data</longdescription>
- </dtconfig>
  <dtconfig>
     <name>screen_dpi_overwrite</name>
     <type>float</type>
     <default>-1.0</default>
     <shortdescription>overwrite the screen's dpi setting</shortdescription>
     <longdescription>if this value is &gt; 0.0 then it is used as the screen's dpi setting which is used to scale the gui</longdescription>
-  </dtconfig>
-  <dtconfig>
-    <name>ui/performance</name>
-    <type>bool</type>
-    <default>false</default>
-    <shortdescription>performance mode for thumbs and previews</shortdescription>
   </dtconfig>
   <dtconfig>
     <name>plugins/lighttable/preview/max_in_memory_images</name>
