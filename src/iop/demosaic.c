@@ -48,7 +48,7 @@ DT_MODULE_INTROSPECTION(3, dt_iop_demosaic_params_t)
 typedef enum dt_iop_demosaic_method_t
 {
   // methods for Bayer images
-  DT_IOP_DEMOSAIC_PPG = 0,   // $DESCRIPTION: "PPG (fast)"
+  DT_IOP_DEMOSAIC_PPG = 0,   // $DESCRIPTION: "PPG"
   DT_IOP_DEMOSAIC_AMAZE = 1, // $DESCRIPTION: "AMaZE (slow)"
   DT_IOP_DEMOSAIC_VNG4 = 2,  // $DESCRIPTION: "VNG4"
   DT_IOP_DEMOSAIC_RCD = 5,   // $DESCRIPTION: "RCD"
@@ -133,16 +133,6 @@ int default_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_p
 int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
                   void *new_params, const int new_version)
 {
-  if(old_version == 2 && new_version == 3)
-  {
-    dt_iop_demosaic_params_t *o = (dt_iop_demosaic_params_t *)old_params;
-    dt_iop_demosaic_params_t *n = (dt_iop_demosaic_params_t *)new_params;
-    n->green_eq = o->green_eq;
-    n->median_thrs = o->median_thrs;
-    n->color_smoothing = 0;
-    n->demosaicing_method = DT_IOP_DEMOSAIC_PPG;
-    return 0;
-  }
   return 1;
 }
 
