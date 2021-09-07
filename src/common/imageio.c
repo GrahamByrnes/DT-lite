@@ -229,7 +229,7 @@ gboolean dt_imageio_has_mono_preview(const char *filename)
 {
   dt_colorspaces_color_profile_type_t color_space;
   uint8_t *tmp = NULL;
-  int32_t thumb_width, thumb_height;
+  int32_t thumb_width = 0, thumb_height = 0;
   gboolean mono = FALSE;
 
   if(dt_imageio_large_thumbnail(filename, &tmp, &thumb_width, &thumb_height, &color_space))
@@ -321,14 +321,14 @@ void dt_imageio_flip_buffers_ui8_to_float(float *out, const uint8_t *in, const f
   {
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
-    dt_omp_firstprivate(wd, scale, black, ht, stride) \
+    dt_omp_firstprivate(wd, scale, black, ht, stride, ch) \
     shared(in, out) \
     schedule(static)
 #endif
     for(int j = 0; j < ht; j++)
       for(int i = 0; i < wd; i++)
-        for(int k = 0; k < 4; k++)
-          out[4 * ((size_t)j * wd + i) + k] = (in[(size_t)j * stride + 4 * i + k] - black) * scale;
+        for(int k = 0; k < ch; k++)
+          out[4 * ((size_t)j * wd + i) + k] = (in[(size_t)j * stride + (size_t)ch * i + k] - black) * scale;
     return;
   }
   int ii = 0, jj = 0;
@@ -350,7 +350,7 @@ void dt_imageio_flip_buffers_ui8_to_float(float *out, const uint8_t *in, const f
   }
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
-  dt_omp_firstprivate(wd, scale, black, stride, ht) \
+  dt_omp_firstprivate(wd, scale, black, stride, ht, ch) \
   shared(in, out, jj, ii, sj, si) \
   schedule(static)
 #endif
@@ -360,8 +360,8 @@ void dt_imageio_flip_buffers_ui8_to_float(float *out, const uint8_t *in, const f
     const uint8_t *in2 = in + (size_t)stride * j;
     for(int i = 0; i < wd; i++)
     {
-      for(int k = 0; k < 4; k++) out2[k] = (in2[k] - black) * scale;
-      in2 += 4;
+      for(int k = 0; k < ch; k++) out2[k] = (in2[k] - black) * scale;
+      in2 += ch;
       out2 += si;
     }
   }
@@ -699,8 +699,10 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     goto error;
   }
 
+  const gboolean use_style = !thumbnail_export && format_params->style[0] != '\0';
+  const gboolean appending = format_params->style_append != FALSE;
   //  If a style is to be applied during export, add the iop params into the history
-  if(!thumbnail_export && format_params->style[0] != '\0')
+  if(use_style)
   {
     GList *style_items = dt_styles_get_item_list(format_params->style, TRUE, -1);
     if(!style_items)
@@ -710,15 +712,14 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     }
 
     GList *modules_used = NULL;
-    dt_dev_pop_history_items_ext(&dev, dev.history_end);
-    dt_ioppr_update_for_style_items(&dev, style_items, format_params->style_append);
-    GList *st_items = g_list_first(style_items);
+    dt_dev_pop_history_items_ext(&dev, appending ? dev.history_end : 0);
+    dt_ioppr_update_for_style_items(&dev, style_items, appending);
 
-    while(st_items)
+    for(GList *st_items = style_items; st_items; st_items = g_list_next(st_items))
     {
       dt_style_item_t *st_item = (dt_style_item_t *)st_items->data;
-      dt_styles_apply_style_item(&dev, st_item, &modules_used, format_params->style_append);
-      st_items = g_list_next(st_items);
+      dt_styles_apply_style_item(&dev, st_item, &modules_used, appending);
+                                       
     }
 
     g_list_free(modules_used);
@@ -749,9 +750,9 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     sRGB = 1;
   else if(icc_type == DT_COLORSPACE_NONE)
   {
-    GList *modules = dev.iop;
     dt_iop_module_t *colorout = NULL;
-    while(modules)
+
+    for(GList *modules = dev.iop; modules; modules = g_list_next(modules))
     {
       colorout = (dt_iop_module_t *)modules->data;
       if(colorout->get_p && strcmp(colorout->op, "colorout") == 0)
@@ -760,7 +761,7 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
         sRGB = (!type || *type == DT_COLORSPACE_SRGB);
         break; // colorout can't have > 1 instance
       }
-      modules = g_list_next(modules);
+                                     
     }
   }
   else
@@ -886,21 +887,20 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     // so we need to turn temporarily disable in-pipe late downsampling iop.
     // find the finalscale module
     dt_dev_pixelpipe_iop_t *finalscale = NULL;
+
+    for(const GList *nodes = g_list_last(pipe.nodes); nodes; nodes = g_list_previous(nodes))
     {
-      GList *nodes = g_list_last(pipe.nodes);
-      while(nodes)
+      dt_dev_pixelpipe_iop_t *node = (dt_dev_pixelpipe_iop_t *)(nodes->data);
+
+      if(!strcmp(node->module->op, "finalscale"))
       {
-        dt_dev_pixelpipe_iop_t *node = (dt_dev_pixelpipe_iop_t *)(nodes->data);
-        if(!strcmp(node->module->op, "finalscale"))
-        {
-          finalscale = node;
-          break;
-        }
-        nodes = g_list_previous(nodes);
+        finalscale = node;
+        break;
       }
     }
 
-    if(finalscale) finalscale->enabled = 0;
+    if(finalscale)
+      finalscale->enabled = 0;
 
     // do the processing (8-bit with special treatment, to make sure we can use openmp further down):
     if(bpp == 8)
