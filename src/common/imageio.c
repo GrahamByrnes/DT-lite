@@ -713,7 +713,7 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
 
     GList *modules_used = NULL;
     dt_dev_pop_history_items_ext(&dev, appending ? dev.history_end : 0);
-    dt_dev_pop_history_items_ext(&dev, dev.history_end);   /* *** */
+    //dt_dev_pop_history_items_ext(&dev, dev.history_end);   /* *** */
     dt_ioppr_update_for_style_items(&dev, style_items, appending);
 
     for(GList *st_items = style_items; st_items; st_items = g_list_next(st_items))
