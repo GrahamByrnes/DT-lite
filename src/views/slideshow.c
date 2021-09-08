@@ -173,7 +173,6 @@ static int process_image(dt_slideshow_t *d, dt_slideshow_slot_t slot)
   buf.bpp = bpp;
   buf.write_image = write_image;
 
-  dt_control_log(_("in process_image"));
   // lock to copy the information to process the image
   dt_pthread_mutex_lock(&d->lock);
   
