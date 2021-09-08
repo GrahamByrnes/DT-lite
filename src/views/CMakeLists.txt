@@ -5,7 +5,7 @@ include(manage-symbol-visibility)
 add_definitions(-include common/module_api.h)
 add_definitions(-include views/view_api.h)
 
-set(MODULES darkroom lighttable slideshow)
+set(MODULES darkroom lighttable)
 
 add_library(darkroom MODULE "darkroom.c")
 add_library(lighttable MODULE "lighttable.c")
