@@ -257,11 +257,13 @@ static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
   gboolean export_masks = dt_conf_get_bool(CONFIG_PREFIX "export_masks");
   char *tmp = dt_conf_get_string(CONFIG_PREFIX "style");
   gboolean style_append = dt_conf_get_bool(CONFIG_PREFIX "style_append");
+
   if(tmp)
   {
     g_strlcpy(style, tmp, sizeof(style));
     g_free(tmp);
   }
+
   dt_colorspaces_color_profile_type_t icc_type = dt_conf_get_int(CONFIG_PREFIX "icctype");
   gchar *icc_filename = dt_conf_get_string(CONFIG_PREFIX "iccprofile");
   dt_iop_color_intent_t icc_intent = dt_conf_get_int(CONFIG_PREFIX "iccintent");
@@ -344,6 +346,7 @@ void gui_reset(dt_lib_module_t *self)
     for(GList *profiles = darktable.color_profiles->profiles; profiles; profiles = g_list_next(profiles))
     {
       dt_colorspaces_color_profile_t *pp = (dt_colorspaces_color_profile_t *)profiles->data;
+
       if(pp->out_pos > -1 &&
          icctype == pp->type && (icctype != DT_COLORSPACE_FILE || !strcmp(iccfilename, pp->filename)))
       {
@@ -362,7 +365,10 @@ void gui_reset(dt_lib_module_t *self)
   if(style != NULL)
   {
     rc = dt_bauhaus_combobox_set_from_text(d->style, style);
-    if(rc == FALSE) dt_bauhaus_combobox_set(d->style, 0);
+
+    if(rc == FALSE)
+      dt_bauhaus_combobox_set(d->style, 0);
+
     g_free(style);
   }
   else
@@ -370,8 +376,7 @@ void gui_reset(dt_lib_module_t *self)
 
   // style mode to overwrite as it was the initial behavior
   dt_bauhaus_combobox_set(d->style_mode, dt_conf_get_bool(CONFIG_PREFIX "style_append"));
-
-  gtk_widget_set_sensitive(GTK_WIDGET(d->style_mode), dt_bauhaus_combobox_get(d->style)==0?FALSE:TRUE);
+  gtk_widget_set_sensitive(GTK_WIDGET(d->style_mode), dt_bauhaus_combobox_get(d->style)== 0 ? FALSE : TRUE);
 
   // export metadata presets
   g_free(d->metadata_export);
@@ -389,6 +394,7 @@ static void set_format_by_name(dt_lib_export_t *d, const char *name)
 {
   // Find the selected format plugin among all existing plugins
   dt_imageio_module_format_t *module = NULL;
+
   for(GList *it = darktable.imageio->plugins_format; it; it = g_list_next(it))
   {
     if(g_strcmp0(((dt_imageio_module_format_t *)it->data)->name(), name) == 0
@@ -410,16 +416,13 @@ static void set_format_by_name(dt_lib_export_t *d, const char *name)
     gtk_stack_set_visible_child(GTK_STACK(d->format_extra_container), module->widget);
   }
   else
-  {
     gtk_widget_hide(d->format_extra_container);
-  }
 
   // Store the new format
   dt_conf_set_string(CONFIG_PREFIX "format_name", module->plugin_name);
 
   if(dt_bauhaus_combobox_set_from_text(d->format, module->name()) == FALSE)
     dt_bauhaus_combobox_set(d->format, 0);
-
   // Let's also update combination of storage/format dimension restrictions
   _update_dimensions(d);
 
@@ -460,6 +463,7 @@ static void _get_max_output_dimension(dt_lib_export_t *d, uint32_t *width, uint3
   char *format_name = dt_conf_get_string(CONFIG_PREFIX "format_name");
   dt_imageio_module_format_t *format = dt_imageio_get_format_by_name(format_name);
   g_free(format_name);
+
   if(storage && format)
   {
     uint32_t fw, fh, sw, sh;
@@ -484,6 +488,7 @@ static void _validate_dimensions(dt_lib_export_t *d)
   //reset dimensions to previously stored value if they exceed the maximum
   uint32_t width = atoi(gtk_entry_get_text(GTK_ENTRY(d->width)));
   uint32_t height = atoi(gtk_entry_get_text(GTK_ENTRY(d->height)));
+
   if(width > d->max_allowed_width || height > d->max_allowed_height)
   {
     width = width > d->max_allowed_width ? dt_conf_get_int(CONFIG_PREFIX "width") : width;
@@ -506,9 +511,11 @@ static void set_storage_by_name(dt_lib_export_t *d, const char *name)
   int k = -1;
   GList *it = g_list_first(darktable.imageio->plugins_storage);
   dt_imageio_module_storage_t *module = NULL;
+
   if(it != NULL) do
     {
       k++;
+
       if(strcmp(((dt_imageio_module_storage_t *)it->data)->name(((dt_imageio_module_storage_t *)it->data)),
                 name) == 0 || strcmp(((dt_imageio_module_storage_t *)it->data)->plugin_name, name) == 0)
       {
@@ -532,7 +539,6 @@ static void set_storage_by_name(dt_lib_export_t *d, const char *name)
 
   dt_bauhaus_combobox_set(d->storage, k);
   dt_conf_set_string(CONFIG_PREFIX "storage_name", module->plugin_name);
-
   // Check if plugin recommends a max dimension and set
   // if not implemented the stored conf values are used..
   uint32_t w = 0, h = 0;
@@ -546,13 +552,10 @@ static void set_storage_by_name(dt_lib_export_t *d, const char *name)
 
   if(h > ch || h == 0)
     h = ch;
-
   // Set the recommended dimension
   _set_dimensions(d, w, h);
-
   // Let's update formats combobox with supported formats of selected storage module...
   _update_formats_combobox(d);
-
   // Lets try to set selected format if fail select first in list..
   gchar *format_name = dt_conf_get_string(CONFIG_PREFIX "format_name");
   dt_imageio_module_format_t *format = dt_imageio_get_format_by_name(format_name);
@@ -566,19 +569,25 @@ static void _storage_changed(GtkWidget *widget, dt_lib_export_t *d)
 {
   const gchar *name = dt_bauhaus_combobox_get_text(d->storage);
   g_signal_handlers_block_by_func(widget, _storage_changed, d);
-  if(name) set_storage_by_name(d, name);
+
+  if(name)
+    set_storage_by_name(d, name);
+
   g_signal_handlers_unblock_by_func(widget, _storage_changed, d);
 }
 
 static void _profile_changed(GtkWidget *widget, dt_lib_export_t *d)
 {
   int pos = dt_bauhaus_combobox_get(widget);
+
   if(pos > 0)
   {
     pos--;
+
     for(GList *profiles = darktable.color_profiles->profiles; profiles; profiles = g_list_next(profiles))
     {
       dt_colorspaces_color_profile_t *pp = (dt_colorspaces_color_profile_t *)profiles->data;
+
       if(pp->out_pos == pos)
       {
         dt_conf_set_int(CONFIG_PREFIX "icctype", pp->type);
@@ -592,6 +601,7 @@ static void _profile_changed(GtkWidget *widget, dt_lib_export_t *d)
       }
     }
   }
+
   dt_conf_set_int(CONFIG_PREFIX "icctype", DT_COLORSPACE_NONE);
   dt_conf_set_string(CONFIG_PREFIX "iccprofile", "");
 }
@@ -815,14 +825,15 @@ static void _lib_export_styles_changed_callback(gpointer instance, gpointer user
 
   dt_bauhaus_combobox_clear(d->style);
   dt_bauhaus_combobox_add(d->style, _("none"));
-
   GList *styles = dt_styles_get_list("");
+
   while(styles)
   {
     dt_style_t *style = (dt_style_t *)styles->data;
     dt_bauhaus_combobox_add(d->style, style->name);
     styles = g_list_next(styles);
   }
+
   dt_bauhaus_combobox_set(d->style, 0);
 
   g_list_free_full(styles, dt_style_free);
@@ -889,11 +900,14 @@ void gui_init(dt_lib_module_t *self)
   gtk_stack_set_homogeneous(GTK_STACK(d->format_extra_container),FALSE);
   gtk_box_pack_start(GTK_BOX(self->widget), d->format_extra_container, FALSE, TRUE, 0);
   it = g_list_first(darktable.imageio->plugins_format);
+
   if(it != NULL) do
   {
     dt_imageio_module_format_t *module = (dt_imageio_module_format_t *)it->data;
+
     if(module->widget)
       gtk_container_add(GTK_CONTAINER(d->format_extra_container), module->widget);
+
   } while((it = g_list_next(it)));
 
   label = dt_ui_section_label_new(_("global options"));
@@ -1488,6 +1502,7 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
   // get module by name and fail if not there.
   dt_imageio_module_format_t *fmod = dt_imageio_get_format_by_name(fname);
   dt_imageio_module_storage_t *smod = dt_imageio_get_storage_by_name(sname);
+
   if(!fmod || !smod) return 1;
 
   const int32_t fversion = *(const int32_t *)buf;

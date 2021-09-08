@@ -5,7 +5,7 @@ include(manage-symbol-visibility)
 add_definitions(-include common/module_api.h)
 add_definitions(-include imageio/storage/imageio_storage_api.h)
 
-set(MODULES disk email gallery latex)
+set(MODULES disk gallery latex)
 
 find_package(CURL 7.56)
 if(CURL_FOUND)
