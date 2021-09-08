@@ -251,9 +251,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
 
   // avoid braindead export which is bound to overwrite at random:
   if(total > 1 && !g_strrstr(d->filename, "$"))
-  {
     snprintf(d->filename + strlen(d->filename), sizeof(d->filename) - strlen(d->filename), "_$(SEQUENCE)");
-  }
 
   gchar *fixed_path = dt_util_fix_path(d->filename);
   g_strlcpy(d->filename, fixed_path, sizeof(d->filename));
@@ -267,26 +265,30 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
 
   const char *ext = format->extension(fdata);
   char *c = dirname + strlen(dirname);
+
   for(; c > dirname && *c != '/'; c--)
     ;
-  if(*c == '/') *c = '\0';
+
+  if(*c == '/')
+    *c = '\0';
+
   if(g_mkdir_with_parents(dirname, 0755))
   {
     fprintf(stderr, "[imageio_storage_gallery] could not create directory: `%s'!\n", dirname);
     dt_control_log(_("could not create directory `%s'!"), dirname);
     return 1;
   }
-
   // store away dir.
   g_strlcpy(d->cached_dirname, dirname, sizeof(d->cached_dirname));
-
   c = filename + strlen(filename);
+
   for(; c > filename && *c != '.' && *c != '/'; c--)
     ;
-  if(c <= filename || *c == '/') c = filename + strlen(filename);
+
+  if(c <= filename || *c == '/')
+    c = filename + strlen(filename);
 
   sprintf(c, ".%s", ext);
-
   // save image to list, in order:
   pair_t *pair = malloc(sizeof(pair_t));
 
@@ -296,32 +298,39 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   if ((metadata->flags & DT_META_METADATA) && !(metadata->flags & DT_META_CALCULATED))
   {
     res_title = dt_metadata_get(imgid, "Xmp.dc.title", NULL);
+
     if(res_title)
-    {
       title = res_title->data;
-    }
 
     res_desc = dt_metadata_get(imgid, "Xmp.dc.description", NULL);
+
     if(res_desc)
-    {
       description = res_desc->data;
-    }
   }
   
   char relfilename[PATH_MAX] = { 0 }, relthumbfilename[PATH_MAX] = { 0 };
   c = filename + strlen(filename);
+
   for(; c > filename && *c != '/'; c--)
     ;
-  if(*c == '/') c++;
-  if(c <= filename) c = filename;
+
+  if(*c == '/')
+    c++;
+
+  if(c <= filename)
+    c = filename;
+
   g_strlcpy(relfilename, c, sizeof(relfilename));
   g_strlcpy(relthumbfilename, relfilename, sizeof(relthumbfilename));
   c = relthumbfilename + strlen(relthumbfilename);
+
   for(; c > relthumbfilename && *c != '.'; c--)
     ;
-  if(c <= relthumbfilename) c = relthumbfilename + strlen(relthumbfilename);
-  sprintf(c, "-thumb.%s", ext);
 
+  if(c <= relthumbfilename)
+    c = relthumbfilename + strlen(relthumbfilename);
+
+  sprintf(c, "-thumb.%s", ext);
   char subfilename[PATH_MAX] = { 0 }, relsubfilename[PATH_MAX] = { 0 };
   g_strlcpy(subfilename, d->cached_dirname, sizeof(subfilename));
   char *sc = subfilename + strlen(subfilename);
@@ -342,6 +351,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
            esc_relthumbfilename,
            num, num-1, title ? title : "&nbsp;", description ? description : "&nbsp;");
 
+  dt_pthread_mutex_lock(&darktable.plugin_threadsafe);
   // export image to file. need this to be able to access meaningful
   // fdata->width and height below.
   if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, export_masks, icc_type,
@@ -368,8 +378,13 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   g_free(esc_relthumbfilename);
 
   pair->pos = num;
-  if(res_title) g_list_free_full(res_title, &g_free);
-  if(res_desc) g_list_free_full(res_desc, &g_free);
+  
+  if(res_title)
+    g_list_free_full(res_title, &g_free);
+
+  if(res_desc)
+    g_list_free_full(res_desc, &g_free);
+
   d->l = g_list_insert_sorted(d->l, pair, (GCompareFunc)sort_pos);
 
   /* also export thumbnail: */
@@ -392,6 +407,9 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
     dt_control_log(_("could not export to file `%s'!"), filename);
     return 1;
   }
+  
+  dt_pthread_mutex_unlock(&darktable.plugin_threadsafe);
+
   // restore for next image:
   fdata->max_width = save_max_width;
   fdata->max_height = save_max_height;

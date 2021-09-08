@@ -173,8 +173,10 @@ static int process_image(dt_slideshow_t *d, dt_slideshow_slot_t slot)
   buf.bpp = bpp;
   buf.write_image = write_image;
 
+  dt_control_log(_("in process_image"));
   // lock to copy the information to process the image
   dt_pthread_mutex_lock(&d->lock);
+  
   dt_slideshow_format_t dat;
   dat.head.width = dat.head.max_width = d->width;
   dat.head.height = dat.head.max_height = d->height;
@@ -205,9 +207,8 @@ static int process_image(dt_slideshow_t *d, dt_slideshow_slot_t slot)
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, 1);
   if(sqlite3_step(stmt) == SQLITE_ROW) id = sqlite3_column_int(stmt, 0);
   sqlite3_finalize(stmt);
-
   // this is a little slow, might be worth to do an option:
-  const gboolean high_quality = !dt_conf_get_bool("ui/performance");
+  const gboolean high_quality = !dt_conf_get_bool("ui/performance_slideshow");
 
   if(id)
   {
@@ -265,13 +266,9 @@ static int32_t process_job_run(dt_job_t *job)
     dt_control_queue_redraw_center();
   }
   else if(d->buf[S_RIGHT].invalidated && d->buf[S_RIGHT].rank <= d->col_count)
-  {
     process_image(d, S_RIGHT);
-  }
   else if(d->buf[S_LEFT].invalidated && d->buf[S_LEFT].rank >= 0)
-  {
     process_image(d, S_LEFT);
-  }
 
   // any other slot to fill?
   if(!_is_idle(d))
@@ -283,7 +280,9 @@ static int32_t process_job_run(dt_job_t *job)
 static dt_job_t *process_job_create(dt_slideshow_t *d)
 {
   dt_job_t *job = dt_control_job_create(&process_job_run, "process slideshow image");
+
   if(!job) return NULL;
+
   dt_control_job_set_params(job, d, NULL);
   return job;
 }
@@ -291,12 +290,16 @@ static dt_job_t *process_job_create(dt_slideshow_t *d)
 static void _refresh_display(dt_slideshow_t *d)
 {
   if(!d->buf[S_CURRENT].invalidated && d->buf[S_CURRENT].rank >= 0)
+  {
+    dt_control_log(_("trying to redrw centre"));      
     dt_control_queue_redraw_center();
+  }
 }
 
 // state machine stepping
 static void _step_state(dt_slideshow_t *d, dt_slideshow_event_t event)
 {
+  dt_control_log(_("in _step_state"));
   dt_pthread_mutex_lock(&d->lock);
 
   if(event == S_REQUEST_STEP)
@@ -338,7 +341,6 @@ static void _step_state(dt_slideshow_t *d, dt_slideshow_event_t event)
 }
 
 // callbacks for a view module:
-
 const char *name(const dt_view_t *self)
 {
   return _("slideshow");
@@ -368,9 +370,7 @@ int try_enter(dt_view_t *self)
 {
   /* verify that there are images to display */
   if(dt_collection_get_count(darktable.collection) != 0)
-  {
     return 0;
-  }
   else
   {
     dt_control_log(_("there are no images in this collection"));
@@ -390,7 +390,7 @@ void enter(dt_view_t *self)
   dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_RIGHT, FALSE, TRUE);
   dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_TOP, FALSE, TRUE);
   dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_BOTTOM, FALSE, TRUE);
-  dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_CENTER_TOP, FALSE, TRUE);
+  dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_CENTER_TOP, TRUE, TRUE);  /* *** */
   dt_ui_panel_show(darktable.gui->ui, DT_UI_PANEL_CENTER_BOTTOM, FALSE, TRUE);
 
   // also hide arrows
@@ -454,7 +454,9 @@ void leave(dt_view_t *self)
 {
   dt_slideshow_t *d = (dt_slideshow_t *)self->data;
 
-  if(d->mouse_timeout > 0) g_source_remove(d->mouse_timeout);
+  if(d->mouse_timeout > 0)
+    g_source_remove(d->mouse_timeout);
+
   d->mouse_timeout = 0;
   dt_control_change_cursor(GDK_LEFT_PTR);
   d->auto_advance = FALSE;
@@ -479,6 +481,8 @@ void expose(dt_view_t *self, cairo_t *cr, int32_t width, int32_t height, int32_t
 {
   // draw front buffer.
   dt_slideshow_t *d = (dt_slideshow_t *)self->data;
+  
+  dt_control_log(_("in expose"));
 
   dt_pthread_mutex_lock(&d->lock);
   cairo_paint(cr);

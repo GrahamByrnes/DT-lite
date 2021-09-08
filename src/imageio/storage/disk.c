@@ -249,9 +249,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
 try_again:
     // avoid braindead export which is bound to overwrite at random:
     if(total > 1 && !g_strrstr(pattern, "$"))
-    {
       snprintf(pattern + strlen(pattern), sizeof(pattern) - strlen(pattern), "_$(SEQUENCE)");
-    }
 
     gchar *fixed_path = dt_util_fix_path(pattern);
     g_strlcpy(pattern, fixed_path, sizeof(pattern));
@@ -269,6 +267,7 @@ try_again:
     // if filenamepattern is a directory just add ${FILE_NAME} as default..
     // this can happen if the filename component of the pattern is an empty variable
     char last_char = *(filename + strlen(filename) - 1);
+
     if(last_char == '/' || last_char == '\\')
     {
       // add to the end of the original pattern without caring about a
@@ -286,6 +285,7 @@ try_again:
       fail = 1;
       goto failed;
     }
+
     if(g_access(output_dir, W_OK | X_OK) != 0)
     {
       fprintf(stderr, "[imageio_storage_disk] could not write to directory: `%s'!\n", output_dir);
@@ -306,6 +306,7 @@ try_again:
     if(!fail && d->onsave_action == DT_EXPORT_ONCONFLICT_UNIQUEFILENAME)
     {
       int seq = 1;
+
       while(g_file_test(filename, G_FILE_TEST_EXISTS))
       {
         snprintf(c, filename_free_space, "_%.2d.%s", seq, ext);
@@ -330,7 +331,7 @@ try_again:
 
   /* export image to file */
   if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, export_masks, icc_type,
-                       icc_filename, icc_intent, self, sdata, num, total, metadata) != 0)
+                       icc_filename, icc_intent, self, sdata, num, total, metadata))
   {
     fprintf(stderr, "[imageio_storage_disk] could not export to file: `%s'!\n", filename);
     dt_control_log(_("could not export to file `%s'!"), filename);
@@ -363,12 +364,9 @@ void *get_params(dt_imageio_module_storage_t *self)
   char *text = dt_conf_get_string("plugins/imageio/storage/disk/file_directory");
   g_strlcpy(d->filename, text, sizeof(d->filename));
   g_free(text);
-
   d->onsave_action = dt_conf_get_int("plugins/imageio/storage/disk/overwrite");
-
   d->vp = NULL;
   dt_variables_params_init(&d->vp);
-
   return d;
 }
 
@@ -385,7 +383,8 @@ int set_params(dt_imageio_module_storage_t *self, const void *params, const int 
   dt_imageio_disk_t *d = (dt_imageio_disk_t *)params;
   disk_t *g = (disk_t *)self->gui_data;
 
-  if(size != self->params_size(self)) return 1;
+  if(size != self->params_size(self))
+    return 1;
 
   gtk_entry_set_text(GTK_ENTRY(g->entry), d->filename);
   gtk_editable_set_position(GTK_EDITABLE(g->entry), strlen(d->filename));
@@ -397,14 +396,10 @@ char *ask_user_confirmation(dt_imageio_module_storage_t *self)
 {
   disk_t *g = (disk_t *)self->gui_data;
   if(dt_bauhaus_combobox_get(g->onsave_action) == DT_EXPORT_ONCONFLICT_OVERWRITE)
-  {
     return g_strdup(_("you are going to export on overwrite mode, this will overwrite any existing images\n\n"
         "do you really want to continue?"));
-  }
   else
-  {
     return NULL;
-  }
 }
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
