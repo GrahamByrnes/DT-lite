@@ -9,13 +9,6 @@ set(MODULES darkroom lighttable slideshow)
 
 add_library(darkroom MODULE "darkroom.c")
 add_library(lighttable MODULE "lighttable.c")
-add_library(slideshow MODULE "slideshow.c")
-
-if(USE_MAP)
-    add_library(map MODULE "map.c")
-    set(MODULES ${MODULES} map)
-endif(USE_MAP)
-
 
 if(Gphoto2_FOUND)
     add_library(tethering MODULE "tethering.c")
