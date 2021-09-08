@@ -481,8 +481,6 @@ void expose(dt_view_t *self, cairo_t *cr, int32_t width, int32_t height, int32_t
 {
   // draw front buffer.
   dt_slideshow_t *d = (dt_slideshow_t *)self->data;
-  
-  dt_control_log(_("in expose"));
 
   dt_pthread_mutex_lock(&d->lock);
   cairo_paint(cr);
