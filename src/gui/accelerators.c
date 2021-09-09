@@ -236,6 +236,7 @@ void dt_accel_register_lib(dt_lib_module_t *self, const gchar *path, guint accel
   dt_view_type_flags_t v = 0;
   int i=0;
   const gchar **views = self->views(self);
+
   while (views[i])
   {
     if(strcmp(views[i], "lighttable") == 0)
@@ -662,13 +663,9 @@ float dt_accel_get_slider_scale_multiplier()
   const int slider_precision = dt_conf_get_int("accel/slider_precision");
   
   if(slider_precision == DT_IOP_PRECISION_COARSE)
-  {
     return dt_conf_get_float("darkroom/ui/scale_rough_step_multiplier");
-  }
   else if(slider_precision == DT_IOP_PRECISION_FINE)
-  {
     return dt_conf_get_float("darkroom/ui/scale_precise_step_multiplier");
-  }
 
   return dt_conf_get_float("darkroom/ui/scale_step_multiplier");
 }
@@ -761,11 +758,9 @@ void dt_accel_connect_combobox_iop(dt_iop_module_t *module, const gchar *path, G
   gchar accel_next_path[256];
   gchar accel_prev_path[256];
   gchar accel_dynamic_path[256];
-
   assert(DT_IS_BAUHAUS_WIDGET(combobox));
 
   GClosure *closure;
-
   //accel to select next value
   snprintf(accel_next_path, 256, "<Darktable>/%s/%s/%s/%s", NC_("accel", "image operations"), module->so->op, path,
            NC_("accel", "next"));

@@ -56,7 +56,7 @@ typedef struct dt_lib_export_t
   GtkWidget *storage, *format;
   int format_lut[128];
   uint32_t max_allowed_width , max_allowed_height;
-  GtkWidget *upscale, *profile, *intent, *style, *style_mode;
+  GtkWidget *upscale, *profile, *intent;
   GtkButton *export_button;
   GtkWidget *storage_extra_container, *format_extra_container;
   GtkWidget *high_quality;
@@ -199,7 +199,6 @@ static void _mouse_over_image_callback(gpointer instance, dt_lib_module_t *self)
 
 static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
 {
-  char style[128] = { 0 };
   // Let's get the max dimension restriction if any...
   // TODO: pass the relevant values directly, not using the conf ...
   const uint32_t max_width = dt_conf_get_int(CONFIG_PREFIX "width");
@@ -219,6 +218,7 @@ static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
     dt_control_log("invalid format for export selected");
     return;
   }
+
   if(storage_index == -1)
   {
     dt_control_log("invalid storage for export selected");
@@ -253,14 +253,6 @@ static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
 
   gboolean upscale = dt_conf_get_bool(CONFIG_PREFIX "upscale");
   gboolean high_quality = dt_conf_get_bool(CONFIG_PREFIX "high_quality_processing");
-  char *tmp = dt_conf_get_string(CONFIG_PREFIX "style");
-  gboolean style_append = dt_conf_get_bool(CONFIG_PREFIX "style_append");
-
-  if(tmp)
-  {
-    g_strlcpy(style, tmp, sizeof(style));
-    g_free(tmp);
-  }
 
   dt_colorspaces_color_profile_type_t icc_type = dt_conf_get_int(CONFIG_PREFIX "icctype");
   gchar *icc_filename = dt_conf_get_string(CONFIG_PREFIX "iccprofile");
@@ -268,7 +260,7 @@ static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
 
   GList *list = g_list_copy((GList *)dt_view_get_images_to_act_on(TRUE, TRUE));
   dt_control_export(list, max_width, max_height, format_index, storage_index, high_quality, upscale,
-                    style, style_append, icc_type, icc_filename, icc_intent, d->metadata_export);
+                    icc_type, icc_filename, icc_intent, d->metadata_export);
   g_free(icc_filename);
 }
 
@@ -353,26 +345,6 @@ void gui_reset(dt_lib_module_t *self)
   }
 
   g_free(iccfilename);
-
-  // style
-  // set it to none if the var is not set or the style doesn't exist anymore
-  gboolean rc = FALSE;
-  gchar *style = dt_conf_get_string(CONFIG_PREFIX "style");
-  if(style != NULL)
-  {
-    rc = dt_bauhaus_combobox_set_from_text(d->style, style);
-
-    if(rc == FALSE)
-      dt_bauhaus_combobox_set(d->style, 0);
-
-    g_free(style);
-  }
-  else
-    dt_bauhaus_combobox_set(d->style, 0);
-
-  // style mode to overwrite as it was the initial behavior
-  dt_bauhaus_combobox_set(d->style_mode, dt_conf_get_bool(CONFIG_PREFIX "style_append"));
-  gtk_widget_set_sensitive(GTK_WIDGET(d->style_mode), dt_bauhaus_combobox_get(d->style)== 0 ? FALSE : TRUE);
 
   // export metadata presets
   g_free(d->metadata_export);
@@ -719,21 +691,6 @@ static void _intent_changed(GtkWidget *widget, dt_lib_export_t *d)
   dt_conf_set_int(CONFIG_PREFIX "iccintent", pos - 1);
 }
 
-static void _style_changed(GtkWidget *widget, dt_lib_export_t *d)
-{
-  if(dt_bauhaus_combobox_get(d->style) == 0)
-  {
-    dt_conf_set_string(CONFIG_PREFIX "style", "");
-    gtk_widget_set_sensitive(GTK_WIDGET(d->style_mode), FALSE);
-  }
-  else
-  {
-    const gchar *style = dt_bauhaus_combobox_get_text(d->style);
-    dt_conf_set_string(CONFIG_PREFIX "style", style);
-    gtk_widget_set_sensitive(GTK_WIDGET(d->style_mode), TRUE);
-  }
-}
-
 int position()
 {
   return 0;
@@ -792,27 +749,6 @@ static void _on_storage_list_changed(gpointer instance, dt_lib_module_t *self)
     }
   } while((it = g_list_next(it)));
   dt_bauhaus_combobox_set(d->storage, dt_imageio_get_index_of_storage(storage));
-}
-
-static void _lib_export_styles_changed_callback(gpointer instance, gpointer user_data)
-{
-  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
-  dt_lib_export_t *d = self->data;
-
-  dt_bauhaus_combobox_clear(d->style);
-  dt_bauhaus_combobox_add(d->style, _("none"));
-  GList *styles = dt_styles_get_list("");
-
-  while(styles)
-  {
-    dt_style_t *style = (dt_style_t *)styles->data;
-    dt_bauhaus_combobox_add(d->style, style->name);
-    styles = g_list_next(styles);
-  }
-
-  dt_bauhaus_combobox_set(d->style, 0);
-
-  g_list_free_full(styles, dt_style_free);
 }
 
 static void _metadata_export_clicked(GtkComboBox *widget, dt_lib_export_t *d)
@@ -1007,29 +943,6 @@ void gui_init(dt_lib_module_t *self)
   dt_bauhaus_combobox_add(d->intent, _("absolute colorimetric"));
   gtk_box_pack_start(GTK_BOX(self->widget), d->intent, FALSE, TRUE, 0);
 
-  //  Add style combo
-
-  d->style = dt_bauhaus_combobox_new(NULL);
-  dt_bauhaus_widget_set_label(d->style, NULL, _("style"));
-  _lib_export_styles_changed_callback(NULL, self);
-  gtk_box_pack_start(GTK_BOX(self->widget), d->style, FALSE, TRUE, 0);
-  gtk_widget_set_tooltip_text(d->style, _("temporary style to use while exporting"));
-
-  //  Add check to control whether the style is to replace or append the current module
-
-  d->style_mode = dt_bauhaus_combobox_new(NULL);
-  dt_bauhaus_widget_set_label(d->style_mode, NULL, _("mode"));
-
-  gtk_box_pack_start(GTK_BOX(self->widget), d->style_mode, FALSE, TRUE, 0);
-
-  dt_bauhaus_combobox_add(d->style_mode, _("replace history"));
-  dt_bauhaus_combobox_add(d->style_mode, _("append history"));
-
-  dt_bauhaus_combobox_set(d->style_mode, 0);
-
-  gtk_widget_set_tooltip_text(d->style_mode,
-                              _("whether the style items are appended to the history or replacing the history"));
-
   //  Set callback signals
 
   g_signal_connect(G_OBJECT(d->upscale), "value-changed", G_CALLBACK(_callback_bool),
@@ -1038,12 +951,6 @@ void gui_init(dt_lib_module_t *self)
                    (gpointer)CONFIG_PREFIX "high_quality_processing");
   g_signal_connect(G_OBJECT(d->intent), "value-changed", G_CALLBACK(_intent_changed), (gpointer)d);
   g_signal_connect(G_OBJECT(d->profile), "value-changed", G_CALLBACK(_profile_changed), (gpointer)d);
-  g_signal_connect(G_OBJECT(d->style), "value-changed", G_CALLBACK(_style_changed), (gpointer)d);
-  g_signal_connect(G_OBJECT(d->style_mode), "value-changed", G_CALLBACK(_callback_bool),
-                   (gpointer)CONFIG_PREFIX "style_append");
-
-  DT_DEBUG_CONTROL_SIGNAL_CONNECT(darktable.signals, DT_SIGNAL_STYLE_CHANGED,
-                            G_CALLBACK(_lib_export_styles_changed_callback), self);
 
   hbox = GTK_BOX(gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0));
   gtk_box_pack_start(GTK_BOX(self->widget), GTK_WIDGET(hbox), FALSE, TRUE, 0);
@@ -1093,8 +1000,6 @@ void gui_cleanup(dt_lib_module_t *self)
   dt_gui_key_accel_block_on_focus_disconnect(GTK_WIDGET(d->height));
 
   DT_DEBUG_CONTROL_SIGNAL_DISCONNECT(darktable.signals, G_CALLBACK(_on_storage_list_changed), self);
-  DT_DEBUG_CONTROL_SIGNAL_DISCONNECT(darktable.signals, G_CALLBACK(_lib_export_styles_changed_callback), self);
-
   DT_DEBUG_CONTROL_SIGNAL_DISCONNECT(darktable.signals, G_CALLBACK(_image_selection_changed_callback), self);
   DT_DEBUG_CONTROL_SIGNAL_DISCONNECT(darktable.signals, G_CALLBACK(_mouse_over_image_callback), self);
   DT_DEBUG_CONTROL_SIGNAL_DISCONNECT(darktable.signals, G_CALLBACK(_collection_updated_callback), self);
@@ -1328,24 +1233,17 @@ void *get_params(dt_lib_module_t *self, int *size)
   const int32_t upscale = dt_conf_get_bool(CONFIG_PREFIX "upscale") ? 1 : 0;
   const int32_t high_quality = dt_conf_get_bool(CONFIG_PREFIX "high_quality_processing") ? 1 : 0;
   gchar *iccfilename = dt_conf_get_string(CONFIG_PREFIX "iccprofile");
-  gchar *style = dt_conf_get_string(CONFIG_PREFIX "style");
-  const gboolean style_append = dt_conf_get_bool(CONFIG_PREFIX "style_append");
   const char *metadata_export = d->metadata_export;
-
-  if(fdata)
-  {
-    g_strlcpy(fdata->style, style, sizeof(fdata->style));
-    fdata->style_append = style_append;
-  }
 
   if(icctype != DT_COLORSPACE_FILE)
   {
     g_free(iccfilename);
     iccfilename = NULL;
   }
+
   if(!iccfilename)
     iccfilename = g_strdup("");
-  
+
   if(!metadata_export)
     metadata_export = g_strdup("");
 
@@ -1399,7 +1297,6 @@ void *get_params(dt_lib_module_t *self, int *size)
 
   g_assert(pos == *size);
   g_free(iccfilename);
-  g_free(style);
 
   if(fdata)
     mformat->free_params(mformat, fdata);
@@ -1435,7 +1332,6 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
   dt_lib_export_metadata_set_conf(d->metadata_export);
   const char *iccfilename = buf;
   buf += strlen(iccfilename) + 1;
-
   // reverse these by setting the gui, not the conf vars!
   dt_bauhaus_combobox_set(d->intent, iccintent + 1);
 
@@ -1471,7 +1367,6 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
   buf += sizeof(int32_t);
   const int32_t sversion = *(const int32_t *)buf;
   buf += sizeof(int32_t);
-
   const int fsize = *(const int *)buf;
   buf += sizeof(int32_t);
   const int ssize = *(const int *)buf;
@@ -1486,14 +1381,6 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
     return 1;
 
   const dt_imageio_module_data_t *fdata = (const dt_imageio_module_data_t *)buf;
-  
-  if(fdata->style[0] == '\0')
-    dt_bauhaus_combobox_set(d->style, 0);
-  else
-    dt_bauhaus_combobox_set_from_text(d->style, fdata->style);
-
-  dt_bauhaus_combobox_set(d->style_mode, fdata->style_append ? 1 : 0);
-
   buf += fsize;
   const void *sdata = buf;
 

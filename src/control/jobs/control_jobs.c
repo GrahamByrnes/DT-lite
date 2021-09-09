@@ -65,8 +65,6 @@ typedef struct dt_control_export_t
   dt_imageio_module_data_t *sdata; // needed since the gui thread resets things like overwrite once the export
   // is dispatched, but we have to keep that information
   gboolean high_quality, upscale;
-  char style[128];
-  gboolean style_append;
   dt_colorspaces_color_profile_type_t icc_type;
   gchar *icc_filename;
   dt_iop_color_intent_t icc_intent;
@@ -852,8 +850,6 @@ static int32_t dt_control_export_job_run(dt_job_t *job)
   // set up the fdata struct
   fdata->max_width = (settings->max_width != 0 && w != 0) ? MIN(w, settings->max_width) : MAX(w, settings->max_width);
   fdata->max_height = (settings->max_height != 0 && h != 0) ? MIN(h, settings->max_height) : MAX(h, settings->max_height);
-  g_strlcpy(fdata->style, settings->style, sizeof(fdata->style));
-  fdata->style_append = settings->style_append;
   // Invariant: the tagid for 'darktable|changed' will not change while this function runs. Is this a
   // sensible assumption?
   guint tagid = 0, etagid = 0;
@@ -896,6 +892,7 @@ static int32_t dt_control_export_job_run(dt_job_t *job)
       char imgfilename[PATH_MAX] = { 0 };
       gboolean from_cache = TRUE;
       dt_image_full_path(image->id, imgfilename, sizeof(imgfilename), &from_cache);
+
       if(!g_file_test(imgfilename, G_FILE_TEST_IS_REGULAR))
       {
         dt_control_log(_("image `%s' is currently unavailable"), image->filename);
@@ -914,7 +911,10 @@ static int32_t dt_control_export_job_run(dt_job_t *job)
     }
 
     fraction += 1.0 / total;
-    if(fraction > 1.0) fraction = 1.0;
+
+    if(fraction > 1.0) 
+      fraction = 1.0;
+
     dt_control_job_set_progress(job, fraction);
   }
 
@@ -1253,7 +1253,7 @@ static void dt_control_export_cleanup(void *p)
 }
 
 void dt_control_export(GList *imgid_list, int max_width, int max_height, int format_index, int storage_index,
-                       gboolean high_quality, gboolean upscale, char *style, gboolean style_append,
+                       gboolean high_quality, gboolean upscale,
                        dt_colorspaces_color_profile_type_t icc_type, const gchar *icc_filename,
                        dt_iop_color_intent_t icc_intent, const gchar *metadata_export)
 {
@@ -1292,8 +1292,6 @@ void dt_control_export(GList *imgid_list, int max_width, int max_height, int for
   data->sdata = sdata;
   data->high_quality = high_quality;
   data->upscale = upscale;
-  g_strlcpy(data->style, style, sizeof(data->style));
-  data->style_append = style_append;
   data->icc_type = icc_type;
   data->icc_filename = g_strdup(icc_filename);
   data->icc_intent = icc_intent;
