@@ -45,8 +45,6 @@ void dt_control_export(GList *imgid_list, int max_width, int max_height, int for
                        gboolean high_quality, gboolean upscale, char *style, gboolean style_append,
                        dt_colorspaces_color_profile_type_t icc_type, const gchar *icc_filename,
                        dt_iop_color_intent_t icc_intent, const gchar *metadata_export);
-void dt_control_merge_hdr();
-
 void dt_control_seed_denoise();
 void dt_control_denoise();
 void dt_control_refresh_exif();
