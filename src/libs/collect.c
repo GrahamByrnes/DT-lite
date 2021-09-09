@@ -1889,7 +1889,6 @@ static void update_view(dt_lib_collect_rule_t *dr)
 static void _lib_collect_gui_update(dt_lib_module_t *self)
 {
   dt_lib_collect_t *d = (dt_lib_collect_t *)self->data;
-
   // we check if something as change since last call
   if(d->view_rule != -1) return;
 
@@ -1927,6 +1926,7 @@ static void _lib_collect_gui_update(dt_lib_module_t *self)
     }
 
     GtkDarktableButton *button = DTGTK_BUTTON(d->rule[i].button);
+
     if(i == MAX_RULES - 1)
     {
       // only clear
@@ -1949,7 +1949,6 @@ static void _lib_collect_gui_update(dt_lib_module_t *self)
       gtk_widget_set_tooltip_text(GTK_WIDGET(button), _("clear this rule"));
     }
   }
-
   // update list of proposals
   update_view(d->rule + d->active_rule);
   --darktable.gui->reset;
@@ -1971,6 +1970,7 @@ void gui_reset(dt_lib_module_t *self)
 static void combo_changed(GtkComboBox *combo, dt_lib_collect_rule_t *d)
 {
   if(darktable.gui->reset) return;
+
   g_signal_handlers_block_matched(d->text, G_SIGNAL_MATCH_FUNC, 0, 0, NULL, entry_changed, NULL);
   gtk_entry_set_text(GTK_ENTRY(d->text), "");
   g_signal_handlers_unblock_matched(d->text, G_SIGNAL_MATCH_FUNC, 0, 0, NULL, entry_changed, NULL);
@@ -2039,7 +2039,8 @@ static void combo_changed(GtkComboBox *combo, dt_lib_collect_rule_t *d)
   dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_NEW_QUERY, NULL);
 }
 
-static void row_activated_with_event(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col, GdkEventButton *event, dt_lib_collect_t *d)
+static void row_activated_with_event(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col,
+                                     GdkEventButton *event, dt_lib_collect_t *d)
 {
   GtkTreeIter iter;
   GtkTreeModel *model = NULL;
@@ -2073,7 +2074,7 @@ static void row_activated_with_event(GtkTreeView *view, GtkTreePath *path, GtkTr
           )
       )
     {
-      /* this is a range selection */
+      // this is a range selection
       GtkTreeIter iter2;
       GtkTreePath *path2 = (GtkTreePath *)g_list_last(sels)->data;
       if(!gtk_tree_model_get_iter(model, &iter2, path2)) return;
@@ -2083,7 +2084,7 @@ static void row_activated_with_event(GtkTreeView *view, GtkTreePath *path, GtkTr
 
       gchar *n_text;
       if(item == DT_COLLECTION_PROP_DAY || is_time_property(item))
-        n_text = g_strdup_printf("[%s;%s]", text2, text); /* dates are in reverse order */
+        n_text = g_strdup_printf("[%s;%s]", text2, text); // dates are in reverse order
       else
         n_text = g_strdup_printf("[%s;%s]", text, text2);
 
@@ -2095,15 +2096,14 @@ static void row_activated_with_event(GtkTreeView *view, GtkTreePath *path, GtkTr
     {
       if(gtk_tree_model_iter_has_child(model, &iter))
       {
-        /* if a tag has children, ctrl-clicking on a parent node should display all images under this hierarchy. */
+        // if a tag has children, ctrl-clicking on a parent node should display all images under this hierarchy.
         if(event->state & GDK_CONTROL_MASK)
         {
           gchar *n_text = g_strconcat(text, "|%", NULL);
           g_free(text);
           text = n_text;
         }
-        /* if a tag has children, shift-clicking on a parent node should display all images in and under this
-         * hierarchy. */
+        // if tag has children, shift-clicking on a parent node should display all images in the hierarchy
         else if(event->state & GDK_SHIFT_MASK)
         {
           gchar *n_text = g_strconcat(text, "%", NULL);
@@ -2169,6 +2169,7 @@ static void row_activated_with_event(GtkTreeView *view, GtkTreePath *path, GtkTr
 
 static void entry_activated(GtkWidget *entry, dt_lib_collect_rule_t *d)
 {
+
   GtkTreeView *view;
   GtkTreeModel *model;
   int rows;
@@ -2298,7 +2299,6 @@ static void filmrolls_imported(gpointer instance, int film_id, gpointer self)
 {
   dt_lib_module_t *dm = (dt_lib_module_t *)self;
   dt_lib_collect_t *d = (dt_lib_collect_t *)dm->data;
-
   // update tree
   d->view_rule = -1;
   d->rule[d->active_rule].typing = FALSE;
@@ -2365,6 +2365,7 @@ static void metadata_changed(gpointer instance, int type, gpointer self)
 {
   dt_lib_module_t *dm = (dt_lib_module_t *)self;
   dt_lib_collect_t *d = (dt_lib_collect_t *)dm->data;
+
   if(type != DT_METADATA_SIGNAL_NEW_VALUE)
   {
     // hidden metadata have changed - update the collection list
@@ -2628,13 +2629,11 @@ void gui_init(dt_lib_module_t *self)
   d->sw2 = GTK_SCROLLED_WINDOW(sw2);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw2), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
   gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(sw2), DT_PIXEL_APPLY_DPI(300));
-
   gtk_box_pack_start(GTK_BOX(self->widget), GTK_WIDGET(sw2), TRUE, TRUE, 0);
 
   /* setup proxy */
   darktable.view_manager->proxy.module_collect.module = self;
   darktable.view_manager->proxy.module_collect.update = _lib_collect_gui_update;
-
   _lib_collect_gui_update(self);
 
   if(_combo_get_active_collection(GTK_COMBO_BOX(d->rule[0].combo)) == DT_COLLECTION_PROP_TAG)
@@ -2642,30 +2641,20 @@ void gui_init(dt_lib_module_t *self)
     gchar *tag = dt_conf_get_string("plugins/lighttable/collect/string0");
     dt_collection_set_tag_id((dt_collection_t *)darktable.collection, dt_tag_get_tag_id_by_name(tag));
   }
-
   // force redraw collection images because of late update of the table memory.darktable_iop_names
   dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD, NULL);
-
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_COLLECTION_CHANGED, G_CALLBACK(collection_updated),
                             self);
-
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_FILMROLLS_CHANGED, G_CALLBACK(filmrolls_updated),
                             self);
-
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_PREFERENCES_CHANGE, G_CALLBACK(preferences_changed),
                             self);
-
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_FILMROLLS_IMPORTED, G_CALLBACK(filmrolls_imported),
                             self);
-
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_FILMROLLS_REMOVED, G_CALLBACK(filmrolls_removed),
                             self);
-
-  dt_control_signal_connect(darktable.signals, DT_SIGNAL_TAG_CHANGED, G_CALLBACK(tag_changed),
-                            self);
-
+  dt_control_signal_connect(darktable.signals, DT_SIGNAL_TAG_CHANGED, G_CALLBACK(tag_changed), self);
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_METADATA_CHANGED, G_CALLBACK(metadata_changed), self);
-
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_PREFERENCES_CHANGE, G_CALLBACK(view_set_click), self);
 }
 
@@ -2673,7 +2662,8 @@ void gui_cleanup(dt_lib_module_t *self)
 {
   dt_lib_collect_t *d = (dt_lib_collect_t *)self->data;
 
-  for(int i = 0; i < MAX_RULES; i++) dt_gui_key_accel_block_on_focus_disconnect(d->rule[i].text);
+  for(int i = 0; i < MAX_RULES; i++)
+    dt_gui_key_accel_block_on_focus_disconnect(d->rule[i].text);
 
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(collection_updated), self);
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(filmrolls_updated), self);
@@ -2684,14 +2674,10 @@ void gui_cleanup(dt_lib_module_t *self)
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(view_set_click), self);
   darktable.view_manager->proxy.module_collect.module = NULL;
   free(d->params);
-
   /* cleanup mem */
-
   g_object_unref(d->treefilter);
   g_object_unref(d->listfilter);
-
   /* TODO: Make sure we are cleaning up all allocations */
-
   free(self->data);
   self->data = NULL;
 }
@@ -2717,11 +2703,9 @@ static int new_rule_cb(lua_State*L)
 static int filter_cb(lua_State *L)
 {
   dt_lib_module_t *self = lua_touserdata(L, lua_upvalueindex(1));
-
   int size;
   dt_lib_collect_params_t *p = get_params(self,&size);
   // put it in stack so memory is not lost if a lua exception is raised
-
   if(lua_gettop(L) > 0)
   {
     luaL_checktype(L,1,LUA_TTABLE);
@@ -2815,7 +2799,6 @@ static int data_member(lua_State *L)
 
 void init(struct dt_lib_module_t *self)
 {
-
   lua_State *L = darktable.lua_state.state;
   int my_type = dt_lua_module_entry_get_type(L, "lib", self->plugin_name);
   lua_pushlightuserdata(L, self);
@@ -2881,7 +2864,6 @@ void init(struct dt_lib_module_t *self)
   luaA_enum_value(L,dt_collection_properties_t,DT_COLLECTION_PROP_GROUPING);
   luaA_enum_value(L,dt_collection_properties_t,DT_COLLECTION_PROP_MODULE);
   luaA_enum_value(L,dt_collection_properties_t,DT_COLLECTION_PROP_ORDER);
-
 }
 #endif
 #undef MAX_RULES

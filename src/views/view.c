@@ -91,7 +91,8 @@ void dt_view_manager_gui_init(dt_view_manager_t *vm)
   for(GList *iter = vm->views; iter; iter = g_list_next(iter))
   {
     dt_view_t *view = (dt_view_t *)iter->data;
-    if(view->gui_init) view->gui_init(view);
+    if(view->gui_init)
+      view->gui_init(view);
   }
 }
 
@@ -299,7 +300,6 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
 {
   dt_view_t *old_view = vm->current_view;
   dt_view_t *new_view = (dt_view_t *)nv; // views belong to us, we can de-const them :-)
-
   // Before switching views, restore accelerators if disabled
   if(!darktable.control->key_accelerators_on)
     dt_control_key_accelerators_on(darktable.control);
@@ -308,30 +308,24 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
   // also ignore what scrolling there was previously happening
   memset(darktable.gui->scroll_to, 0, sizeof(darktable.gui->scroll_to));
   // destroy old module list
-  /*  clear the undo list, for now we do this unconditionally. At some point we will probably want to clear
-     only part
-      of the undo list. This should probably done with a view proxy routine returning the type of undo to
-     remove. */
   dt_undo_clear(darktable.undo, DT_UNDO_ALL);
-
-  /* Special case when entering nothing (just before leaving dt) */
+  // Special case when entering nothing (just before leaving dt)
   if(!new_view)
   {
     if(old_view)
     {
-      /* leave the current view*/
       if(old_view->leave)
         old_view->leave(old_view);
-
-      /* iterator plugins and cleanup plugins in current view */
+      // iterator plugins and cleanup plugins in current view 
       for(GList *iter = darktable.lib->plugins; iter; iter = g_list_next(iter))
       {
         dt_lib_module_t *plugin = (dt_lib_module_t *)(iter->data);
-
-        /* does this module belong to current view ?*/
+        // does this module belong to current view 
         if(dt_lib_is_visible_in_view(plugin, old_view))
         {
-          if(plugin->view_leave) plugin->view_leave(plugin, old_view, NULL);
+          if(plugin->view_leave)
+            plugin->view_leave(plugin, old_view, NULL);
+
           plugin->gui_cleanup(plugin);
           plugin->data = NULL;
           dt_accel_disconnect_list(&plugin->accel_closures);
@@ -339,12 +333,12 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
         }
       }
     }
-
-    /* remove all widgets in all containers */
+    // remove all widgets in all containers
     for(int l = 0; l < DT_UI_CONTAINER_SIZE; l++)
       dt_ui_container_destroy_children(darktable.gui->ui, l);
+
     vm->current_view = NULL;
-    /* remove sticky accels window */
+    // remove sticky accels window
     if(vm->accels_window.window)
       dt_view_accels_hide(vm);
 
@@ -359,48 +353,44 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
     if(error)
       return error;
   }
-
-  /* cleanup current view before initialization of new  */
+  // cleanup current view before initialization of new
   if(old_view)
   {
-    /* leave current view */
     if(old_view->leave)
       old_view->leave(old_view);
 
     dt_accel_disconnect_list(&old_view->accel_closures);
-    /* iterator plugins and cleanup plugins in current view */
+    // iterator plugins and cleanup plugins in current view
     for(GList *iter = darktable.lib->plugins; iter; iter = g_list_next(iter))
     {
       dt_lib_module_t *plugin = (dt_lib_module_t *)(iter->data);
-      /* does this module belong to current view ?*/
+      // does this module belong to current view
       if(dt_lib_is_visible_in_view(plugin, old_view))
       {
-        if(plugin->view_leave) plugin->view_leave(plugin, old_view, new_view);
+        if(plugin->view_leave)
+          plugin->view_leave(plugin, old_view, new_view);
+
         dt_accel_disconnect_list(&plugin->accel_closures);
       }
     }
-
-    /* remove all widets in all containers */
+    // remove all widets in all containers
     for(int l = 0; l < DT_UI_CONTAINER_SIZE; l++)
       dt_ui_container_foreach(darktable.gui->ui, l,(GtkCallback)_remove_child);
   }
-  /* change current view to the new view */
   vm->current_view = new_view;
-  /* update thumbtable accels */
   dt_thumbtable_update_accels_connection(dt_ui_thumbtable(darktable.gui->ui), new_view->view(new_view));
-  /* restore visible stat of panels for the new view */
   dt_ui_restore_panels(darktable.gui->ui);
-  /* lets add plugins related to new view into panels.
-   * this has to be done in reverse order to have the lowest position at the bottom! */
+  // lets add plugins related to new view into panels.
+  // this has to be done in reverse order to have the lowest position at the bottom!
   for(GList *iter = g_list_last(darktable.lib->plugins); iter; iter = g_list_previous(iter))
   {
     dt_lib_module_t *plugin = (dt_lib_module_t *)(iter->data);
     if(dt_lib_is_visible_in_view(plugin, new_view))
     {
-      /* try get the module expander  */
+      // try get the module expander
       GtkWidget *w = dt_lib_gui_get_expander(plugin);
       dt_lib_connect_common_accels(plugin);
-      /* if we didn't get an expander let's add the widget */
+      // if we didn't get an expander let's add the widget
       if(!w)
         w = plugin->widget;
 
@@ -410,55 +400,56 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
         || !strcmp(plugin->plugin_name,"view_toolbox"))
       {
         dt_view_type_flags_t view_type = new_view->view(new_view);
+
         if(view_type == DT_VIEW_LIGHTTABLE)
           dt_gui_add_help_link(w,"lighttable_chapter.html#lighttable_overview");
         if(view_type == DT_VIEW_DARKROOM)
           dt_gui_add_help_link(w,"darkroom_bottom_panel.html#darkroom_bottom_panel");
       }
-      /* add module to its container */
+      // add module to its container
       dt_ui_container_add_widget(darktable.gui->ui, plugin->container(plugin), w);
     }
   }
-
-  /* hide/show modules as last config */
+  // hide/show modules as last config
   for(GList *iter = darktable.lib->plugins; iter; iter = g_list_next(iter))
   {
     dt_lib_module_t *plugin = (dt_lib_module_t *)(iter->data);
+
     if(dt_lib_is_visible_in_view(plugin, new_view))
     {
-      /* set expanded if last mode was that */
+      // set expanded if last mode was that
       char var[1024];
       gboolean expanded = FALSE;
       gboolean visible = dt_lib_is_visible(plugin);
+
       if(plugin->expandable(plugin))
       {
         snprintf(var, sizeof(var), "plugins/%s/%s/expanded", new_view->module_name, plugin->plugin_name);
         expanded = dt_conf_get_bool(var);
-
         dt_lib_gui_set_expanded(plugin, expanded);
       }
       else
       {
-        /* show/hide plugin widget depending on expanded flag or if plugin
-            not is expandeable() */
+        // show/hide plugin widget depending on expanded flag or if plugin is expandeable()
         if(visible)
           gtk_widget_show_all(plugin->widget);
         else
           gtk_widget_hide(plugin->widget);
       }
-      if(plugin->view_enter) plugin->view_enter(plugin, old_view, new_view);
+
+      if(plugin->view_enter)
+        plugin->view_enter(plugin, old_view, new_view);
     }
   }
-
   // enter view. crucially, do this before initing the plugins below
   if(new_view->enter)
     new_view->enter(new_view);
-  /* update the scrollbars */
+
   dt_ui_update_scrollbars(darktable.gui->ui);
-  /* update sticky accels window */
+
   if(vm->accels_window.window && vm->accels_window.sticky)
     dt_view_accels_refresh(vm);
-  /* raise view changed signal */
+  // raise view changed signal
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_VIEWMANAGER_VIEW_CHANGED, old_view, new_view);
   // update log visibility
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_LOG_REDRAW);
@@ -663,6 +654,7 @@ void dt_view_manager_configure(dt_view_manager_t *vm, int width, int height)
     dt_view_t *v = (dt_view_t *)iter->data;
     v->width = width;
     v->height = height;
+
     if(v->configure)
       v->configure(v, width, height);
   }
@@ -680,6 +672,7 @@ void dt_view_manager_scrollbar_changed(dt_view_manager_t *vm, double x, double y
 {
   if(!vm->current_view)
     return;
+
   if(vm->current_view->scrollbar_changed)
     vm->current_view->scrollbar_changed(vm->current_view, x, y);
 }
