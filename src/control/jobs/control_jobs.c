@@ -64,7 +64,7 @@ typedef struct dt_control_export_t
   int max_width, max_height, format_index, storage_index;
   dt_imageio_module_data_t *sdata; // needed since the gui thread resets things like overwrite once the export
   // is dispatched, but we have to keep that information
-  gboolean high_quality, upscale, export_masks;
+  gboolean high_quality, upscale;
   char style[128];
   gboolean style_append;
   dt_colorspaces_color_profile_type_t icc_type;
@@ -314,8 +314,11 @@ static int dt_control_merge_hdr_process(dt_imageio_module_data_t *datai, const c
     dt_iop_roi_t roi = {0};
     roi.x = image.crop_x;
     roi.y = image.crop_y;
+
     for(int j=0;j<6;j++)
-      for(int i = 0; i < 6; i++) d->first_xtrans[j][i] = FCxtrans(j, i, &roi, image.buf_dsc.xtrans);
+      for(int i = 0; i < 6; i++)
+        d->first_xtrans[j][i] = FCxtrans(j, i, &roi, image.buf_dsc.xtrans);
+
     d->pixels = calloc(datai->width * datai->height, sizeof(float));
     d->weight = calloc(datai->width * datai->height, sizeof(float));
     d->wd = datai->width;
@@ -1182,7 +1185,7 @@ static int32_t dt_control_export_job_run(dt_job_t *job)
       {
         dt_image_cache_read_release(darktable.image_cache, image);
         if(mstorage->store(mstorage, sdata, imgid, mformat, fdata, num, total, settings->high_quality, settings->upscale,
-                           settings->export_masks, settings->icc_type, settings->icc_filename, settings->icc_intent,
+                           0, settings->icc_type, settings->icc_filename, settings->icc_intent,
                            &metadata) != 0)
           dt_control_job_cancel(job);
       }
@@ -1535,7 +1538,7 @@ static void dt_control_export_cleanup(void *p)
 }
 
 void dt_control_export(GList *imgid_list, int max_width, int max_height, int format_index, int storage_index,
-                       gboolean high_quality, gboolean upscale, gboolean export_masks, char *style, gboolean style_append,
+                       gboolean high_quality, gboolean upscale, char *style, gboolean style_append,
                        dt_colorspaces_color_profile_type_t icc_type, const gchar *icc_filename,
                        dt_iop_color_intent_t icc_intent, const gchar *metadata_export)
 {
@@ -1573,7 +1576,6 @@ void dt_control_export(GList *imgid_list, int max_width, int max_height, int for
 
   data->sdata = sdata;
   data->high_quality = high_quality;
-  data->export_masks = export_masks;
   data->upscale = upscale;
   g_strlcpy(data->style, style, sizeof(data->style));
   data->style_append = style_append;

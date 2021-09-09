@@ -60,7 +60,6 @@ typedef struct dt_lib_export_t
   GtkButton *export_button;
   GtkWidget *storage_extra_container, *format_extra_container;
   GtkWidget *high_quality;
-  GtkWidget *export_masks;
   GtkWidget *metadata_button;
   char *metadata_export;
 } dt_lib_export_t;
@@ -254,7 +253,6 @@ static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
 
   gboolean upscale = dt_conf_get_bool(CONFIG_PREFIX "upscale");
   gboolean high_quality = dt_conf_get_bool(CONFIG_PREFIX "high_quality_processing");
-  gboolean export_masks = dt_conf_get_bool(CONFIG_PREFIX "export_masks");
   char *tmp = dt_conf_get_string(CONFIG_PREFIX "style");
   gboolean style_append = dt_conf_get_bool(CONFIG_PREFIX "style_append");
 
@@ -269,7 +267,7 @@ static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
   dt_iop_color_intent_t icc_intent = dt_conf_get_int(CONFIG_PREFIX "iccintent");
 
   GList *list = g_list_copy((GList *)dt_view_get_images_to_act_on(TRUE, TRUE));
-  dt_control_export(list, max_width, max_height, format_index, storage_index, high_quality, upscale, export_masks,
+  dt_control_export(list, max_width, max_height, format_index, storage_index, high_quality, upscale,
                     style, style_append, icc_type, icc_filename, icc_intent, d->metadata_export);
   g_free(icc_filename);
 }
@@ -333,8 +331,6 @@ void gui_reset(dt_lib_module_t *self)
 
   dt_bauhaus_combobox_set(d->upscale, dt_conf_get_bool(CONFIG_PREFIX "upscale") ? 1 : 0);
   dt_bauhaus_combobox_set(d->high_quality, dt_conf_get_bool(CONFIG_PREFIX "high_quality_processing") ? 1 : 0);
-  dt_bauhaus_combobox_set(d->export_masks, dt_conf_get_bool(CONFIG_PREFIX "export_masks") ? 1 : 0);
-
   dt_bauhaus_combobox_set(d->intent, dt_conf_get_int(CONFIG_PREFIX "iccintent") + 1);
 
   // iccprofile
@@ -425,26 +421,6 @@ static void set_format_by_name(dt_lib_export_t *d, const char *name)
     dt_bauhaus_combobox_set(d->format, 0);
   // Let's also update combination of storage/format dimension restrictions
   _update_dimensions(d);
-
-  // only some modules support export of masks
-  // set it to 0 when insensitive and restore when making it sensitive again. this doesn't survive dt restarts.
-  const gboolean support_layers = (module->flags(NULL) & FORMAT_FLAGS_SUPPORT_LAYERS) == FORMAT_FLAGS_SUPPORT_LAYERS;
-  const gboolean is_enabled = gtk_widget_get_sensitive(d->export_masks);
-  if(support_layers && !is_enabled)
-  {
-    // combobox was disabled and shall be enabled. we want to restore the old setting.
-    const gboolean export_masks = dt_conf_get_bool(CONFIG_PREFIX "export_masks");
-    gtk_widget_set_sensitive(d->export_masks, TRUE);
-    dt_bauhaus_combobox_set(d->export_masks, export_masks ? 1 : 0);
-  }
-  else if(!support_layers && is_enabled)
-  {
-    // combobox was enabled but shall be disabled. we want to save the current setting.
-    const int export_masks = dt_bauhaus_combobox_get(d->export_masks);
-    dt_bauhaus_combobox_set(d->export_masks, 0);
-    dt_conf_set_bool(CONFIG_PREFIX "export_masks", export_masks == 1);
-    gtk_widget_set_sensitive(d->export_masks, FALSE);
-  }
 }
 
 static void _format_changed(GtkWidget *widget, dt_lib_export_t *d)
@@ -993,13 +969,6 @@ void gui_init(dt_lib_module_t *self)
   gtk_widget_set_tooltip_text(d->high_quality, _("do high quality resampling during export"));
   gtk_box_pack_start(GTK_BOX(self->widget), d->high_quality, FALSE, TRUE, 0);
 
-  d->export_masks = dt_bauhaus_combobox_new(NULL);
-  dt_bauhaus_widget_set_label(d->export_masks, NULL, _("store masks"));
-  dt_bauhaus_combobox_add(d->export_masks, _("no"));
-  dt_bauhaus_combobox_add(d->export_masks, _("yes"));
-  gtk_widget_set_tooltip_text(d->export_masks, _("store masks as layers in exported images. only works for some formats."));
-  gtk_box_pack_start(GTK_BOX(self->widget), d->export_masks, FALSE, TRUE, 0);
-
   //  Add profile combo
 
   char datadir[PATH_MAX] = { 0 };
@@ -1067,8 +1036,6 @@ void gui_init(dt_lib_module_t *self)
                    (gpointer)CONFIG_PREFIX "upscale");
   g_signal_connect(G_OBJECT(d->high_quality), "value-changed", G_CALLBACK(_callback_bool),
                    (gpointer)CONFIG_PREFIX "high_quality_processing");
-  g_signal_connect(G_OBJECT(d->export_masks), "value-changed", G_CALLBACK(_callback_bool),
-                   (gpointer)CONFIG_PREFIX "export_masks");
   g_signal_connect(G_OBJECT(d->intent), "value-changed", G_CALLBACK(_intent_changed), (gpointer)d);
   g_signal_connect(G_OBJECT(d->profile), "value-changed", G_CALLBACK(_profile_changed), (gpointer)d);
   g_signal_connect(G_OBJECT(d->style), "value-changed", G_CALLBACK(_style_changed), (gpointer)d);
@@ -1360,7 +1327,6 @@ void *get_params(dt_lib_module_t *self, int *size)
   const int32_t max_height = dt_conf_get_int(CONFIG_PREFIX "height");
   const int32_t upscale = dt_conf_get_bool(CONFIG_PREFIX "upscale") ? 1 : 0;
   const int32_t high_quality = dt_conf_get_bool(CONFIG_PREFIX "high_quality_processing") ? 1 : 0;
-  const int32_t export_masks = dt_conf_get_bool(CONFIG_PREFIX "export_masks") ? 1 : 0;
   gchar *iccfilename = dt_conf_get_string(CONFIG_PREFIX "iccprofile");
   gchar *style = dt_conf_get_string(CONFIG_PREFIX "style");
   const gboolean style_append = dt_conf_get_bool(CONFIG_PREFIX "style_append");
@@ -1397,8 +1363,6 @@ void *get_params(dt_lib_module_t *self, int *size)
   memcpy(params + pos, &upscale, sizeof(int32_t));
   pos += sizeof(int32_t);
   memcpy(params + pos, &high_quality, sizeof(int32_t));
-  pos += sizeof(int32_t);
-  memcpy(params + pos, &export_masks, sizeof(int32_t));
   pos += sizeof(int32_t);
   memcpy(params + pos, &iccintent, sizeof(int32_t));
   pos += sizeof(int32_t);
@@ -1458,8 +1422,6 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
   const int upscale = *(const int *)buf;
   buf += sizeof(int32_t);
   const int high_quality = *(const int *)buf;
-  buf += sizeof(int32_t);
-  const int export_masks = *(const int *)buf;
   buf += sizeof(int32_t);
   const int iccintent = *(const int *)buf;
   buf += sizeof(int32_t);
@@ -1543,7 +1505,6 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
   _set_dimensions(d, max_width, max_height);
   dt_bauhaus_combobox_set(d->upscale, upscale ? 1 : 0);
   dt_bauhaus_combobox_set(d->high_quality, high_quality ? 1 : 0);
-  dt_bauhaus_combobox_set(d->export_masks, export_masks ? 1 : 0);
 
   // propagate to modules
   int res = 0;
