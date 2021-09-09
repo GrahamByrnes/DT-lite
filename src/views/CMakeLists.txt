@@ -10,11 +10,6 @@ set(MODULES darkroom lighttable)
 add_library(darkroom MODULE "darkroom.c")
 add_library(lighttable MODULE "lighttable.c")
 
-if(Gphoto2_FOUND)
-    add_library(tethering MODULE "tethering.c")
-    set(MODULES ${MODULES} tethering)
-endif(Gphoto2_FOUND)
-
 if(CUPS_FOUND)
     add_library(print MODULE "print.c")
     set(MODULES ${MODULES} print)

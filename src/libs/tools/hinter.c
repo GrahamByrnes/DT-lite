@@ -43,7 +43,7 @@ const char *name(dt_lib_module_t *self)
 
 const char **views(dt_lib_module_t *self)
 {
-  static const char *v[] = {"lighttable", "darkroom", "tethering", NULL};
+  static const char *v[] = {"lighttable", "darkroom", NULL};
   return v;
 }
 

@@ -20,7 +20,7 @@ add_custom_target(
 )
 
 # The modules
-set(MODULES import export copy_history styles tagging image select collect recentcollect metadata metadata_view module_view navigation histogram history snapshots backgroundjobs colorpicker masks session duplicate)
+set(MODULES export copy_history styles tagging image select collect recentcollect metadata metadata_view module_view navigation histogram history snapshots backgroundjobs colorpicker masks duplicate)
 
 # The tools
 set(MODULES ${MODULES} viewswitcher)
@@ -42,7 +42,7 @@ if(BUILD_BATTERY_INDICATOR)
 endif()
 
 # modules
-add_library(import MODULE "import.c")
+#add_library(import MODULE "import.c")
 add_library(export MODULE "export.c" "export_metadata.c")
 add_library(copy_history MODULE "copy_history.c")
 add_library(styles MODULE "styles.c")
@@ -60,7 +60,7 @@ add_library(snapshots MODULE "snapshots.c")
 add_library(backgroundjobs MODULE "backgroundjobs.c")
 add_library(colorpicker MODULE "colorpicker.c")
 add_library(masks MODULE "masks.c")
-add_library(session MODULE "session.c")
+#add_library(session MODULE "session.c")
 add_library(duplicate MODULE "duplicate.c")
 add_library(module_view MODULE "module_view.c")
 
@@ -85,13 +85,6 @@ add_library(image_infos MODULE "tools/image_infos.c")
 if(BUILD_BATTERY_INDICATOR)
   add_library(battery_indicator MODULE "tools/battery_indicator.c")
 endif()
-
-# check if gphoto2 found and add build of camera modules...
-if(Gphoto2_FOUND)
-	add_library(camera MODULE "camera.c")
-	add_library(live_view MODULE "live_view.c")
-	set(MODULES ${MODULES} camera live_view)
-endif(Gphoto2_FOUND)
 
 # the module specific to print mode
 if(CUPS_FOUND)

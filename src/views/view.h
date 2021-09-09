@@ -109,8 +109,7 @@ typedef struct dt_mouse_action_t
 } dt_mouse_action_t;
 
 #define DT_VIEW_ALL                                                                              \
-  (DT_VIEW_LIGHTTABLE | DT_VIEW_DARKROOM | DT_VIEW_TETHERING | DT_VIEW_MAP | DT_VIEW_SLIDESHOW | \
-   DT_VIEW_PRINT | DT_VIEW_KNIGHT)
+  (DT_VIEW_LIGHTTABLE | DT_VIEW_DARKROOM | DT_VIEW_PRINT )
 
 /* maximum zoom factor for the lighttable */
 #define DT_LIGHTTABLE_MAX_ZOOM 25
@@ -304,14 +303,6 @@ typedef struct dt_view_manager_t
       gboolean (*get_preview_state)(struct dt_view_t *view);
       void (*change_offset)(struct dt_view_t *view, gboolean reset, gint imgid);
     } lighttable;
-    /* tethering view proxy object */
-    struct
-    {
-      struct dt_view_t *view;
-      const char *(*get_job_code)(const dt_view_t *view);
-      void (*set_job_code)(const dt_view_t *view, const char *name);
-      int32_t (*get_selected_imgid)(const dt_view_t *view);
-    } tethering;
     /* module_view window proxy */
     struct
     {
@@ -378,16 +369,6 @@ GSList *dt_mouse_action_create_simple(GSList *actions, dt_mouse_action_type_t ty
 
 GSList *dt_mouse_action_create_format(GSList *actions, dt_mouse_action_type_t type, GdkModifierType accel,
                                       const char *const format_string, const char *const replacement);
-
-/*
- * Tethering View PROXY
- */
-/** get the current selected image id for tethering session */
-int32_t dt_view_tethering_get_selected_imgid(const dt_view_manager_t *vm);
-/** set the current jobcode for tethering session */
-void dt_view_tethering_set_job_code(const dt_view_manager_t *vm, const char *name);
-/** get the current jobcode for tethering session */
-const char *dt_view_tethering_get_job_code(const dt_view_manager_t *vm);
 
 /** update the collection module */
 void dt_view_collection_update(const dt_view_manager_t *vm);

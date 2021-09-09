@@ -2038,8 +2038,8 @@ static gboolean _accel_select_untouched(GtkAccelGroup *accel_group, GObject *acc
 void dt_thumbtable_init_accels(dt_thumbtable_t *table)
 {
   const dt_view_type_flags_t views
-      = DT_VIEW_LIGHTTABLE | DT_VIEW_DARKROOM | DT_VIEW_MAP | DT_VIEW_TETHERING | DT_VIEW_PRINT;
-  const dt_view_type_flags_t views_nolt = DT_VIEW_DARKROOM | DT_VIEW_MAP | DT_VIEW_TETHERING | DT_VIEW_PRINT;
+      = DT_VIEW_LIGHTTABLE | DT_VIEW_DARKROOM | DT_VIEW_PRINT;
+  const dt_view_type_flags_t views_nolt = DT_VIEW_DARKROOM | DT_VIEW_PRINT;
   /* setup rating key accelerators */
   dt_accel_register_manual(NC_("accel", "views/thumbtable/rate 0"), views, GDK_KEY_0, 0);
   dt_accel_register_manual(NC_("accel", "views/thumbtable/rate 1"), views, GDK_KEY_1, 0);
@@ -2086,8 +2086,7 @@ void dt_thumbtable_update_accels_connection(dt_thumbtable_t *table, const int vi
 
   dt_accel_disconnect_list(&table->accel_closures);
 
-  if((view & DT_VIEW_LIGHTTABLE) || (view & DT_VIEW_DARKROOM) || (view & DT_VIEW_TETHERING)
-     || (view & DT_VIEW_MAP) || (view & DT_VIEW_PRINT))
+  if((view & DT_VIEW_LIGHTTABLE) || (view & DT_VIEW_DARKROOM) || (view & DT_VIEW_PRINT))
   {
     // Rating accels
     dt_accel_connect_manual(&table->accel_closures, "views/thumbtable/rate 0",

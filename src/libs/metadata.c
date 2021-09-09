@@ -58,7 +58,7 @@ const char *name(dt_lib_module_t *self)
 
 const char **views(dt_lib_module_t *self)
 {
-  static const char *v[] = {"lighttable", "tethering", NULL};
+  static const char *v[] = {"lighttable", NULL};
   return v;
 }
 
@@ -87,6 +87,7 @@ static void _text_set_italic(GtkTextView *textview, const gboolean italic)
   GtkTextBuffer *buffer = gtk_text_view_get_buffer(textview);
   GtkTextIter start, end;
   gtk_text_buffer_get_bounds(buffer, &start, &end);
+  
   if(italic)
     gtk_text_buffer_apply_tag_by_name(buffer, "italic", &start, &end);
   else
@@ -99,19 +100,17 @@ static void _fill_text_view(const uint32_t i, const uint32_t count, dt_lib_modul
   gboolean multi = FALSE;
 
   GtkTextBuffer *buffer = gtk_text_view_get_buffer(d->textview[i]);
+
   if(count == 0)  // no metadata value
-  {
     gtk_text_buffer_set_text(buffer, "", -1);
-  }
   else if(count == 1) // images with different metadata values
   {
     gtk_text_buffer_set_text(buffer, _("<leave unchanged>"), -1);
     multi = TRUE;
   }
   else // one or several images with the same metadata value
-  {
     gtk_text_buffer_set_text(buffer, (char *)d->metadata_list[i]->data, -1);
-  }
+
   _text_set_italic(d->textview[i], multi);
 }
 
@@ -124,6 +123,7 @@ static void _update(dt_lib_module_t *self)
   GList *metadata[DT_METADATA_NUMBER];
   uint32_t metadata_count[DT_METADATA_NUMBER];
   uint32_t imgs_count = 0;
+
   for(unsigned int i = 0; i < DT_METADATA_NUMBER; i++)
   {
     metadata[i] = NULL;
@@ -134,6 +134,7 @@ static void _update(dt_lib_module_t *self)
   // takes ages.
   char *images = NULL;
   const GList *imgs = dt_view_get_images_to_act_on(TRUE, FALSE);
+
   while(imgs)
   {
     images = dt_util_dstrcat(images, "%d,",GPOINTER_TO_INT(imgs->data));

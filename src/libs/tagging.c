@@ -91,7 +91,7 @@ const char *name(dt_lib_module_t *self)
 
 const char **views(dt_lib_module_t *self)
 {
-  static const char *v1[] = {"lighttable", "tethering", NULL};
+  static const char *v1[] = {"lighttable", NULL};
   return v1;
 }
 

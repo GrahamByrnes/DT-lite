@@ -88,7 +88,7 @@ const char *name(dt_lib_module_t *self)
 
 const char **views(dt_lib_module_t *self)
 {
-  static const char *v[] = {"darkroom", "tethering", NULL};
+  static const char *v[] = {"darkroom", NULL};
   return v;
 }
 
@@ -177,13 +177,7 @@ static void dt_lib_histogram_process(struct dt_lib_module_t *self, const float *
     dt_pthread_mutex_unlock(&d->lock);
     return;
   }
-  // If showing a selected image in tether view, then the image is
-  // already in histogram profile. If the image is from live view and
-  // histogram profile is DT_COLORSPACE_WORK or DT_COLORSPACE_EXPORT,
-  // we just show the image as-is, as the image hasn't gone through
-  // the pixelpipe. Otherwise, convert it to histogram profile.
-  // FIXME: detect whether in live view (darktable.develop state should give a clue) and if so if 
-  // histogram profile is DT_COLORSPACE_WORK use linear rec 2020 as a reasonable default, if profile is export skip this conversion
+  
   if(in_profile_type != DT_COLORSPACE_NONE)
   {
     dt_colorspaces_color_profile_type_t out_profile_type;
@@ -356,10 +350,9 @@ static gboolean _lib_histogram_draw_callback(GtkWidget *widget, cairo_t *crf, gp
   dt_draw_grid(cr, 4, 0, 0, width, height);
 
   // darkroom view: draw scope so long as preview pipe is finished
-  // tether view: draw whatever has come in from tether
   dt_pthread_mutex_lock(&d->lock);
-  const dt_view_t *cv = dt_view_manager_get_current_view(darktable.view_manager);
-  if(cv->view(cv) == DT_VIEW_TETHERING || dev->image_storage.id == dev->preview_pipe->output_imgid)
+
+  if(dev->image_storage.id == dev->preview_pipe->output_imgid)
   {
     cairo_save(cr);
     uint8_t mask[3] = { d->red, d->green, d->blue };
@@ -631,11 +624,8 @@ static void _lib_histogram_preview_updated_callback(gpointer instance, dt_lib_mo
 void view_enter(struct dt_lib_module_t *self, struct dt_view_t *old_view, struct dt_view_t *new_view)
 {
   if(new_view->view(new_view) == DT_VIEW_DARKROOM)
-  {
     dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_PREVIEW_PIPE_FINISHED,
                               G_CALLBACK(_lib_histogram_preview_updated_callback), self);
-  }
-  // FIXME: set histogram data to blank if enter tether with no active image
 }
 
 void view_leave(struct dt_lib_module_t *self, struct dt_view_t *old_view, struct dt_view_t *new_view)
@@ -666,7 +656,7 @@ void gui_init(dt_lib_module_t *self)
   g_free(histogram_scale);
   d->histogram = (uint32_t *)calloc(4 * HISTOGRAM_BINS, sizeof(uint32_t));
   d->histogram_max = 0;
-  // proxy functions and data so that pixelpipe or tether can
+  // proxy functions and data so that pixelpipe can
   // provide data for a histogram
   // FIXME: do need to pass self, or can wrap a callback as a lambda
   darktable.lib->proxy.histogram.module = self;

@@ -69,11 +69,11 @@
 
 typedef enum dt_gui_view_switch_t
 {
-  DT_GUI_VIEW_SWITCH_TO_TETHERING = 1,
+  //DT_GUI_VIEW_SWITCH_TO_TETHERING = 1,
   DT_GUI_VIEW_SWITCH_TO_LIGHTTABLE,
   DT_GUI_VIEW_SWITCH_TO_DARKROOM,
-  DT_GUI_VIEW_SWITCH_TO_MAP,
-  DT_GUI_VIEW_SWITCH_TO_SLIDESHOW,
+  //DT_GUI_VIEW_SWITCH_TO_MAP,
+  //DT_GUI_VIEW_SWITCH_TO_SLIDESHOW,
   DT_GUI_VIEW_SWITCH_TO_PRINT
 } dt_gui_view_switch_to_t;
 
@@ -848,24 +848,12 @@ static gboolean _gui_switch_view_key_accel_callback(GtkAccelGroup *accel_group, 
   /* do some setup before switch view*/
   switch(view)
   {
-    case DT_GUI_VIEW_SWITCH_TO_TETHERING:
-      mode = "tethering";
-      break;
-
     case DT_GUI_VIEW_SWITCH_TO_DARKROOM:
       mode = "darkroom";
       break;
 
     case DT_GUI_VIEW_SWITCH_TO_LIGHTTABLE:
       mode = "lighttable";
-      break;
-
-    case DT_GUI_VIEW_SWITCH_TO_MAP:
-      mode = "map";
-      break;
-
-    case DT_GUI_VIEW_SWITCH_TO_SLIDESHOW:
-      mode = "slideshow";
       break;
 
     case DT_GUI_VIEW_SWITCH_TO_PRINT:
@@ -1208,27 +1196,16 @@ int dt_gui_gtk_init(dt_gui_gtk_t *gui)
   g_signal_connect(G_OBJECT(widget), "configure-event", G_CALLBACK(window_configure), NULL);
 
   // register keys for view switching
-  dt_accel_register_global(NC_("accel", "tethering view"), GDK_KEY_t, 0);
   dt_accel_register_global(NC_("accel", "lighttable view"), GDK_KEY_l, 0);
   dt_accel_register_global(NC_("accel", "darkroom view"), GDK_KEY_d, 0);
-  dt_accel_register_global(NC_("accel", "map view"), GDK_KEY_m, 0);
-  dt_accel_register_global(NC_("accel", "slideshow view"), GDK_KEY_s, 0);
   dt_accel_register_global(NC_("accel", "print view"), GDK_KEY_p, 0);
 
-  dt_accel_connect_global("tethering view",
-                          g_cclosure_new(G_CALLBACK(_gui_switch_view_key_accel_callback),
-                                         GINT_TO_POINTER(DT_GUI_VIEW_SWITCH_TO_TETHERING), NULL));
   dt_accel_connect_global("lighttable view",
                           g_cclosure_new(G_CALLBACK(_gui_switch_view_key_accel_callback),
                                          GINT_TO_POINTER(DT_GUI_VIEW_SWITCH_TO_LIGHTTABLE), NULL));
   dt_accel_connect_global("darkroom view",
                           g_cclosure_new(G_CALLBACK(_gui_switch_view_key_accel_callback),
                                          GINT_TO_POINTER(DT_GUI_VIEW_SWITCH_TO_DARKROOM), NULL));
-  dt_accel_connect_global("map view", g_cclosure_new(G_CALLBACK(_gui_switch_view_key_accel_callback),
-                                                     GINT_TO_POINTER(DT_GUI_VIEW_SWITCH_TO_MAP), NULL));
-  dt_accel_connect_global("slideshow view",
-                          g_cclosure_new(G_CALLBACK(_gui_switch_view_key_accel_callback),
-                                         GINT_TO_POINTER(DT_GUI_VIEW_SWITCH_TO_SLIDESHOW), NULL));
   dt_accel_connect_global("print view", g_cclosure_new(G_CALLBACK(_gui_switch_view_key_accel_callback),
                                                      GINT_TO_POINTER(DT_GUI_VIEW_SWITCH_TO_PRINT), NULL));
   dt_accel_register_global(NC_("accel", "quit"), GDK_KEY_q, GDK_CONTROL_MASK);

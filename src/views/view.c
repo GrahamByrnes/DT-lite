@@ -1256,27 +1256,6 @@ void dt_view_collection_update(const dt_view_manager_t *vm)
     vm->proxy.module_collect.update(vm->proxy.module_collect.module);
 }
 
-int32_t dt_view_tethering_get_selected_imgid(const dt_view_manager_t *vm)
-{
-  if(vm->proxy.tethering.view)
-    return vm->proxy.tethering.get_selected_imgid(vm->proxy.tethering.view);
-
-  return -1;
-}
-
-void dt_view_tethering_set_job_code(const dt_view_manager_t *vm, const char *name)
-{
-  if(vm->proxy.tethering.view)
-    vm->proxy.tethering.set_job_code(vm->proxy.tethering.view, name);
-}
-
-const char *dt_view_tethering_get_job_code(const dt_view_manager_t *vm)
-{
-  if(vm->proxy.tethering.view)
-    return vm->proxy.tethering.get_job_code(vm->proxy.tethering.view);
-  return NULL;
-}
-
 #ifdef HAVE_PRINT
 void dt_view_print_settings(const dt_view_manager_t *vm, dt_print_info_t *pinfo)
 {

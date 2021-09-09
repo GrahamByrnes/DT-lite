@@ -42,7 +42,6 @@
 /**
  * This module is merely just a simple container
  * which can contains thumbtable widget
- *
  * all the stuff is located in the thumbtable and its thumbnails childs
  */
 
@@ -55,7 +54,7 @@ const char *name(dt_lib_module_t *self)
 
 const char **views(dt_lib_module_t *self)
 {
-  static const char *v[] = {"lighttable", "darkroom", "tethering", "map", "print", NULL};
+  static const char *v[] = {"lighttable", "darkroom", "map", "print", NULL};
   return v;
 }
 
