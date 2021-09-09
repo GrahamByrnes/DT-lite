@@ -203,7 +203,7 @@ void dt_accel_register_lib_as_view(gchar *view_name, const gchar *path, guint ac
     accel->views = DT_VIEW_LIGHTTABLE;
   else if(strcmp(view_name, "darkroom") == 0)
     accel->views = DT_VIEW_DARKROOM;
-  else
+  else if(strcmp(view_name, "print") == 0)
     accel->views = DT_VIEW_PRINT;
 
   darktable.control->accelerator_list = g_slist_prepend(darktable.control->accelerator_list, accel);
