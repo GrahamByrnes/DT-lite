@@ -1392,10 +1392,12 @@ static gboolean tree_key_press(GtkWidget *widget, GdkEventKey *event, gpointer d
       gchar *accel_txt
           = gtk_accelerator_get_label(gdk_keyval_to_lower(event->keyval), event_mods);
       gchar txt[512] = { 0 };
+
       if(g_str_has_prefix(accel_conflict->translated_path, "<Darktable>/"))
         g_strlcpy(txt, accel_conflict->translated_path + 12, sizeof(txt));
       else
         g_strlcpy(txt, accel_conflict->translated_path, sizeof(txt));
+
       GtkWidget *dialog = gtk_message_dialog_new(
         GTK_WINDOW(_preferences_dialog), GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL, GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
           _("%s accel is already mapped to\n%s.\ndo you want to replace it ?"), accel_txt, txt);
@@ -1407,26 +1409,22 @@ static gboolean tree_key_press(GtkWidget *widget, GdkEventKey *event, gpointer d
       gtk_window_set_title(GTK_WINDOW(dialog), _("accel conflict"));
       gint res = gtk_dialog_run(GTK_DIALOG(dialog));
       gtk_widget_destroy(dialog);
+
       if(res == GTK_RESPONSE_YES)
       {
         // Change the accel map entry
         if(gtk_accel_map_change_entry(darktable.control->accel_remap_str, gdk_keyval_to_lower(event->keyval),
                                       event_mods, TRUE))
-        {
           // Then remove conflicts
           g_slist_foreach(darktable.control->accelerator_list, delete_matching_accels, (gpointer)(accel_current));
-        }
       }
     }
-
     // Then update the text in the A_BINDING_COLUMN of each row
     update_accels_model(NULL, model);
-
     // Finally clear the remap state
     darktable.control->accel_remap_str = NULL;
     gtk_tree_path_free(darktable.control->accel_remap_path);
     darktable.control->accel_remap_path = NULL;
-
     // Save the changed keybindings
     gtk_accel_map_save(accelpath);
 
@@ -1435,7 +1433,6 @@ static gboolean tree_key_press(GtkWidget *widget, GdkEventKey *event, gpointer d
   else if(event->keyval == GDK_KEY_BackSpace)
   {
     // If a leaf node is selected, clear that accelerator
-
     // If nothing is selected, or branch node selected, just return
     if(!gtk_tree_selection_get_selected(selection, &model, &iter)
        || gtk_tree_model_iter_has_child(model, &iter))

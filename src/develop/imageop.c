@@ -1820,12 +1820,7 @@ GtkWidget *dt_iop_gui_get_expander(dt_iop_module_t *module)
   hw[IOP_MODULE_PRESETS] = dtgtk_button_new(dtgtk_cairo_paint_presets, CPF_STYLE_FLAT, NULL);
   module->presets_button = GTK_WIDGET(hw[IOP_MODULE_PRESETS]);
 
-  if (module->flags() & IOP_FLAGS_ONE_INSTANCE)
-    gtk_widget_set_tooltip_text(GTK_WIDGET(hw[IOP_MODULE_PRESETS]), _("presets"));
-  else
-    gtk_widget_set_tooltip_text(GTK_WIDGET(hw[IOP_MODULE_PRESETS]),
-                                _("presets\nleft-click to apply on new instance"));
-                                
+  gtk_widget_set_tooltip_text(GTK_WIDGET(hw[IOP_MODULE_PRESETS]), _("presets"));
   g_signal_connect(G_OBJECT(hw[IOP_MODULE_PRESETS]), "button-press-event", G_CALLBACK(popup_callback), module);
   gtk_widget_set_name(GTK_WIDGET(hw[IOP_MODULE_PRESETS]), "module-preset-button");
   // add enabled button
