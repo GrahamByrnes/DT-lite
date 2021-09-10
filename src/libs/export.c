@@ -1249,7 +1249,7 @@ void *get_params(dt_lib_module_t *self, int *size)
 
   char *fname = mformat->plugin_name, *sname = mstorage->plugin_name;
   int32_t fname_len = strlen(fname), sname_len = strlen(sname);
-  *size = fname_len + sname_len + 2 + 4 * sizeof(int32_t) + fsize + ssize + 7 * sizeof(int32_t)
+  *size = fname_len + sname_len + 2 + 4 * sizeof(int32_t) + fsize + ssize + 6 * sizeof(int32_t)
           + strlen(iccfilename) + 1 + strlen(metadata_export) + 1;
 
   char *params = (char *)calloc(1, *size);
