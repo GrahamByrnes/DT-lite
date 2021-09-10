@@ -106,7 +106,8 @@ void gui_init(dt_lib_module_t *self)
     dt_view_t *view = (dt_view_t *)view_iter->data;
     if(view->flags() & VIEW_FLAGS_HIDDEN) continue;
 
-    if(!g_strcmp0(view->module_name, "lighttable") || !g_strcmp0(view->module_name, "darkroom"))
+    if(!g_strcmp0(view->module_name, "lighttable") || !g_strcmp0(view->module_name, "darkroom")
+                  || !g_strcmp0(view->module_name, "print"))
     {
       GtkWidget *w = _lib_viewswitcher_create_label(view);
       gtk_box_pack_start(GTK_BOX(self->widget), w, FALSE, FALSE, 0);
@@ -124,10 +125,6 @@ void gui_init(dt_lib_module_t *self)
   model = gtk_list_store_new(N_COLUMNS, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_BOOLEAN);
   d->dropdown = gtk_combo_box_new_with_model(GTK_TREE_MODEL(model));
   gtk_widget_set_name(d->dropdown, "view_dropdown");
-  GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-  gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(d->dropdown), renderer, FALSE);
-  gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(d->dropdown), renderer, "markup", TEXT_COLUMN,
-                                        "sensitive", SENSITIVE_COLUMN, NULL);
 
   if(model)
     g_object_unref(model);
