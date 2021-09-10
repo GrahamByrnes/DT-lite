@@ -329,7 +329,7 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
 
 const char **views(dt_lib_module_t *self)
 {
-  static const char *v[] = {"lighttable", "map", "print", NULL};
+  static const char *v[] = {"lighttable", "print", NULL};
   return v;
 }
 

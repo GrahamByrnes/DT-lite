@@ -227,9 +227,6 @@ void gui_init(dt_lib_module_t *self)
   darktable.view_manager->proxy.filter.module = self;
   darktable.view_manager->proxy.filter.reset_filter = _lib_filter_reset;
 
-  g_signal_connect_swapped(G_OBJECT(d->comparator), "map",
-                           G_CALLBACK(_lib_filter_sync_combobox_and_comparator), self);
-
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_IMAGES_ORDER_CHANGE,
                             G_CALLBACK(_lib_filter_images_order_change), self);
 }
