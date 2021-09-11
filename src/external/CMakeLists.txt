@@ -1,7 +1,3 @@
-if(USE_XCF)
-  add_subdirectory(libxcf)
-endif()
-
 set(BUILD_TESTING_SAVE "${BUILD_TESTING}")
 
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
