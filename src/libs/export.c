@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-DT_MODULE(8)
+DT_MODULE(7)
 
 #define EXPORT_MAX_IMAGE_SIZE UINT16_MAX
 #define CONFIG_PREFIX "plugins/lighttable/export/"

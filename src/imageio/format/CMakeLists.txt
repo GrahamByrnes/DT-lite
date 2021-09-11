@@ -22,11 +22,6 @@ if(WebP_FOUND)
   add_library(webp MODULE "webp.c")
 endif(WebP_FOUND)
 
-if(OpenEXR_FOUND)
-	list(APPEND MODULES "exr")
-	add_library(exr MODULE "exr.cc")
-endif(OpenEXR_FOUND)
-
 if(OpenJPEG_FOUND)
 	list(APPEND MODULES "j2k")
 	add_library(j2k MODULE "j2k.c")

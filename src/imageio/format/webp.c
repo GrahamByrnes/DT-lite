@@ -329,7 +329,7 @@ void gui_init(dt_imageio_module_format_t *self)
 
   gui->quality = dt_bauhaus_slider_new_with_range(NULL, 5, 100, 1, 95, 0);
   dt_bauhaus_widget_set_label(gui->quality, NULL, _("quality"));
-  dt_bauhaus_slider_set_default(gui->quality, 95);
+  dt_bauhaus_slider_set_default(gui->quality, dt_conf_get_int("plugins/imageio/format/webp/quality"));
   dt_bauhaus_slider_set_format(gui->quality, "%.2f%%");
   gtk_widget_set_tooltip_text(gui->quality, _("applies only to lossy setting"));
   if(quality > 0 && quality <= 100) dt_bauhaus_slider_set(gui->quality, quality);
@@ -364,6 +364,13 @@ void gui_cleanup(dt_imageio_module_format_t *self)
 
 void gui_reset(dt_imageio_module_format_t *self)
 {
+  dt_imageio_webp_gui_data_t *gui = (dt_imageio_webp_gui_data_t *)self->gui_data;
+  const int comp_type = dt_conf_get_int("plugins/imageio/format/webp/comp_type");
+  const int quality = dt_conf_get_int("plugins/imageio/format/webp/quality");
+  const int hint = dt_conf_get_int("plugins/imageio/format/webp/hint");
+  dt_bauhaus_combobox_set(gui->compression, comp_type);
+  dt_bauhaus_slider_set(gui->quality, quality);
+  dt_bauhaus_combobox_set(gui->hint, hint);
 }
 
 int flags(dt_imageio_module_data_t *data)
