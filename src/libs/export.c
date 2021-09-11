@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-DT_MODULE(7)
+DT_MODULE(8)
 
 #define EXPORT_MAX_IMAGE_SIZE UINT16_MAX
 #define CONFIG_PREFIX "plugins/lighttable/export/"
@@ -1373,7 +1373,7 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
   buf += sizeof(int32_t);
 
   if(size
-     != strlen(fname) + strlen(sname) + 2 + 4 * sizeof(int32_t) + fsize + ssize + 7 * sizeof(int32_t)
+     != strlen(fname) + strlen(sname) + 2 + 4 * sizeof(int32_t) + fsize + ssize + 6 * sizeof(int32_t)
         + strlen(iccfilename) + 1 + strlen(metadata_export) + 1)
     return 1;
     
