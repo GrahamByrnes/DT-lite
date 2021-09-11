@@ -330,7 +330,7 @@ try_again:
   if(fail) return 1;
 
   /* export image to file */
-  if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, export_masks, icc_type,
+  if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, icc_type,
                        icc_filename, icc_intent, self, sdata, num, total, metadata))
   {
     fprintf(stderr, "[imageio_storage_disk] could not export to file: `%s'!\n", filename);

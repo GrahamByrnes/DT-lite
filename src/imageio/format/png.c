@@ -119,8 +119,7 @@ static void PNGwriteRawProfile(png_struct *ping, png_info *ping_info, char *prof
 
 int write_image(dt_imageio_module_data_t *p_tmp, const char *filename, const void *ivoid,
                 dt_colorspaces_color_profile_type_t over_type, const char *over_filename,
-                void *exif, int exif_len, int imgid, int num, int total, struct dt_dev_pixelpipe_t *pipe,
-                const gboolean export_masks)
+                void *exif, int exif_len, int imgid, int num, int total, struct dt_dev_pixelpipe_t *pipe)
 {
   dt_imageio_png_t *p = (dt_imageio_png_t *)p_tmp;
   const int width = p->global.width, height = p->global.height;
@@ -208,17 +207,14 @@ int write_image(dt_imageio_module_data_t *p_tmp, const char *filename, const voi
     /* swap bytes of 16 bit files to most significant bit first */
     png_set_swap(png_ptr);
 
-    for(unsigned i = 0; i < height; i++) row_pointers[i] = (png_bytep)((uint16_t *)ivoid + (size_t)4 * i * width);
+    for(unsigned i = 0; i < height; i++)
+      row_pointers[i] = (png_bytep)((uint16_t *)ivoid + (size_t)4 * i * width);
   }
   else
-  {
     for(unsigned i = 0; i < height; i++) row_pointers[i] = (uint8_t *)ivoid + (size_t)4 * i * width;
-  }
 
   png_write_image(png_ptr, row_pointers);
-
   dt_free_align(row_pointers);
-
   png_write_end(png_ptr, info_ptr);
   png_destroy_write_struct(&png_ptr, &info_ptr);
   fclose(f);

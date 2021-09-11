@@ -234,8 +234,7 @@ static int _paper_size(dt_imageio_pdf_params_t *d, float *page_width, float *pag
 
 int write_image(dt_imageio_module_data_t *data, const char *filename, const void *in,
                 dt_colorspaces_color_profile_type_t over_type, const char *over_filename,
-                void *exif, int exif_len, int imgid, int num, int total, struct dt_dev_pixelpipe_t *pipe,
-                const gboolean export_masks)
+                void *exif, int exif_len, int imgid, int num, int total, struct dt_dev_pixelpipe_t *pipe)
 {
   dt_imageio_pdf_t *d = (dt_imageio_pdf_t *)data;
 
@@ -250,16 +249,14 @@ int write_image(dt_imageio_module_data_t *data, const char *filename, const void
 
     unsigned int compression = d->params.compression;
     compression = MIN(compression, DT_PDF_STREAM_ENCODER_FLATE);
-
-
     dt_pdf_t *pdf = dt_pdf_start(filename, page_width, page_height, page_dpi, compression);
+
     if(!pdf)
     {
       fprintf(stderr, "[imageio_format_pdf] could not export to file: `%s'!\n", filename);
       dt_control_log(_("could not export to file `%s'!"), filename);
       return 1;
     }
-
     // TODO: escape ')' and maybe also '('
     pdf->title = *d->params.title ? d->params.title : NULL;
 
@@ -274,7 +271,6 @@ int write_image(dt_imageio_module_data_t *data, const char *filename, const void
   {
     // get the id of the profile
     const dt_colorspaces_color_profile_t *profile = dt_colorspaces_get_output_profile(imgid, over_type, over_filename);
-
     // look it up in the list
     for(GList *iter = d->icc_profiles; iter; iter = g_list_next(iter))
     {
@@ -289,6 +285,7 @@ int write_image(dt_imageio_module_data_t *data, const char *filename, const void
     {
       uint32_t len = 0;
       cmsSaveProfileToMem(profile->profile, 0, &len);
+
       if(len > 0)
       {
         unsigned char *buf = malloc(len * sizeof(unsigned char));
@@ -337,25 +334,21 @@ int write_image(dt_imageio_module_data_t *data, const char *filename, const void
     }
   }
 
-  dt_pdf_image_t *image = dt_pdf_add_image(d->pdf, image_data, d->params.global.width, d->params.global.height, d->params.bpp, icc_id, d->page_border);
-
+  dt_pdf_image_t *image = dt_pdf_add_image(d->pdf, image_data, d->params.global.width, d->params.global.height,
+                                           d->params.bpp, icc_id, d->page_border);
   dt_free_align(image_data);
-
   d->images = g_list_append(d->images, image);
-
-
   // finish the pdf
   if(num == total)
   {
     int n_images = g_list_length(d->images);
     dt_pdf_page_t **pages = malloc(n_images * sizeof(dt_pdf_page_t *));
-
     gboolean outline_mode = d->params.mode != MODE_NORMAL;
     gboolean show_bb = d->params.mode == MODE_DEBUG;
-
     // add a page for every image
     GList *iter = d->images;
     int i = 0;
+
     while(iter)
     {
       dt_pdf_image_t *page = (dt_pdf_image_t *)iter->data;
@@ -374,7 +367,10 @@ int write_image(dt_imageio_module_data_t *data, const char *filename, const void
 
     // we allocated the images and pages. the main pdf object gets free'ed in dt_pdf_finish().
     g_list_free_full(d->images, free);
-    for(i = 0; i < n_images; i++) free(pages[i]);
+
+    for(i = 0; i < n_images; i++)
+      free(pages[i]);
+
     free(pages);
     g_free(d->actual_filename);
     g_list_free_full(d->icc_profiles, free);

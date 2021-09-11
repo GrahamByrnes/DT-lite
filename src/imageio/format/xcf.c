@@ -48,8 +48,7 @@ typedef struct dt_imageio_xcf_t
 
 int write_image(dt_imageio_module_data_t *data, const char *filename, const void *ivoid,
                 dt_colorspaces_color_profile_type_t over_type, const char *over_filename,
-                void *exif, int exif_len, int imgid, int num, int total, struct dt_dev_pixelpipe_t *pipe,
-                const gboolean export_masks)
+                void *exif, int exif_len, int imgid, int num, int total, struct dt_dev_pixelpipe_t *pipe)
 {
   const dt_imageio_xcf_t *const d = (dt_imageio_xcf_t *)data;
 
@@ -119,106 +118,14 @@ int write_image(dt_imageio_module_data_t *data, const char *filename, const void
     xcf_set(xcf, XCF_PROP, XCF_PROP_PARASITES, "icc-profile", XCF_PARASITE_PERSISTENT | XCF_PARASITE_UNDOABLE,
             profile_len, profile);
   }
-
-  xcf_set(xcf, XCF_N_LAYERS, 1);
-  int n_channels = 0;
-  if(export_masks && pipe)
-  {
-    for(GList *iter = pipe->nodes; iter; iter = g_list_next(iter))
-      n_channels += g_hash_table_size(((dt_dev_pixelpipe_iop_t *)iter->data)->raster_masks);
-  }
-  xcf_set(xcf, XCF_N_CHANNELS, n_channels);
-  xcf_set(xcf, XCF_OMIT_BASE_ALPHA, 1);
-
-  char *comment = g_strdup_printf("Created with %s", darktable_package_string);
-  xcf_set(xcf, XCF_PROP, XCF_PROP_PARASITES, "gimp-comment", XCF_PARASITE_PERSISTENT, strlen(comment) + 1, comment);
-  g_free(comment);
-
-  // TODO: this needs to be serialized, together with the exif data
-//   char *xmp_string = dt_exif_xmp_read_string(imgid);
-//   if(xmp_string)
-//   {
-//     xcf_set(xcf, XCF_PROP, XCF_PROP_PARASITES, "gimp-metadata", XCF_PARASITE_PERSISTENT,
-//             strlen(xmp_string) + 1, xmp_string);
-//     g_free(xmp_string);
-//   }
-
-  xcf_add_layer(xcf);
-  xcf_set(xcf, XCF_WIDTH, d->global.width);
-  xcf_set(xcf, XCF_HEIGHT, d->global.height);
-  xcf_set(xcf, XCF_NAME, _("image"));
-  // we only add one layer and omit its alpha channel. thus we can just pass ivoid and ignore its 4th channel!
-  xcf_add_data(xcf, ivoid, 4);
-
-  if(n_channels > 0)
-    for(GList *iter = pipe->nodes; iter; iter = g_list_next(iter))
-    {
-      dt_dev_pixelpipe_iop_t *piece = (dt_dev_pixelpipe_iop_t *)iter->data;
-
-      GHashTableIter rm_iter;
-      gpointer key, value;
-
-      g_hash_table_iter_init(&rm_iter, piece->raster_masks);
-      while(g_hash_table_iter_next(&rm_iter, &key, &value))
-      {
-        gboolean free_mask = TRUE;
-        float *raster_mask = dt_dev_get_raster_mask(pipe, piece->module, GPOINTER_TO_INT(key), NULL, &free_mask);
-
-        if(!raster_mask)
-        {
-          // this should never happen
-          fprintf(stderr, "error: can't get raster mask from `%s'\n", piece->module->name());
-          goto exit;
-        }
-
-        xcf_add_channel(xcf);
-        xcf_set(xcf, XCF_PROP, XCF_PROP_VISIBLE, 0);
-
-        const char *pagename = g_hash_table_lookup(piece->module->raster_mask.source.masks, key);
-        if(pagename)
-          xcf_set(xcf, XCF_NAME, pagename);
-        else
-          xcf_set(xcf, XCF_NAME, piece->module->name());
-
-        void *channel_data = NULL;
-        gboolean free_channel_data = TRUE;
-        if(d->bpp == 8)
-        {
-          channel_data = malloc((size_t)d->global.width * d->global.height * sizeof(uint8_t));
-          uint8_t *ch = (uint8_t *)channel_data;
-          for(size_t i = 0; i < (size_t)d->global.width * d->global.height; i++)
-            ch[i] = CLAMP((int)(raster_mask[i] * 255.0), 0, 255);
-        }
-        else if(d->bpp == 16)
-        {
-          channel_data = malloc((size_t)d->global.width * d->global.height * sizeof(uint16_t));
-          uint16_t *ch = (uint16_t *)channel_data;
-          for(size_t i = 0; i < (size_t)d->global.width * d->global.height; i++)
-            ch[i] = CLAMP((int)(raster_mask[i] * 65535.0), 0, 65535);
-        }
-        else if(d->bpp == 32)
-        {
-          channel_data = raster_mask;
-          free_channel_data = FALSE;
-        }
-
-        xcf_add_data(xcf, channel_data, 1);
-
-        if(free_channel_data)
-          free(channel_data);
-        if(free_mask)
-          dt_free_align(raster_mask);
-      }
-    }
-
+  
   res = 0;
-
+  
 exit:
   xcf_close(xcf);
   free(profile);
 
   return res;
-
 }
 
 size_t params_size(dt_imageio_module_format_t *self)

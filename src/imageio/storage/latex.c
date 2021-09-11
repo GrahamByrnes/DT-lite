@@ -357,7 +357,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   dt_pthread_mutex_unlock(&darktable.plugin_threadsafe);
 
   /* export image to file */
-  dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, export_masks, icc_type, icc_filename,
+  dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, icc_type, icc_filename,
                     icc_intent, self, sdata, num, total, metadata);
 
   printf("[export_job] exported to `%s'\n", filename);

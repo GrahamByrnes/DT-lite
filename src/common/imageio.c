@@ -634,7 +634,7 @@ void dt_imageio_to_fractional(float in, uint32_t *num, uint32_t *den)
 
 int dt_imageio_export(const int32_t imgid, const char *filename, dt_imageio_module_format_t *format,
                       dt_imageio_module_data_t *format_params, const gboolean high_quality, const gboolean upscale,
-                      const gboolean copy_metadata, const gboolean export_masks,
+                      const gboolean copy_metadata,
                       dt_colorspaces_color_profile_type_t icc_type, const gchar *icc_filename,
                       dt_iop_color_intent_t icc_intent, dt_imageio_module_storage_t *storage,
                       dt_imageio_module_data_t *storage_params, int num, int total, dt_export_metadata_t *metadata)
@@ -642,10 +642,10 @@ int dt_imageio_export(const int32_t imgid, const char *filename, dt_imageio_modu
   if(strcmp(format->mime(format_params), "x-copy") == 0)
     // This is a just a copy, skip process and just export
     return format->write_image(format_params, filename, NULL, icc_type, icc_filename,
-                               NULL, 0, imgid, num, total, NULL, export_masks);
+                               NULL, 0, imgid, num, total, NULL);
   else
     return dt_imageio_export_with_flags(imgid, filename, format, format_params, FALSE, FALSE, high_quality, upscale,
-                                        FALSE, NULL, copy_metadata, export_masks, icc_type, icc_filename, icc_intent,
+                                        FALSE, NULL, copy_metadata, icc_type, icc_filename, icc_intent,
                                         storage, storage_params, num, total, metadata);
 }
 
@@ -654,13 +654,13 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
                                  dt_imageio_module_format_t *format, dt_imageio_module_data_t *format_params,
                                  const gboolean ignore_exif, const gboolean display_byteorder,
                                  const gboolean high_quality, const gboolean upscale, const gboolean thumbnail_export,
-                                 const char *filter, const gboolean copy_metadata, const gboolean export_masks,
+                                 const char *filter, const gboolean copy_metadata,
                                  dt_colorspaces_color_profile_type_t icc_type, const gchar *icc_filename,
                                  dt_iop_color_intent_t icc_intent, dt_imageio_module_storage_t *storage,
                                  dt_imageio_module_data_t *storage_params, int num, int total,
                                  dt_export_metadata_t *metadata)
 {
-  dt_dev_write_history(darktable.develop);  /******/
+  dt_dev_write_history(darktable.develop);
   dt_develop_t dev;
   dt_dev_init(&dev, 0);
   dt_dev_load_image(&dev, imgid);
@@ -690,7 +690,7 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
   dt_get_times(&start);
   dt_dev_pixelpipe_t pipe;
   res = thumbnail_export ? dt_dev_pixelpipe_init_thumbnail(&pipe, wd, ht)
-                         : dt_dev_pixelpipe_init_export(&pipe, wd, ht, format->levels(format_params), export_masks);
+                         : dt_dev_pixelpipe_init_export(&pipe, wd, ht, format->levels(format_params));
   if(!res)
   {
     dt_control_log(
@@ -698,35 +698,7 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
         thumbnail_export ? C_("noun", "thumbnail export") : C_("noun", "export"));
     goto error;
   }
-
-  const gboolean use_style = !thumbnail_export && format_params->style[0] != '\0';
-  const gboolean appending = format_params->style_append != FALSE;
-  //  If a style is to be applied during export, add the iop params into the history
-  if(use_style)
-  {
-    GList *style_items = dt_styles_get_item_list(format_params->style, TRUE, -1);
-    if(!style_items)
-    {
-      dt_control_log(_("cannot find the style '%s' to apply during export."), format_params->style);
-      goto error;
-    }
-
-    GList *modules_used = NULL;
-    dt_dev_pop_history_items_ext(&dev, appending ? dev.history_end : 0);
-    //dt_dev_pop_history_items_ext(&dev, dev.history_end);   /* *** */
-    dt_ioppr_update_for_style_items(&dev, style_items, appending);
-
-    for(GList *st_items = style_items; st_items; st_items = g_list_next(st_items))
-    {
-      dt_style_item_t *st_item = (dt_style_item_t *)st_items->data;
-      dt_styles_apply_style_item(&dev, st_item, &modules_used, appending);
-                                       
-    }
-
-    g_list_free(modules_used);
-    g_list_free_full(style_items, dt_style_item_free);
-  }
-
+  
   dt_ioppr_resync_modules_order(&dev);
   dt_dev_pixelpipe_set_icc(&pipe, icc_type, icc_filename, icc_intent);
   dt_dev_pixelpipe_set_input(&pipe, &dev, (float *)buf.buf, buf.width, buf.height, buf.iscale);
@@ -1005,13 +977,13 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     length = dt_exif_read_blob(&exif_profile, pathname, imgid, sRGB, processed_width, processed_height, 0);
 
     res = format->write_image(format_params, filename, outbuf, icc_type, icc_filename, exif_profile, length, imgid,
-                              num, total, &pipe, export_masks);
+                              num, total, &pipe);
 
     free(exif_profile);
   }
   else
     res = format->write_image(format_params, filename, outbuf, icc_type, icc_filename,
-                              NULL, 0, imgid, num, total, &pipe, export_masks);
+                              NULL, 0, imgid, num, total, &pipe);
 
   dt_dev_pixelpipe_cleanup(&pipe);
   dt_dev_cleanup(&dev);

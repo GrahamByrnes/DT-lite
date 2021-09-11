@@ -963,7 +963,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
       g_list_free_full(auth, &g_free);
     }
   }
-  if(dt_imageio_export(imgid, fname, format, fdata, high_quality, upscale, TRUE, export_masks, icc_type, icc_filename,
+  if(dt_imageio_export(imgid, fname, format, fdata, high_quality, upscale, TRUE, icc_type, icc_filename,
                        icc_intent, self, sdata, num, total, metadata) != 0)
   {
     fprintf(stderr, "[imageio_storage_piwigo] could not export to file: `%s'!\n", fname);

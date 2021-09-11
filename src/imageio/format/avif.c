@@ -199,8 +199,7 @@ int write_image(struct dt_imageio_module_data_t *data,
                 int imgid,
                 int num,
                 int total,
-                struct dt_dev_pixelpipe_t *pipe,
-                const gboolean export_masks)
+                struct dt_dev_pixelpipe_t *pipe)
 {
   dt_imageio_avif_t *d = (dt_imageio_avif_t *)data;
 
@@ -230,17 +229,11 @@ int write_image(struct dt_imageio_module_data_t *data,
           break;
         case AVIF_COMP_LOSSY:
           if (d->quality > 90)
-          {
               format = AVIF_PIXEL_FORMAT_YUV444;
-          }
           else if (d->quality > 80)
-          {
               format = AVIF_PIXEL_FORMAT_YUV422;
-          }
           else
-          {
             format = AVIF_PIXEL_FORMAT_YUV420;
-          }
           break;
       }
 

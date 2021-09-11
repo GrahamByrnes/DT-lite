@@ -99,26 +99,20 @@ void cleanup(dt_imageio_module_format_t *self)
 
 int write_image(dt_imageio_module_data_t *tmp, const char *filename, const void *in_tmp,
                 dt_colorspaces_color_profile_type_t over_type, const char *over_filename,
-                void *exif, int exif_len, int imgid, int num, int total, struct dt_dev_pixelpipe_t *pipe,
-                const gboolean export_masks)
+                void *exif, int exif_len, int imgid, int num, int total, struct dt_dev_pixelpipe_t *pipe)
 {
   const dt_imageio_exr_t *exr = (dt_imageio_exr_t *)tmp;
-
   Imf::setGlobalThreadCount(dt_get_num_threads());
-
   Imf::Blob exif_blob(exif_len, (uint8_t *)exif);
-
   Imf::Header header(exr->global.width, exr->global.height, 1, Imath::V2f(0, 0), 1, Imf::INCREASING_Y,
                      (Imf::Compression)exr->compression);
 
   char comment[1024];
   snprintf(comment, sizeof(comment), "Developed using %s", darktable_package_string);
-
   header.insert("comment", Imf::StringAttribute(comment));
-
   header.insert("exif", Imf::BlobAttribute(exif_blob));
-
   char *xmp_string = dt_exif_xmp_read_string(imgid);
+
   if(xmp_string)
   {
     header.insert("xmp", Imf::StringAttribute(xmp_string));
@@ -154,11 +148,6 @@ int write_image(dt_imageio_module_data_t *tmp, const char *filename, const void 
 
     if(!cmsIsToneCurveLinear(red_curve) || !cmsIsToneCurveLinear(green_curve) || !cmsIsToneCurveLinear(blue_curve))
       goto icc_error;
-
-//     printf("r: %f %f %f\n", red_color->X, red_color->Y, red_color->Z);
-//     printf("g: %f %f %f\n", green_color->X, green_color->Y, green_color->Z);
-//     printf("b: %f %f %f\n", blue_color->X, blue_color->Y, blue_color->Z);
-//     printf("w: %f %f %f\n", white_point->X, white_point->Y, white_point->Z);
 
     sum = red_color->X + red_color->Y + red_color->Z;
     r[0] = red_color->X / sum;

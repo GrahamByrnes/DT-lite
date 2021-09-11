@@ -354,7 +354,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   dt_pthread_mutex_lock(&darktable.plugin_threadsafe);
   // export image to file. need this to be able to access meaningful
   // fdata->width and height below.
-  if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, export_masks, icc_type,
+  if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, icc_type,
                        icc_filename, icc_intent, self, sdata, num, total, metadata) != 0)
   {
     fprintf(stderr, "[imageio_storage_gallery] could not export to file: `%s'!\n", filename);
@@ -395,12 +395,16 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   fdata->max_height = 200;
   // alter filename with -thumb:
   c = filename + strlen(filename);
+
   for(; c > filename && *c != '.' && *c != '/'; c--)
     ;
-  if(c <= filename || *c == '/') c = filename + strlen(filename);
+
+  if(c <= filename || *c == '/')
+    c = filename + strlen(filename);
+
   ext = format->extension(fdata);
   sprintf(c, "-thumb.%s", ext);
-  if(dt_imageio_export(imgid, filename, format, fdata, FALSE, TRUE, FALSE, export_masks, icc_type, icc_filename,
+  if(dt_imageio_export(imgid, filename, format, fdata, FALSE, TRUE, FALSE, icc_type, icc_filename,
                        icc_intent, self, sdata, num, total, NULL) != 0)
   {
     fprintf(stderr, "[imageio_storage_gallery] could not export to file: `%s'!\n", filename);

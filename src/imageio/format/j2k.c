@@ -320,8 +320,7 @@ static void cinema_setup_encoder(opj_cparameters_t *parameters, opj_image_t *ima
 
 int write_image(dt_imageio_module_data_t *j2k_tmp, const char *filename, const void *in_tmp,
                 dt_colorspaces_color_profile_type_t over_type, const char *over_filename,
-                void *exif, int exif_len, int imgid, int num, int total, struct dt_dev_pixelpipe_t *pipe,
-                const gboolean export_masks)
+                void *exif, int exif_len, int imgid, int num, int total, struct dt_dev_pixelpipe_t *pipe)
 {
   const float *in = (const float *)in_tmp;
   dt_imageio_j2k_t *j2k = (dt_imageio_j2k_t *)j2k_tmp;
@@ -348,16 +347,14 @@ int write_image(dt_imageio_module_data_t *j2k_tmp, const char *filename, const v
   if(parameters.cp_cinema)
   {
     rates = (float *)calloc(parameters.tcp_numlayers, sizeof(float));
+
     for(int i = 0; i < parameters.tcp_numlayers; i++)
-    {
       rates[i] = parameters.tcp_rates[i];
-    }
+
     cinema_parameters(&parameters);
   }
-
   /* Create comment for codestream */
   parameters.cp_comment = g_strdup_printf("Created by %s", darktable_package_string);
-
   /*Converting the image to a format suitable for encoding*/
   {
     const int subsampling_dx = parameters.subsampling_dx;
@@ -395,12 +392,6 @@ int write_image(dt_imageio_module_data_t *j2k_tmp, const char *filename, const v
 
     switch(prec)
     {
-//      case 8:
-//        for(int i = 0; i < w * h; i++)
-//        {
-//          for(int k = 0; k < numcomps; k++) image->comps[k].data[i] = DOWNSAMPLE_FLOAT_TO_8BIT(in[i * 4 + k]);
-//        }
-//        break;
       case 12:
         for(int i = 0; i < w * h; i++)
         {
@@ -408,24 +399,10 @@ int write_image(dt_imageio_module_data_t *j2k_tmp, const char *filename, const v
             image->comps[k].data[i] = DOWNSAMPLE_FLOAT_TO_12BIT(in[i * 4 + k]);
         }
         break;
-//      case 16:
-//        for(int i = 0; i < w * h; i++)
-//        {
-//          for(int k = 0; k < numcomps; k++)
-//            image->comps[k].data[i] = DOWNSAMPLE_FLOAT_TO_16BIT(in[i * 4 + k]);
-//        }
-//        break;
-//      default:
-//        fprintf(stderr, "Error: this shouldn't happen, there is no bit depth of %d for jpeg 2000 images.\n",
-//                prec);
-//        free(rates);
-//        opj_image_destroy(image);
-//        return 1;
     }
   }
 
   /*Encoding image*/
-
   /* Decide if MCT should be used */
   parameters.tcp_mct = image->numcomps == 3 ? 1 : 0;
 
