@@ -136,7 +136,7 @@ void gui_init(dt_imageio_module_format_t *self)
   self->widget = box;
 
   GtkWidget *label
-      = gtk_label_new(_("do a 1:1 copy of the selected files.\nthe global options below do not apply!"));
+      = gtk_label_new(_("do a 1:1 copy of the selected files \nglobal options irrelevant"));
   gtk_widget_set_halign(label, GTK_ALIGN_START);
   gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
 }
