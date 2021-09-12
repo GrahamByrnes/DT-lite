@@ -222,11 +222,12 @@ static void _metadata_update_value_end(GtkLabel *label, const char *value)
   gtk_widget_set_tooltip_text(GTK_WIDGET(label), str);
 }
 
-
+/*
 #ifdef USE_LUA
 static int lua_update_metadata(lua_State*L);
-#endif
-/* update all values to reflect mouse over image id or no data at all */
+#endif*/
+
+// update all values to reflect mouse over image id or no data at all
 static void _metadata_view_update_values(dt_lib_module_t *self)
 {
   dt_lib_metadata_view_t *d = (dt_lib_metadata_view_t *)self->data;
@@ -652,13 +653,13 @@ static void _metadata_view_update_values(dt_lib_module_t *self)
 
     /* release img */
     dt_image_cache_read_release(darktable.image_cache, img);
-
+/*
 #ifdef USE_LUA
     dt_lua_async_call_alien(lua_update_metadata,
         0,NULL,NULL,
         LUA_ASYNC_TYPENAME,"void*",self,
         LUA_ASYNC_TYPENAME,"int32_t",mouse_over_id,LUA_ASYNC_DONE);
-#endif
+#endif*/
   }
 
   return;
@@ -666,12 +667,12 @@ static void _metadata_view_update_values(dt_lib_module_t *self)
 /* reset */
 fill_minuses:
   for(int k = 0; k < md_size; k++) _metadata_update_value(d->metadata[k], NODATA_STRING);
-#ifdef USE_LUA
+/*#ifdef USE_LUA
   dt_lua_async_call_alien(lua_update_metadata,
       0,NULL,NULL,
         LUA_ASYNC_TYPENAME,"void*",self,
         LUA_ASYNC_TYPENAME,"int32_t",-1,LUA_ASYNC_DONE);
-#endif
+#endif*/
 }
 
 static void _jump_to()
@@ -808,115 +809,6 @@ static gboolean view_onMouseScroll(GtkWidget *view, GdkEventScroll *event, dt_li
   return FALSE;
 }
 
-#ifdef USE_LUA
-static int lua_update_widgets(lua_State*L)
-{
-  dt_lib_module_t *self = lua_touserdata(L, 1);
-  dt_lua_module_entry_push(L,"lib",self->plugin_name);
-  lua_getuservalue(L,2);
-  lua_getfield(L,3,"values");
-  lua_getfield(L,3,"widgets");
-  lua_pushnil(L);
-  while(lua_next(L, 4) != 0)
-  {
-    lua_getfield(L,5,lua_tostring(L,-2));
-    GtkLabel *widget = lua_touserdata(L,-1);
-    _metadata_update_value_end(widget,luaL_checkstring(L,7));
-    lua_pop(L,2);
-  }
-  return 0;
-}
-static int lua_update_metadata(lua_State*L)
-{
-  dt_lib_module_t *self = lua_touserdata(L, 1);
-  int32_t imgid = lua_tointeger(L,2);
-  dt_lua_module_entry_push(L,"lib",self->plugin_name);
-  lua_getuservalue(L,-1);
-  lua_getfield(L,4,"callbacks");
-  lua_getfield(L,4,"values");
-  lua_pushnil(L);
-  while(lua_next(L, 5) != 0)
-  {
-    lua_pushvalue(L,-1);
-    luaA_push(L,dt_lua_image_t,&imgid);
-    lua_call(L,1,1);
-    lua_pushvalue(L,7);
-    lua_pushvalue(L,9);
-    lua_settable(L,6);
-    lua_pop(L, 2);
-  }
-  lua_pushcfunction(L,lua_update_widgets);
-  dt_lua_gtk_wrap(L);
-  lua_pushlightuserdata(L,self);
-  lua_call(L,1,0);
-  return 0;
-}
-
-static int lua_register_info(lua_State *L)
-{
-  dt_lib_module_t *self = lua_touserdata(L, lua_upvalueindex(1));
-  dt_lua_module_entry_push(L,"lib",self->plugin_name);
-  lua_getuservalue(L,-1);
-  const char* key = luaL_checkstring(L,1);
-  luaL_checktype(L,2,LUA_TFUNCTION);
-  {
-    lua_getfield(L,-1,"callbacks");
-    lua_pushstring(L,key);
-    lua_pushvalue(L,2);
-    lua_settable(L,5);
-    lua_pop(L,1);
-  }
-  {
-    lua_getfield(L,-1,"values");
-    lua_pushstring(L,key);
-    lua_pushstring(L,"-");
-    lua_settable(L,5);
-    lua_pop(L,1);
-  }
-  {
-    GtkLabel *name = GTK_LABEL(gtk_label_new(key));
-    GtkLabel *value = GTK_LABEL(gtk_label_new("-"));
-    gtk_widget_set_name(GTK_WIDGET(value), "brightbg");
-    gtk_label_set_selectable(value, TRUE);
-    gtk_widget_set_halign(GTK_WIDGET(name), GTK_ALIGN_START);
-    gtk_widget_set_halign(GTK_WIDGET(value), GTK_ALIGN_FILL);
-    gtk_label_set_xalign (value, 0.0f);
-    gtk_grid_attach_next_to(GTK_GRID(self->widget), GTK_WIDGET(name), NULL, GTK_POS_BOTTOM, 1, 1);
-    gtk_grid_attach_next_to(GTK_GRID(self->widget), GTK_WIDGET(value), GTK_WIDGET(name), GTK_POS_RIGHT, 1, 1);
-    gtk_widget_show_all(self->widget);
-    {
-      lua_getfield(L,-1,"widgets");
-      lua_pushstring(L,key);
-      lua_pushlightuserdata(L,value);
-      lua_settable(L,5);
-      lua_pop(L,1);
-    }
-  }
-  return 0;
-}
-
-void init(struct dt_lib_module_t *self)
-{
-
-  lua_State *L = darktable.lua_state.state;
-  int my_type = dt_lua_module_entry_get_type(L, "lib", self->plugin_name);
-  lua_pushlightuserdata(L, self);
-  lua_pushcclosure(L, lua_register_info,1);
-  dt_lua_gtk_wrap(L);
-  lua_pushcclosure(L, dt_lua_type_member_common, 1);
-  dt_lua_type_register_const_type(L, my_type, "register_info");
-
-  dt_lua_module_entry_push(L,"lib",self->plugin_name);
-  lua_getuservalue(L,-1);
-  lua_newtable(L);
-  lua_setfield(L,-2,"callbacks");
-  lua_newtable(L);
-  lua_setfield(L,-2,"values");
-  lua_newtable(L);
-  lua_setfield(L,-2,"widgets");
-  lua_pop(L,2);
-}
-#endif
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
 // kate: tab-indents: off; indent-width 2; replace-tabs on; indent-mode cstyle; remove-trailing-spaces modified;

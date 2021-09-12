@@ -26,26 +26,15 @@
  */
 #include "common/dtpthread.h"
 #include <glib.h>
-
+/*
 #ifdef USE_LUA
 #include <lautoc.h>
 #include <lauxlib.h>
 #include <lua.h>
 #include <lualib.h>
 
-/**
-  (0,+1)
-  find or create the global darktable module table and push it on the stack
-  */
 int dt_lua_push_darktable_lib(lua_State *L);
 
-/**
-  (-1,+1)
-  check that the top of the stack is a table, creates or find a subtable named "name",
-  adds it on top of the stack, and remove the previous table
-
-  used to easily do a tree organisation of objects
-*/
 void dt_lua_goto_subtable(lua_State *L, const char *sub_name);
 
 
@@ -53,15 +42,8 @@ void dt_lua_init_lock();
 void dt_lua_lock_internal(const char *function, const char *file, int line, gboolean silent);
 void dt_lua_unlock_internal(const char *function, int line);
 
-#define dt_lua_debug_stack(L) dt_lua_debug_stack_internal(L, __FUNCTION__, __LINE__)
 void dt_lua_debug_stack_internal(lua_State *L, const char *function, int line);
-#define dt_lua_debug_table(L, index) dt_lua_debug_table_internal(L, index, __FUNCTION__, __LINE__)
 void dt_lua_debug_table_internal(lua_State *L, int t, const char *function, int line);
-
-
-#define dt_lua_lock() dt_lua_lock_internal(__FUNCTION__, __FILE__, __LINE__, FALSE)
-#define dt_lua_lock_silent() dt_lua_lock_internal(__FUNCTION__, __FILE__, __LINE__, TRUE)
-#define dt_lua_unlock() dt_lua_unlock_internal( __FUNCTION__, __LINE__) 
 
 typedef struct
 {
@@ -86,6 +68,7 @@ typedef struct
 void dt_lua_redraw_screen();
 
 #else
+*/
 /* defines to easily have a few lua types when lua is not available */
 typedef int lua_State;
 typedef int (*lua_CFunction)(lua_State *L);
@@ -95,7 +78,7 @@ typedef struct
 {
   int unused; // if this is empty clang++ complains that the struct has size 0 in C and size 1 in C++
 } dt_lua_state_t;
-#endif
+
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent

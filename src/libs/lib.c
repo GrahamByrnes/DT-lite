@@ -667,9 +667,6 @@ static int dt_lib_load_module(void *m, const char *libname, const char *plugin_n
   if(module->expandable(module))
     dt_accel_register_lib(module, NC_("accel", "show module"), 0, 0);
 
-#ifdef USE_LUA
-  dt_lua_lib_register(darktable.lua_state.state, module);
-#endif
   if(module->init)
     module->init(module);
 

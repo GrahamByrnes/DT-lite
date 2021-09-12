@@ -118,25 +118,9 @@ static int dt_imageio_load_module_format(dt_imageio_module_format_t *module, con
   if(!g_module_symbol(module->module, "read_image", (gpointer) & (module->read_image)))
     module->read_image = NULL;
 
-#ifdef USE_LUA
-  {
-    char pseudo_type_name[1024];
-    snprintf(pseudo_type_name, sizeof(pseudo_type_name), "dt_imageio_module_format_data_%s",
-             module->plugin_name);
-    luaA_Type my_type
-        = luaA_type_add(darktable.lua_state.state, pseudo_type_name, module->params_size(module));
-    module->parameter_lua_type = dt_lua_init_type_type(darktable.lua_state.state, my_type);
-    luaA_struct_type(darktable.lua_state.state, my_type);
-    dt_lua_register_format_type(darktable.lua_state.state, module, my_type);
-#endif
-    module->init(module);
-#ifdef USE_LUA
-    lua_pushcfunction(darktable.lua_state.state, dt_lua_type_member_luaautoc);
-    dt_lua_type_register_struct_type(darktable.lua_state.state, my_type);
-  }
-#endif
-
+  module->init(module);
   return 0;
+
 error:
   fprintf(stderr, "[imageio_load_module] failed to open format `%s': %s\n", plugin_name, g_module_error());
   if(module->module) g_module_close(module->module);
@@ -257,24 +241,8 @@ static int dt_imageio_load_module_storage(dt_imageio_module_storage_t *module, c
     module->export_dispatched = _default_storage_nop;
   if(!g_module_symbol(module->module, "ask_user_confirmation", (gpointer) & (module->ask_user_confirmation)))
     module->ask_user_confirmation = NULL;
-#ifdef USE_LUA
-  {
-    char pseudo_type_name[1024];
-    snprintf(pseudo_type_name, sizeof(pseudo_type_name), "dt_imageio_module_storage_data_%s",
-             module->plugin_name);
-    luaA_Type my_type
-        = luaA_type_add(darktable.lua_state.state, pseudo_type_name, module->params_size(module));
-    module->parameter_lua_type = dt_lua_init_type_type(darktable.lua_state.state, my_type);
-    luaA_struct_type(darktable.lua_state.state, my_type);
-    dt_lua_register_storage_type(darktable.lua_state.state, module, my_type);
-#endif
-    module->init(module);
-#ifdef USE_LUA
-    lua_pushcfunction(darktable.lua_state.state, dt_lua_type_member_luaautoc);
-    dt_lua_type_register_struct_type(darktable.lua_state.state, my_type);
-  }
-#endif
 
+  module->init(module);
   return 0;
 error:
   fprintf(stderr, "[imageio_load_module] failed to open storage `%s': %s\n", plugin_name, g_module_error());

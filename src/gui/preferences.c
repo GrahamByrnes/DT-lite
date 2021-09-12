@@ -34,9 +34,6 @@
 #include "gui/presets.h"
 #include "libs/lib.h"
 #include "preferences_gen.h"
-#ifdef USE_LUA
-#include "lua/preferences.h"
-#endif
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
 #endif
@@ -594,23 +591,14 @@ void dt_gui_preferences_show()
   init_tab_misc(_preferences_dialog, stack);
   init_tab_accels(stack, search_data);
   init_tab_presets(stack);
-
   //open in the appropriate tab if currently in darkroom or lighttable view
   const gchar *current_view = darktable.view_manager->current_view->name(darktable.view_manager->current_view);
-  if(strcmp(current_view, "darkroom") == 0 || strcmp(current_view, "lighttable") == 0)
-  {
-    gtk_stack_set_visible_child(GTK_STACK(stack), gtk_stack_get_child_by_name(GTK_STACK(stack), current_view));
-  }
 
-#ifdef USE_LUA
-  GtkGrid* lua_grid = init_tab_lua(_preferences_dialog, stack);
-#endif
+  if(strcmp(current_view, "darkroom") == 0 || strcmp(current_view, "lighttable") == 0)
+    gtk_stack_set_visible_child(GTK_STACK(stack), gtk_stack_get_child_by_name(GTK_STACK(stack), current_view));
+
   gtk_widget_show_all(_preferences_dialog);
   (void)gtk_dialog_run(GTK_DIALOG(_preferences_dialog));
-
-#ifdef USE_LUA
-  destroy_tab_lua(lua_grid);
-#endif
 
   g_free(search_data->last_search_term);
   free(search_data);

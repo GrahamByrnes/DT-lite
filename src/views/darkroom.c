@@ -46,12 +46,9 @@
 #include "libs/colorpicker.h"
 #include "views/view.h"
 #include "views/view_api.h"
+
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
-#endif
-
-#ifdef USE_LUA
-#include "lua/image.h"
 #endif
 
 #include <gdk/gdkkeysyms.h>
@@ -85,43 +82,10 @@ const char *name(const dt_view_t *self)
   return _("darkroom");
 }
 
-#ifdef USE_LUA
-
-static int display_image_cb(lua_State *L)
-{
-  dt_develop_t *dev = darktable.develop;
-  dt_lua_image_t imgid = -1;
-  
-  if(luaL_testudata(L, 1, "dt_lua_image_t"))
-  {
-    luaA_to(L, dt_lua_image_t, &imgid, 1);
-    dt_dev_change_image(dev, imgid);
-  }
-  else
-    // ensure the image infos in db is up to date
-    dt_dev_write_history(dev);
-
-  luaA_push(L, dt_lua_image_t, &dev->image_storage.id);
-  return 1;
-}
-
-#endif
-
-
 void init(dt_view_t *self)
 {
   self->data = malloc(sizeof(dt_develop_t));
   dt_dev_init((dt_develop_t *)self->data, 1);
-
-#ifdef USE_LUA
-  lua_State *L = darktable.lua_state.state;
-  const int my_type = dt_lua_module_entry_get_type(L, "view", self->module_name);
-  lua_pushlightuserdata(L, self);
-  lua_pushcclosure(L, display_image_cb, 1);
-  dt_lua_gtk_wrap(L);
-  lua_pushcclosure(L, dt_lua_type_member_common, 1);
-  dt_lua_type_register_const_type(L, my_type, "display_image");
-#endif
 }
 
 uint32_t view(const dt_view_t *self)

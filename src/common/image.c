@@ -39,9 +39,6 @@
 #include "control/jobs.h"
 #include "develop/lightroom.h"
 #include "win/filepath.h"
-#ifdef USE_LUA
-#include "lua/image.h"
-#endif
 #include <assert.h>
 #include <math.h>
 #include <sqlite3.h>
@@ -1269,19 +1266,6 @@ static uint32_t _image_import_internal(const int32_t film_id, const char *filena
   g_free(basename);
   g_free(sql_pattern);
   g_free(normalized_filename);
-
-#ifdef USE_LUA
-  //Synchronous calling of lua post-import-image events
-  if(lua_locking)
-    dt_lua_lock();
-
-  lua_State *L = darktable.lua_state.state;
-  luaA_push(L, dt_lua_image_t, &id);
-  dt_lua_event_trigger(L, "post-import-image", 1);
-
-  if(lua_locking)
-    dt_lua_unlock();
-#endif
 
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_IMAGE_IMPORT, id);
   // the following line would look logical with new_tags_set being the return value

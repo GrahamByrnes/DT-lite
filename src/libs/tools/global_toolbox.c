@@ -113,13 +113,8 @@ static void _overlays_toggle_button(GtkWidget *w, gpointer user_data)
   gtk_widget_set_sensitive(d->over_timeout, (over == DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK));
 
   // we don't hide the popup in case of block overlay, as the user may want to tweak the duration
-  if(over != DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK) gtk_widget_hide(d->over_popup);
-
-#ifdef USE_LUA
-  gboolean show = (over == DT_THUMBNAIL_OVERLAYS_ALWAYS_NORMAL || over == DT_THUMBNAIL_OVERLAYS_ALWAYS_EXTENDED);
-  dt_lua_async_call_alien(dt_lua_event_trigger_wrapper, 0, NULL, NULL, LUA_ASYNC_TYPENAME, "const char*",
-                          "global_toolbox-overlay_toggle", LUA_ASYNC_TYPENAME, "bool", show, LUA_ASYNC_DONE);
-#endif // USE_LUA
+  if(over != DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK)
+    gtk_widget_hide(d->over_popup);
 }
 
 static void _overlays_toggle_culling_button(GtkWidget *w, gpointer user_data)
@@ -151,12 +146,6 @@ static void _overlays_toggle_culling_button(GtkWidget *w, gpointer user_data)
 
   // we don't hide the popup in case of block overlay, as the user may want to tweak the duration
   if(over != DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK) gtk_widget_hide(d->over_popup);
-
-#ifdef USE_LUA
-  gboolean show = (over == DT_THUMBNAIL_OVERLAYS_ALWAYS_NORMAL || over == DT_THUMBNAIL_OVERLAYS_ALWAYS_EXTENDED);
-  dt_lua_async_call_alien(dt_lua_event_trigger_wrapper, 0, NULL, NULL, LUA_ASYNC_TYPENAME, "const char*",
-                          "global_toolbox-overlay_toggle", LUA_ASYNC_TYPENAME, "bool", show, LUA_ASYNC_DONE);
-#endif // USE_LUA
 }
 
 static void _overlays_timeout_changed(GtkWidget *w, gpointer user_data)
@@ -523,14 +512,6 @@ static void _lib_filter_grouping_button_clicked(GtkWidget *widget, gpointer user
   dt_conf_set_bool("ui_last/grouping", darktable.gui->grouping);
   darktable.gui->expanded_group_id = -1;
   dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD, NULL);
-
-#ifdef USE_LUA
-  dt_lua_async_call_alien(dt_lua_event_trigger_wrapper,
-      0,NULL,NULL,
-      LUA_ASYNC_TYPENAME,"const char*","global_toolbox-grouping_toggle",
-      LUA_ASYNC_TYPENAME,"bool",darktable.gui->grouping,
-      LUA_ASYNC_DONE);
-#endif // USE_LUA
 }
 
 // TODO: this doesn't work for all widgets. the reason being that the GtkEventBox we put libs/iops into catches events.
@@ -538,13 +519,10 @@ static char *get_help_url(GtkWidget *widget)
 {
   while(widget)
   {
-    // if the widget doesn't have a help url set go up the widget hierarchy to find a parent that has an url
     gchar *help_url = g_object_get_data(G_OBJECT(widget), "dt-help-url");
 
     if(help_url)
       return help_url;
-
-    // TODO: shall we cross from libs/iops to the core gui? if not, here is the place to break out of the loop
 
     widget = gtk_widget_get_parent(widget);
   }
@@ -733,71 +711,6 @@ void connect_key_accels(dt_lib_module_t *self)
                        g_cclosure_new(G_CALLBACK(_overlays_accels_callback),
                                       GINT_TO_POINTER(DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK), NULL));
 }
-
-#ifdef USE_LUA
-
-static int grouping_member(lua_State *L)
-{
-  dt_lib_module_t *self = *(dt_lib_module_t **)lua_touserdata(L, 1);
-  dt_lib_tool_preferences_t *d = (dt_lib_tool_preferences_t *)self->data;
-  if(lua_gettop(L) != 3)
-  {
-    lua_pushboolean(L, darktable.gui->grouping);
-    return 1;
-  }
-  else
-  {
-    gboolean value = lua_toboolean(L, 3);
-    if(darktable.gui->grouping != value)
-    {
-      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(d->grouping_button), value);
-    }
-  }
-  return 0;
-}
-
-static int show_overlays_member(lua_State *L)
-{
-  dt_lib_module_t *self = *(dt_lib_module_t **)lua_touserdata(L, 1);
-  dt_lib_tool_preferences_t *d = (dt_lib_tool_preferences_t *)self->data;
-  if(lua_gettop(L) != 3)
-  {
-    lua_pushboolean(L, darktable.gui->show_overlays);
-    return 1;
-  }
-  else
-  {
-    gboolean value = lua_toboolean(L, 3);
-    if(darktable.gui->show_overlays != value)
-    {
-      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(d->overlays_button), value);
-    }
-  }
-  return 0;
-}
-
-void init(struct dt_lib_module_t *self)
-{
-  lua_State *L = darktable.lua_state.state;
-  int my_type = dt_lua_module_entry_get_type(L, "lib", self->plugin_name);
-
-  lua_pushcfunction(L, grouping_member);
-  dt_lua_gtk_wrap(L);
-  dt_lua_type_register_type(L, my_type, "grouping");
-  lua_pushcfunction(L, show_overlays_member);
-  dt_lua_gtk_wrap(L);
-  dt_lua_type_register_type(L, my_type, "show_overlays");
-
-  lua_pushcfunction(L, dt_lua_event_multiinstance_register);
-  lua_pushcfunction(L, dt_lua_event_multiinstance_trigger);
-  dt_lua_event_add(L, "global_toolbox-grouping_toggle");
-
-  lua_pushcfunction(L, dt_lua_event_multiinstance_register);
-  lua_pushcfunction(L, dt_lua_event_multiinstance_trigger);
-  dt_lua_event_add(L, "global_toolbox-overlay_toggle");
-}
-
-#endif // USE_LUA
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent

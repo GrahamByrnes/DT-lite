@@ -223,9 +223,6 @@ static int dt_view_load_module(void *v, const char *libname, const char *module_
 
   if(!strcmp(view->module_name, "darkroom"))
     darktable.develop = (dt_develop_t *)view->data;
-#ifdef USE_LUA
-  dt_lua_register_view(darktable.lua_state.state, view);
-#endif
 
   if(view->init)
     view->init(view);

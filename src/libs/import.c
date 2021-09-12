@@ -46,17 +46,10 @@
 #include <librsvg/rsvg-cairo.h>
 #endif
 
-#ifdef USE_LUA
-#include "lua/widget/widget.h"
-#endif
 DT_MODULE(1)
-
 
 typedef struct dt_lib_import_t
 {
-#ifdef HAVE_GPHOTO2
-  dt_camctl_listener_t camctl_listener;
-#endif
   GtkWidget *frame;
   GtkWidget *recursive;
   GtkWidget *ignore_jpeg;
@@ -68,9 +61,6 @@ typedef struct dt_lib_import_t
   GtkButton *tethered_shoot;
 
   GtkBox *devices;
-#ifdef USE_LUA
-  GtkWidget *extra_lua_widgets;
-#endif
 } dt_lib_import_t;
 
 const char *name(dt_lib_module_t *self)
@@ -94,24 +84,6 @@ int position()
 {
   return 999;
 }
-
-#ifdef USE_LUA
-static void reset_child(GtkWidget* child, gpointer user_data)
-{
-  dt_lua_async_call_alien(dt_lua_widget_trigger_callback,
-      0,NULL,NULL,
-      LUA_ASYNC_TYPENAME,"lua_widget",child, // the GtkWidget is an alias for the lua_widget
-      LUA_ASYNC_TYPENAME,"const char*","reset",
-      LUA_ASYNC_DONE);
-}
-
-// remove the extra portion from the filechooser before destroying it
-static void detach_lua_widgets(GtkWidget *extra_lua_widgets)
-{
-  GtkWidget *parent = gtk_widget_get_parent(extra_lua_widgets);
-  gtk_container_remove(GTK_CONTAINER(parent), extra_lua_widgets);
-}
-#endif
 
 static void _check_button_callback(GtkWidget *widget, gpointer data)
 {
@@ -162,12 +134,6 @@ static GtkWidget *_lib_import_get_extra_widget(dt_lib_import_t *d, dt_import_met
   metadata->box = extra;
   dt_import_metadata_dialog_new(metadata);
   gtk_widget_show_all(frame);
-
-#ifdef USE_LUA
-  gtk_box_pack_start(GTK_BOX(extra),d->extra_lua_widgets , FALSE, FALSE, 0);
-  gtk_container_foreach(GTK_CONTAINER(d->extra_lua_widgets),reset_child,NULL);
-#endif
-
   return frame;
 }
 
@@ -401,10 +367,6 @@ static void _lib_import_single_image_callback(GtkWidget *widget, dt_lib_import_t
     }
   }
 
-#ifdef USE_LUA
-  detach_lua_widgets(d->extra_lua_widgets);
-#endif
-
   gtk_widget_destroy(d->frame);
   gtk_widget_destroy(filechooser);
   gtk_widget_queue_draw(dt_ui_center(darktable.gui->ui));
@@ -476,39 +438,10 @@ static void _lib_import_folder_callback(GtkWidget *widget, dt_lib_module_t* self
     g_slist_free(list);
   }
 
-#ifdef USE_LUA
-  detach_lua_widgets(d->extra_lua_widgets);
-#endif
-
   gtk_widget_destroy(d->frame);
   gtk_widget_destroy(filechooser);
   gtk_widget_queue_draw(dt_ui_center(darktable.gui->ui));
 }
-
-#ifdef USE_LUA
-static int lua_register_widget(lua_State *L)
-{
-  dt_lib_module_t *self = lua_touserdata(L, lua_upvalueindex(1));
-  dt_lib_import_t *d = (dt_lib_import_t *)self->data;
-  lua_widget widget;
-  luaA_to(L,lua_widget,&widget,1);
-  dt_lua_widget_bind(L,widget);
-  gtk_box_pack_start(GTK_BOX(d->extra_lua_widgets),widget->widget, TRUE, TRUE, 0);
-  return 0;
-}
-
-
-void init(dt_lib_module_t *self)
-{
-  lua_State *L = darktable.lua_state.state;
-  int my_type = dt_lua_module_entry_get_type(L, "lib", self->plugin_name);
-  lua_pushlightuserdata(L,self);
-  lua_pushcclosure(L, lua_register_widget,1);
-  dt_lua_gtk_wrap(L);
-  lua_pushcclosure(L, dt_lua_type_member_common, 1);
-  dt_lua_type_register_const_type(L, my_type, "register_widget");
-}
-#endif
 
 void gui_init(dt_lib_module_t *self)
 {
@@ -541,12 +474,6 @@ void gui_init(dt_lib_module_t *self)
   gtk_box_pack_start(GTK_BOX(hbox), widget, TRUE, TRUE, 0);
   g_signal_connect(G_OBJECT(widget), "clicked", G_CALLBACK(_lib_import_folder_callback), self);
   gtk_box_pack_start(GTK_BOX(self->widget), hbox, TRUE, TRUE, 0);
-
-#ifdef USE_LUA
-  // initialize the lua area  and make sure it survives its parent's destruction
-  d->extra_lua_widgets = gtk_box_new(GTK_ORIENTATION_VERTICAL,5);
-  g_object_ref_sink(d->extra_lua_widgets);
-#endif
 }
 
 void gui_cleanup(dt_lib_module_t *self)

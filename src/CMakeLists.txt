@@ -290,16 +290,6 @@ if(LibSoup2_FOUND)
   list(APPEND SOURCES "common/http_server.c")
 endif(LibSoup2_FOUND)
 
-if(USE_OPENEXR)
-  find_package(OpenEXR)
-  if(OpenEXR_FOUND)
-    include_directories(SYSTEM ${OpenEXR_INCLUDE_DIRS})
-    list(APPEND LIBS ${OpenEXR_LIBRARIES})
-    add_definitions(${OpenEXR_DEFINITIONS})
-    list(APPEND SOURCES "common/imageio_exr.cc")
-  endif(OpenEXR_FOUND)
-endif(USE_OPENEXR)
-
 if(USE_WEBP)
   find_package(WebP 0.3.0)
   if(WebP_FOUND)
@@ -456,11 +446,6 @@ if(LensFun_FOUND)
   add_definitions("-DHAVE_LENSFUN")
 endif(LensFun_FOUND)
 
-if(OpenEXR_FOUND)
-  add_definitions("-DHAVE_OPENEXR")
-  set(DT_SUPPORTED_EXTENSIONS ${DT_SUPPORTED_EXTENSIONS} j2c j2k jp2 jpc CACHE INTERNAL "")
-endif(OpenEXR_FOUND)
-
 # Check for __builtin_cpu_supports here due to a bug in clang/llvm. LLVM uses
 # libgcc to provide the symbols, so if clang wasn't compiled with libgcc, the
 # compiler will say it's available; however the linker cannot find the symbols.
@@ -560,85 +545,8 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.h" "${CMAKE_CURRENT_BIN
 #
 # Build external deps
 #
-if(USE_LUA)
-  find_package(Lua53 5.3)
-  if(Lua53_FOUND)
-    message(STATUS "Lua support: Enabled")
-    include_directories(SYSTEM ${Lua53_INCLUDE_DIRS})
-    list(APPEND LIBS ${Lua53_LDFLAGS})
-  else()
-    if(DONT_USE_INTERNAL_LUA)
-      message(STATUS "Lua support: System library for lua 5.3 not found (to use darktable's version use -DDONT_USE_INTERNAL_LUA=Off)")
-      set(USE_LUA OFF)
-    else(DONT_USE_INTERNAL_LUA)
-      message(STATUS "Lua support: System library not found (using darktable's version)")
-      include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lua/src)
-      add_subdirectory(external/lua)
-      list(APPEND LIBS lua)
-    endif(DONT_USE_INTERNAL_LUA)
-  endif(Lua53_FOUND)
 
-  if(USE_LUA)
-    add_definitions("-DUSE_LUA")
-    FILE(GLOB SOURCE_FILES_LUA
-      "lua/cairo.c"
-      "lua/call.c"
-      "lua/configuration.c"
-      "lua/database.c"
-      "lua/events.c"
-      "lua/film.c"
-      "lua/format.c"
-      "lua/gettext.c"
-      "lua/glist.c"
-      "lua/gui.c"
-      "lua/guides.c"
-      "lua/image.c"
-      "lua/init.c"
-      "lua/lib.c"
-      "lua/lua.c"
-      "lua/lualib.c"
-      "lua/luastorage.c"
-      "lua/modules.c"
-      "lua/preferences.c"
-      "lua/print.c"
-      "lua/storage.c"
-      "lua/styles.c"
-      "lua/tags.c"
-      "lua/types.c"
-      "lua/view.c"
-      "lua/widget/widget.c"
-      "lua/widget/box.c"
-      "lua/widget/button.c"
-      "lua/widget/check_button.c"
-      "lua/widget/combobox.c"
-      "lua/widget/container.c"
-      "lua/widget/entry.c"
-      "lua/widget/file_chooser.c"
-      "lua/widget/label.c"
-      "lua/widget/section_label.c"
-      "lua/widget/separator.c"
-      "lua/widget/slider.c"
-      "lua/widget/stack.c"
-      "lua/widget/text_view.c"
-      )
-    set(SOURCES ${SOURCES} ${SOURCE_FILES_LUA})
-  endif(USE_LUA)
-else(USE_LUA)
-  message(STATUS "Lua support: Disabled")
-endif(USE_LUA)
-
-if(USE_LUA)
-  if(NOT Lua53_FOUND)
-    list(APPEND LIB_DEPS lua) # 2nd half of the uglyness :/
-  endif(NOT Lua53_FOUND)
-  # liblautoc for lua automated interface generation
-  add_library(lautoc_static STATIC IMPORTED)
-  set_target_properties(lautoc_static PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/external/LuaAutoC/liblautoc.a POSITION_INDEPENDENT_CODE True)
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/LuaAutoC/)
-  add_subdirectory(external/LuaAutoC)
-  list(APPEND LIB_DEPS lautoc)
-  list(APPEND STATIC_LIBS lautoc_static)
-endif(USE_LUA)
+message(STATUS "Lua support: Disabled")
 
 find_package(Pugixml 1.2 REQUIRED)
 include_directories(SYSTEM ${Pugixml_INCLUDE_DIRS})
@@ -652,30 +560,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL
   # do not error out on "loop not vectorized" clang OpenMP warnings
   add_definitions("-Wno-error=pass-failed")
 endif()
-
-# osm gps map library
-if(USE_MAP)
-  find_package(OSMGpsMap)
-  if(OSMGpsMap_FOUND)
-    message(STATUS "Map mode: enabled")
-    add_definitions("-DHAVE_MAP")
-    if(NOT OSMGpsMap_VERSION VERSION_LESS 1.1.0)
-      add_definitions("-DHAVE_OSMGPSMAP_110_OR_NEWER")
-    endif()
-    if(OSMGpsMap_VERSION VERSION_GREATER 1.1.0)
-      add_definitions("-DHAVE_OSMGPSMAP_NEWER_THAN_110")
-    endif()
-    include_directories(SYSTEM ${OSMGpsMap_INCLUDE_DIRS})
-    list(APPEND LIBS ${OSMGpsMap_LIBRARIES})
-    add_definitions(${OSMGpsMap_DEFINITIONS})
-  else(OSMGpsMap_FOUND)
-    set(USE_MAP OFF)
-    message(STATUS "Map mode: disabled, please install libosmgpsmap")
-  endif(OSMGpsMap_FOUND)
-
-else(USE_MAP)
-  message(STATUS "Map mode: disabled")
-endif(USE_MAP)
 
 # libcolord-gtk:
 if(USE_COLORD)

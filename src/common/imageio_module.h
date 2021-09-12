@@ -24,15 +24,6 @@
 #include <gmodule.h>
 #include <gtk/gtk.h>
 #include <inttypes.h>
-#ifdef USE_LUA
-#include "lua/call.h"
-#include "lua/events.h"
-#include "lua/format.h"
-#include "lua/modules.h"
-#include "lua/storage.h"
-#include "lua/types.h"
-#endif
-
 
 /** Flag for the format modules */
 typedef enum dt_imageio_format_flags_t

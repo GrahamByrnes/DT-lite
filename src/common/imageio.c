@@ -26,9 +26,6 @@
 #include "common/image_cache.h"
 #include "common/imageio.h"
 #include "common/imageio_module.h"
-#ifdef HAVE_OPENEXR
-#include "common/imageio_exr.h"
-#endif
 #ifdef HAVE_OPENJPEG
 #include "common/imageio_j2k.h"
 #endif
@@ -69,10 +66,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-
-#ifdef USE_LUA
-#include "lua/image.h"
-#endif
 
 // load a full-res thumbnail:
 int dt_imageio_large_thumbnail(const char *filename, uint8_t **buffer, int32_t *width, int32_t *height,
@@ -394,11 +387,12 @@ dt_imageio_retval_t dt_imageio_open_hdr(dt_image_t *img, const char *filename, d
   img->buf_dsc.cst = iop_cs_rgb;
   dt_imageio_retval_t ret;
   dt_image_loader_t loader;
+  /*
 #ifdef HAVE_OPENEXR
   loader = LOADER_EXR;
   ret = dt_imageio_open_exr(img, filename, buf);
   if(ret == DT_IMAGEIO_OK || ret == DT_IMAGEIO_CACHE_FULL) goto return_label;
-#endif
+#endif*/
   loader = LOADER_RGBE;
   ret = dt_imageio_open_rgbe(img, filename, buf);
   if(ret == DT_IMAGEIO_OK || ret == DT_IMAGEIO_CACHE_FULL) goto return_label;
@@ -529,9 +523,10 @@ int dt_imageio_is_hdr(const char *filename)
   while(c > filename && *c != '.') c--;
   if(*c == '.')
     if(!strcasecmp(c, ".pfm") || !strcasecmp(c, ".hdr")
+/*
 #ifdef HAVE_OPENEXR
        || !strcasecmp(c, ".exr")
-#endif
+#endif*/
 #ifdef HAVE_LIBAVIF
        || !strcasecmp(c, ".avif")
 #endif
@@ -995,28 +990,9 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     // no need to cancel the export if this fail
 
   if(!thumbnail_export && strcmp(format->mime(format_params), "memory")
-    && !(format->flags(format_params) & FORMAT_FLAGS_NO_TMPFILE))
-  {
-#ifdef USE_LUA
-    //Synchronous calling of lua intermediate-export-image events
-    dt_lua_lock();
-    lua_State *L = darktable.lua_state.state;
-    luaA_push(L, dt_lua_image_t, &imgid);
-    lua_pushstring(L, filename);
-    luaA_push_type(L, format->parameter_lua_type, format_params);
-
-    if (storage)
-      luaA_push_type(L, storage->parameter_lua_type, storage_params);
-    else
-      lua_pushnil(L);
-
-    dt_lua_event_trigger(L, "intermediate-export-image", 4);
-    dt_lua_unlock();
-#endif
-
+                       && !(format->flags(format_params) & FORMAT_FLAGS_NO_TMPFILE))
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_IMAGE_EXPORT_TMPFILE, imgid, filename, format,
                             format_params, storage, storage_params);
-  }
 
   return res;
 

@@ -23,13 +23,6 @@
 #include "views/view.h"
 #include <gmodule.h>
 #include <gtk/gtk.h>
-#ifdef USE_LUA
-#include "lua/call.h"
-#include "lua/events.h"
-#include "lua/lib.h"
-#include "lua/modules.h"
-#include "lua/types.h"
-#endif
 
 struct dt_lib_module_t;
 struct dt_colorpicker_sample_t;
