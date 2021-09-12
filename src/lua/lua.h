@@ -18,58 +18,10 @@
 
 #pragma once
 
-/* this file can safely be included when lua is disabled */
-
-
-/* these include are out of the ifdef to avoid compile errors when compiling with/without lua
-   users that accidentally use it won't be affected by the ifdef USE_LUA
- */
 #include "common/dtpthread.h"
 #include <glib.h>
-/*
-#ifdef USE_LUA
-#include <lautoc.h>
-#include <lauxlib.h>
-#include <lua.h>
-#include <lualib.h>
 
-int dt_lua_push_darktable_lib(lua_State *L);
-
-void dt_lua_goto_subtable(lua_State *L, const char *sub_name);
-
-
-void dt_lua_init_lock();
-void dt_lua_lock_internal(const char *function, const char *file, int line, gboolean silent);
-void dt_lua_unlock_internal(const char *function, int line);
-
-void dt_lua_debug_stack_internal(lua_State *L, const char *function, int line);
-void dt_lua_debug_table_internal(lua_State *L, int t, const char *function, int line);
-
-typedef struct
-{
-  lua_State *state;                  // main lua context
-
-  dt_pthread_mutex_t mutex;          // mutex protecting the lua condition variable
-  pthread_cond_t cond;               // condition variable to wait for the lua lock
-  bool exec_lock;                    // true if some lua code is running. this is logically a mutex
-
-  bool ending;                       // true if we are in the process of terminating DT
-
-  GMainLoop *loop;                   // loop running the lua context
-  GMainContext *context;             // the lua context responsible for dispatching tasks
-  GThreadPool *pool;                 // pool of threads to run lua tasks on (should be one or two at most, unless lot of blocking lua threads
-  GAsyncQueue * stacked_job_queue;   // queue of jobs whose arguments are on a lua stack
-  GAsyncQueue * alien_job_queue;     // queue of jobs coming from C, args are passed in a glist
-  GAsyncQueue * string_job_queue;    // queue of jobs as lua expressions, passed with args as a string
-
-} dt_lua_state_t;
-
-
-void dt_lua_redraw_screen();
-
-#else
-*/
-/* defines to easily have a few lua types when lua is not available */
+// defines to easily have a few lua types when lua is not available 
 typedef int lua_State;
 typedef int (*lua_CFunction)(lua_State *L);
 typedef int luaA_Type;
@@ -78,7 +30,6 @@ typedef struct
 {
   int unused; // if this is empty clang++ complains that the struct has size 0 in C and size 1 in C++
 } dt_lua_state_t;
-
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent

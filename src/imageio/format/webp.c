@@ -39,7 +39,6 @@ typedef enum
   webp_lossless = 1
 } comp_type_t;
 
-
 typedef enum
 {
   hint_default,
@@ -47,7 +46,6 @@ typedef enum
   hint_photo,
   hint_graphic
 } hint_t;
-
 
 typedef struct dt_imageio_webp_t
 {
@@ -89,9 +87,8 @@ static const char *const EncoderError[] = {
 const char *get_error_str(int err)
 {
   if (err < 0 || err >= sizeof(EncoderError)/sizeof(EncoderError[0]))
-  {
     return "unknown error (err=%d). consider filling a bug to DT to update the webp error list";
-  }
+
   return EncoderError[err];
 }
 
@@ -116,15 +113,14 @@ int write_image(dt_imageio_module_data_t *webp, const char *filename, const void
   FILE *out = NULL;
   WebPPicture pic;
   int pic_init = 0;
-
   dt_imageio_webp_t *webp_data = (dt_imageio_webp_t *)webp;
   out = g_fopen(filename, "w+b");
+
   if (!out)
   {
     fprintf(stderr, "[webp export] error saving to %s\n", filename);
     goto error;
   }
-
   // Create, configure and validate a WebPConfig instance
   WebPConfig config;
   if(!WebPConfigPreset(&config, webp_data->hint, (float)webp_data->quality)) goto error;
@@ -138,6 +134,7 @@ int write_image(dt_imageio_module_data_t *webp, const char *filename, const void
   // TODO(jinxos): these values should be adjusted as needed and ideally determined at runtime.
   config.segments = 4;
   config.partition_limit = 70;
+
   if(!WebPValidateConfig(&config))
   {
     fprintf(stderr, "[webp export] error validating encoder configuration\n");
@@ -145,6 +142,7 @@ int write_image(dt_imageio_module_data_t *webp, const char *filename, const void
   }
 
   if(!WebPPictureInit(&pic)) goto error;
+
   pic_init = 1;
   pic.width = webp_data->global.width;
   pic.height = webp_data->global.height;
@@ -153,6 +151,7 @@ int write_image(dt_imageio_module_data_t *webp, const char *filename, const void
   pic.custom_ptr = out;
 
   WebPPictureImportRGBX(&pic, (const uint8_t *)in_tmp, webp_data->global.width * 4);
+
   if(!config.lossless)
   {
     // webp is more efficient at coding YUV images, as we go lossy
@@ -225,17 +224,21 @@ void *get_params(dt_imageio_module_format_t *self)
 {
   dt_imageio_webp_t *d = (dt_imageio_webp_t *)calloc(1, sizeof(dt_imageio_webp_t));
   d->comp_type = dt_conf_get_int("plugins/imageio/format/webp/comp_type");
+
   if(d->comp_type == webp_lossy)
     d->quality = dt_conf_get_int("plugins/imageio/format/webp/quality");
   else
     d->quality = 100;
+
   d->hint = dt_conf_get_int("plugins/imageio/format/webp/hint");
   return d;
 }
 
 int set_params(dt_imageio_module_format_t *self, const void *params, const int size)
 {
-  if(size != self->params_size(self)) return 1;
+  if(size != self->params_size(self))
+    return 1;
+
   const dt_imageio_webp_t *d = (dt_imageio_webp_t *)params;
   dt_imageio_webp_gui_data_t *g = (dt_imageio_webp_gui_data_t *)self->gui_data;
   dt_bauhaus_combobox_set(g->compression, d->comp_type);

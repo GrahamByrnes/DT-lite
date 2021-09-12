@@ -174,7 +174,6 @@ endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/external)
-#include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/external/OpenCL)
 
 # initial compiler flags
 add_definitions("-DHAVE_CONFIG_H")
