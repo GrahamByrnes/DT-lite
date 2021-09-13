@@ -737,24 +737,6 @@
     <shortdescription>pattern for the thumbnail tooltip (empty to disable)</shortdescription>
     <longdescription>see manual to know all the tags you can use.</longdescription>
   </dtconfig>
-  <dtconfig prefs="lighttable">
-    <name>ui/performance_slideshow</name>
-    <type>bool</type>
-    <default>false</default>
-    <shortdescription>performance mode for thumbs, previews</shortdescription>
-  </dtconfig>
-  <dtconfig prefs="lighttable" section="slideshow">
-    <name>ui/performance_slideshow</name>
-    <type>bool</type>
-    <default>false</default>
-    <shortdescription>performance mode for slideshow</shortdescription>
-  </dtconfig>
-  <dtconfig prefs="lighttable" section="slideshow">
-    <name>slideshow_delay</name>
-    <type>int</type>
-    <default>5</default>
-    <shortdescription>waiting time between each picture in slideshow</shortdescription>
-  </dtconfig>
   <dtconfig prefs="darkroom">
     <name>channel_display</name>
     <type>

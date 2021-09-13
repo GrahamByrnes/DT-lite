@@ -295,8 +295,8 @@ static void rcd_ppg_border(float *const out, const float *const in, const int wi
 #ifdef _OPENMP
   #pragma omp declare simd aligned(in, out)
 #endif
-static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict out, const float *const restrict in, dt_iop_roi_t *const roi_out,
-                                   const dt_iop_roi_t *const roi_in, const uint32_t filters)
+static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict out, const float *const restrict in,
+                         dt_iop_roi_t *const roi_out, const dt_iop_roi_t *const roi_in, const uint32_t filters)
 {
   const int width = roi_in->width;
   const int height = roi_in->height;
@@ -417,7 +417,8 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
         // STEP 3: Populate the green channel
         // Step 3.1: Populate the green channel at blue and red CFA positions
         for(int row = 4; row < tileRows - 4; row++)
-          for(int col = 4 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, lpindx = indx / 2; col < tileCols - 4; col += 2, indx += 2, lpindx++)
+          for(int col = 4 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, lpindx = indx / 2; 
+              col < tileCols - 4; col += 2, indx += 2, lpindx++)
           {
             const float cfai = cfa[indx];
 
@@ -445,8 +446,10 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
             // G@B and G@R interpolation
             // Refined vertical and horizontal local discrimination
             const float VH_Central_Value = VH_Dir[indx];
-            const float VH_Neighbourhood_Value = 0.25f * (VH_Dir[indx - w1 - 1] + VH_Dir[indx - w1 + 1] + VH_Dir[indx + w1 - 1] + VH_Dir[indx + w1 + 1]);
-            const float VH_Disc = (fabs(0.5f - VH_Central_Value) < fabs(0.5f - VH_Neighbourhood_Value)) ? VH_Neighbourhood_Value : VH_Central_Value;
+            const float VH_Neighbourhood_Value = 0.25f * (VH_Dir[indx - w1 - 1] + VH_Dir[indx - w1 + 1]
+                                                       + VH_Dir[indx + w1 - 1] + VH_Dir[indx + w1 + 1]);
+            const float VH_Disc = (fabs(0.5f - VH_Central_Value) < fabs(0.5f - VH_Neighbourhood_Value)) 
+                                        ? VH_Neighbourhood_Value : VH_Central_Value;
 
             rgb[1][indx] = intp(VH_Disc, H_Est, V_Est);
           }
@@ -466,7 +469,8 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
         // Step 4.1: Obtain the P/Q diagonals directional discrimination strength
         for(int row = 4; row < tileRows - 4; row++)
           for(int col = 4 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, indx2 = indx / 2, 
-                        indx3 = (indx - w1 - 1) / 2, indx4 = (indx + w1 - 1) / 2; col < tileCols - 4; col += 2, indx += 2, indx2++, indx3++, indx4++ )
+                        indx3 = (indx - w1 - 1) / 2, indx4 = (indx + w1 - 1) / 2; col < tileCols - 4;
+                         col += 2, indx += 2, indx2++, indx3++, indx4++ )
           {
             const float P_Stat = fmaxf(epssq, P_CDiff_Hpf[indx3]     + P_CDiff_Hpf[indx2] + P_CDiff_Hpf[indx4 + 1]);
             const float Q_Stat = fmaxf(epssq, Q_CDiff_Hpf[indx3 + 1] + Q_CDiff_Hpf[indx2] + Q_CDiff_Hpf[indx4]);
@@ -476,8 +480,8 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
         // Step 4.2: Populate the red and blue channels at blue and red CFA positions
         for(int row = 4; row < tileRows - 4; row++)
           for(int col = 4 + (FC(row, 0, filters) & 1), indx = row * RCD_TILESIZE + col, c = 2 - FC(row, col, filters), 
-                             pqindx = indx / 2, pqindx2 = (indx - w1 - 1) / 2, pqindx3 = (indx + w1 - 1) / 2; col < tileCols - 4; col += 2,
-                             indx += 2, pqindx++, pqindx2++, pqindx3++)
+                             pqindx = indx / 2, pqindx2 = (indx - w1 - 1) / 2, pqindx3 = (indx + w1 - 1) / 2;
+                             col < tileCols - 4; col += 2, indx += 2, pqindx++, pqindx2++, pqindx3++)
           {
             // Refined P/Q diagonal local discrimination
             const float PQ_Central_Value   = PQ_Dir[pqindx];
@@ -486,10 +490,14 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
             const float PQ_Disc = (fabs(0.5f - PQ_Central_Value) < fabs(0.5f - PQ_Neighbourhood_Value)) ? PQ_Neighbourhood_Value : PQ_Central_Value;
 
             // Diagonal gradients
-            const float NW_Grad = eps + fabs(rgb[c][indx - w1 - 1] - rgb[c][indx + w1 + 1]) + fabs(rgb[c][indx - w1 - 1] - rgb[c][indx - w3 - 3]) + fabs(rgb[1][indx] - rgb[1][indx - w2 - 2]);
-            const float NE_Grad = eps + fabs(rgb[c][indx - w1 + 1] - rgb[c][indx + w1 - 1]) + fabs(rgb[c][indx - w1 + 1] - rgb[c][indx - w3 + 3]) + fabs(rgb[1][indx] - rgb[1][indx - w2 + 2]);
-            const float SW_Grad = eps + fabs(rgb[c][indx - w1 + 1] - rgb[c][indx + w1 - 1]) + fabs(rgb[c][indx + w1 - 1] - rgb[c][indx + w3 - 3]) + fabs(rgb[1][indx] - rgb[1][indx + w2 - 2]);
-            const float SE_Grad = eps + fabs(rgb[c][indx - w1 - 1] - rgb[c][indx + w1 + 1]) + fabs(rgb[c][indx + w1 + 1] - rgb[c][indx + w3 + 3]) + fabs(rgb[1][indx] - rgb[1][indx + w2 + 2]);
+            const float NW_Grad = eps + fabs(rgb[c][indx - w1 - 1] - rgb[c][indx + w1 + 1]) + fabs(rgb[c][indx - w1 - 1]
+                                  - rgb[c][indx - w3 - 3]) + fabs(rgb[1][indx] - rgb[1][indx - w2 - 2]);
+            const float NE_Grad = eps + fabs(rgb[c][indx - w1 + 1] - rgb[c][indx + w1 - 1]) + fabs(rgb[c][indx - w1 + 1]
+                                  - rgb[c][indx - w3 + 3]) + fabs(rgb[1][indx] - rgb[1][indx - w2 + 2]);
+            const float SW_Grad = eps + fabs(rgb[c][indx - w1 + 1] - rgb[c][indx + w1 - 1]) + fabs(rgb[c][indx + w1 - 1]
+                                  - rgb[c][indx + w3 - 3]) + fabs(rgb[1][indx] - rgb[1][indx + w2 - 2]);
+            const float SE_Grad = eps + fabs(rgb[c][indx - w1 - 1] - rgb[c][indx + w1 + 1]) + fabs(rgb[c][indx + w1 + 1]
+                                  - rgb[c][indx + w3 + 3]) + fabs(rgb[1][indx] - rgb[1][indx + w2 + 2]);
 
             // Diagonal colour differences
             const float NW_Est = rgb[c][indx - w1 - 1] - rgb[1][indx - w1 - 1];
@@ -511,8 +519,10 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
           {
             // Refined vertical and horizontal local discrimination
             const float VH_Central_Value = VH_Dir[indx];
-            const float VH_Neighbourhood_Value = 0.25f * (VH_Dir[indx - w1 - 1] + VH_Dir[indx - w1 + 1] + VH_Dir[indx + w1 - 1] + VH_Dir[indx + w1 + 1]);
-            const float VH_Disc = (fabs(0.5f - VH_Central_Value) < fabs(0.5f - VH_Neighbourhood_Value) ) ? VH_Neighbourhood_Value : VH_Central_Value;
+            const float VH_Neighbourhood_Value = 0.25f * (VH_Dir[indx - w1 - 1] + VH_Dir[indx - w1 + 1]
+                                                 + VH_Dir[indx + w1 - 1] + VH_Dir[indx + w1 + 1]);
+            const float VH_Disc = (fabs(0.5f - VH_Central_Value) < fabs(0.5f - VH_Neighbourhood_Value) )
+                                   ? VH_Neighbourhood_Value : VH_Central_Value;
             const float rgb1 = rgb[1][indx];
             const float N1 = eps + fabs(rgb1 - rgb[1][indx - w2]);
             const float S1 = eps + fabs(rgb1 - rgb[1][indx + w2]);
@@ -557,7 +567,8 @@ static void rcd_demosaic(dt_dev_pixelpipe_iop_t *piece, float *const restrict ou
         const int last_horizontal =  colEnd   - ((tile_horizontal == num_horizontal - 1) ? RCD_MARGIN : RCD_BORDER);
 
         for(int row = first_vertical; row < last_vertical; row++)
-          for(int col = first_horizontal, idx = (row - rowStart) * RCD_TILESIZE + col - colStart, o_idx = (row * width + col) * 4; col < last_horizontal; col++, o_idx += 4, idx++)
+          for(int col = first_horizontal, idx = (row - rowStart) * RCD_TILESIZE + col - colStart, o_idx = (row * width + col) * 4;
+              col < last_horizontal; col++, o_idx += 4, idx++)
           {
             out[o_idx]   = scaler * fmaxf(0.0f, rgb[0][idx]);
             out[o_idx+1] = scaler * fmaxf(0.0f, rgb[1][idx]);
