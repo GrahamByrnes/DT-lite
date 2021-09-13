@@ -123,13 +123,13 @@ int write_image(dt_imageio_module_data_t *webp, const char *filename, const void
   }
   // Create, configure and validate a WebPConfig instance
   WebPConfig config;
-  if(!WebPConfigPreset(&config, webp_data->hint, (float)webp_data->quality)) goto error;
-
+  
+  if(!WebPConfigPreset(&config, webp_data->hint, (float)webp_data->quality))
+    goto error;
   // TODO(jinxos): expose more config options in the UI
   config.lossless = webp_data->comp_type;
   config.image_hint = webp_data->hint;
   config.method = 6;
-
   // these are to allow for large image export.
   // TODO(jinxos): these values should be adjusted as needed and ideally determined at runtime.
   config.segments = 4;
@@ -141,7 +141,8 @@ int write_image(dt_imageio_module_data_t *webp, const char *filename, const void
     goto error;
   }
 
-  if(!WebPPictureInit(&pic)) goto error;
+  if(!WebPPictureInit(&pic))
+    goto error;
 
   pic_init = 1;
   pic.width = webp_data->global.width;
@@ -170,9 +171,7 @@ int write_image(dt_imageio_module_data_t *webp, const char *filename, const void
 
   WebPPictureFree(&pic);
   fclose(out);
-
   dt_exif_write_blob(exif, exif_len, filename, 1);
-
   return 0;
 
 error:
@@ -241,9 +240,7 @@ int set_params(dt_imageio_module_format_t *self, const void *params, const int s
 
   const dt_imageio_webp_t *d = (dt_imageio_webp_t *)params;
   dt_imageio_webp_gui_data_t *g = (dt_imageio_webp_gui_data_t *)self->gui_data;
-  dt_bauhaus_combobox_set(g->compression, d->comp_type);
   dt_bauhaus_slider_set(g->quality, d->quality);
-  dt_bauhaus_combobox_set(g->hint, d->hint);
   return 0;
 }
 
@@ -278,74 +275,29 @@ const char *name()
   return _("WebP (8-bit)");
 }
 
-static void compression_changed(GtkWidget *widget, gpointer user_data)
-{
-  const int comp_type = dt_bauhaus_combobox_get(widget);
-  dt_conf_set_int("plugins/imageio/format/webp/comp_type", comp_type);
-
-  if (comp_type == webp_lossless)
-    gtk_widget_set_sensitive(GTK_WIDGET(user_data), FALSE);
-  else
-    gtk_widget_set_sensitive(GTK_WIDGET(user_data), TRUE);
-}
-
 static void quality_changed(GtkWidget *slider, gpointer user_data)
 {
   const int quality = (int)dt_bauhaus_slider_get(slider);
   dt_conf_set_int("plugins/imageio/format/webp/quality", quality);
 }
 
-static void hint_combobox_changed(GtkWidget *widget, gpointer user_data)
-{
-  const int hint = dt_bauhaus_combobox_get(widget);
-  dt_conf_set_int("plugins/imageio/format/webp/hint", hint);
-}
-
 void gui_init(dt_imageio_module_format_t *self)
 {
   dt_imageio_webp_gui_data_t *gui = (dt_imageio_webp_gui_data_t *)malloc(sizeof(dt_imageio_webp_gui_data_t));
   self->gui_data = (void *)gui;
-  const int comp_type = dt_conf_get_int("plugins/imageio/format/webp/comp_type");
   const int quality = dt_conf_get_int("plugins/imageio/format/webp/quality");
-  const int hint = dt_conf_get_int("plugins/imageio/format/webp/hint");
 
   self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-
-  gui->compression = dt_bauhaus_combobox_new(NULL);
-  dt_bauhaus_widget_set_label(gui->compression, NULL, _("compression type"));
-  dt_bauhaus_combobox_add(gui->compression, _("lossy"));
-  dt_bauhaus_combobox_add(gui->compression, _("lossless"));
-  dt_bauhaus_combobox_set(gui->compression, comp_type);
-  gtk_box_pack_start(GTK_BOX(self->widget), gui->compression, TRUE, TRUE, 0);
 
   gui->quality = dt_bauhaus_slider_new_with_range(NULL, 5, 100, 1, 95, 0);
   dt_bauhaus_widget_set_label(gui->quality, NULL, _("quality"));
   dt_bauhaus_slider_set_default(gui->quality, dt_conf_get_int("plugins/imageio/format/webp/quality"));
   dt_bauhaus_slider_set_format(gui->quality, "%.2f%%");
-  gtk_widget_set_tooltip_text(gui->quality, _("applies only to lossy setting"));
-  if(quality > 0 && quality <= 100) dt_bauhaus_slider_set(gui->quality, quality);
+  if(quality > 0 && quality <= 100)
+    dt_bauhaus_slider_set(gui->quality, quality);
+
   gtk_box_pack_start(GTK_BOX(self->widget), gui->quality, TRUE, TRUE, 0);
   g_signal_connect(G_OBJECT(gui->quality), "value-changed", G_CALLBACK(quality_changed), (gpointer)0);
-
-  g_signal_connect(G_OBJECT(gui->compression), "value-changed", G_CALLBACK(compression_changed), (gpointer)gui->quality);
-
-  if (comp_type == webp_lossless)
-    gtk_widget_set_sensitive(gui->quality, FALSE);
-
-  gui->hint = dt_bauhaus_combobox_new(NULL);
-  dt_bauhaus_widget_set_label(gui->hint, NULL, _("image hint"));
-  gtk_widget_set_tooltip_text(gui->hint,
-               _("image characteristics hint for the underlying encoder.\n"
-               "picture : digital picture, like portrait, inner shot\n"
-               "photo   : outdoor photograph, with natural lighting\n"
-               "graphic : discrete tone image (graph, map-tile etc)"));
-  dt_bauhaus_combobox_add(gui->hint, _("default"));
-  dt_bauhaus_combobox_add(gui->hint, _("picture"));
-  dt_bauhaus_combobox_add(gui->hint, _("photo"));
-  dt_bauhaus_combobox_add(gui->hint, _("graphic"));
-  dt_bauhaus_combobox_set(gui->hint, hint);
-  gtk_box_pack_start(GTK_BOX(self->widget), gui->hint, TRUE, TRUE, 0);
-  g_signal_connect(G_OBJECT(gui->hint), "value-changed", G_CALLBACK(hint_combobox_changed), NULL);
 }
 
 void gui_cleanup(dt_imageio_module_format_t *self)
@@ -356,12 +308,8 @@ void gui_cleanup(dt_imageio_module_format_t *self)
 void gui_reset(dt_imageio_module_format_t *self)
 {
   dt_imageio_webp_gui_data_t *gui = (dt_imageio_webp_gui_data_t *)self->gui_data;
-  const int comp_type = dt_conf_get_int("plugins/imageio/format/webp/comp_type");
   const int quality = dt_conf_get_int("plugins/imageio/format/webp/quality");
-  const int hint = dt_conf_get_int("plugins/imageio/format/webp/hint");
-  dt_bauhaus_combobox_set(gui->compression, comp_type);
   dt_bauhaus_slider_set(gui->quality, quality);
-  dt_bauhaus_combobox_set(gui->hint, hint);
 }
 
 int flags(dt_imageio_module_data_t *data)
