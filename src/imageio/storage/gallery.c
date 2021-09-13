@@ -232,13 +232,12 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   gboolean from_cache = FALSE;
   dt_image_full_path(imgid, dirname, sizeof(dirname), &from_cache);
 
-  char tmp_dir[PATH_MAX] = { 0 };
+  dt_pthread_mutex_lock(&darktable.plugin_threadsafe);
+    char tmp_dir[PATH_MAX] = { 0 };
   d->vp->filename = filename;
   d->vp->jobcode = "export";
   d->vp->imgid = imgid;
   d->vp->sequence = num;
-
-  dt_pthread_mutex_lock(&darktable.plugin_threadsafe);
 
   gchar *result_tmp_dir = dt_variables_expand(d->vp, d->filename, TRUE);
   g_strlcpy(tmp_dir, result_tmp_dir, sizeof(tmp_dir));
@@ -286,7 +285,6 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
     c = filename + strlen(filename);
 
   sprintf(c, ".%s", ext);
-  
   // save image to list, in order:
   pair_t *pair = malloc(sizeof(pair_t));
   char *title = NULL, *description = NULL;
@@ -345,10 +343,10 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
            num, num-1, title ? title : "&nbsp;", description ? description : "&nbsp;");
 
   dt_pthread_mutex_unlock(&darktable.plugin_threadsafe);
+  
   if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, icc_type,
                        icc_filename, icc_intent, self, sdata, num, total, metadata) != 0)
   {
-    fprintf(stderr, "[imageio_storage_gallery] could not export to file: `%s'!\n", filename);
     dt_control_log(_("could not export to file `%s'!"), filename);
     free(pair);
     g_free(esc_relfilename);
@@ -357,7 +355,6 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   }
 
   dt_pthread_mutex_lock(&darktable.plugin_threadsafe);
-
   snprintf(pair->item, sizeof(pair->item),
            "{\n"
            "src: \"%s\",\n"
@@ -383,24 +380,21 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   const int save_max_height = fdata->max_height;
   fdata->max_width = 200;
   fdata->max_height = 200;
-  // alter filename with -thumb:
   c = filename + strlen(filename);
 
   for(; c > filename && *c != '.' && *c != '/'; c--)
     ;
-
   if(c <= filename || *c == '/')
     c = filename + strlen(filename);
 
   ext = format->extension(fdata);
   sprintf(c, "-thumb.%s", ext);
-  
+
   dt_pthread_mutex_unlock(&darktable.plugin_threadsafe);
 
   if(dt_imageio_export(imgid, filename, format, fdata, FALSE, TRUE, FALSE, icc_type, icc_filename,
                        icc_intent, self, sdata, num, total, NULL) != 0)
   {
-    fprintf(stderr, "[imageio_storage_gallery] could not export to file: `%s'!\n", filename);
     dt_control_log(_("could not export to file `%s'!"), filename);
     return 1;
   }
@@ -408,8 +402,6 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   // restore for next image:
   fdata->max_width = save_max_width;
   fdata->max_height = save_max_height;
-
-  printf("[export_job] exported to `%s'\n", filename);
   dt_control_log(ngettext("%d/%d exported to `%s'", "%d/%d exported to `%s'", num),
                  num, total, filename);
   return 0;
