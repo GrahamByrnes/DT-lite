@@ -94,7 +94,7 @@ int main(int argc, char *arg[])
   int file_counter = 0;
   int width = 0, height = 0, bpp = 0;
   gboolean verbose = FALSE, high_quality = TRUE, upscale = FALSE,
-           style_overwrite = FALSE, custom_presets = TRUE, export_masks = FALSE;
+           style_overwrite = FALSE, custom_presets = TRUE;
 
   int k;
   for(k = 1; k < argc; k++)
