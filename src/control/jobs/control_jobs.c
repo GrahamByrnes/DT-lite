@@ -904,7 +904,7 @@ static int32_t dt_control_export_job_run(dt_job_t *job)
       {
         dt_image_cache_read_release(darktable.image_cache, image);
         if(mstorage->store(mstorage, sdata, imgid, mformat, fdata, num, total, settings->high_quality, settings->upscale,
-                           0, settings->icc_type, settings->icc_filename, settings->icc_intent,
+                           settings->icc_type, settings->icc_filename, settings->icc_intent,
                            &metadata) != 0)
           dt_control_job_cancel(job);
       }
