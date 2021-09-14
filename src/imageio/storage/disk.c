@@ -74,42 +74,6 @@ void *legacy_params(dt_imageio_module_storage_t *self, const void *const old_par
                     const size_t old_params_size, const int old_version, const int new_version,
                     size_t *new_size)
 {
-  if(old_version == 1 && new_version == 3)
-  {
-    typedef struct dt_imageio_disk_v1_t
-    {
-      char filename[1024];
-      dt_variables_params_t *vp;
-      gboolean overwrite;
-    } dt_imageio_disk_v1_t;
-
-    dt_imageio_disk_t *n = (dt_imageio_disk_t *)malloc(sizeof(dt_imageio_disk_t));
-    dt_imageio_disk_v1_t *o = (dt_imageio_disk_v1_t *)old_params;
-
-    g_strlcpy(n->filename, o->filename, sizeof(n->filename));
-    n->onsave_action = (o->overwrite) ? DT_EXPORT_ONCONFLICT_OVERWRITE: DT_EXPORT_ONCONFLICT_UNIQUEFILENAME;
-
-    *new_size = self->params_size(self);
-    return n;
-  }
-  if(old_version == 2 && new_version == 3)
-  {
-    typedef struct dt_imageio_disk_v2_t
-    {
-      char filename[DT_MAX_PATH_FOR_PARAMS];
-      gboolean overwrite;
-      dt_variables_params_t *vp;
-    } dt_imageio_disk_v2_t;
-
-    dt_imageio_disk_t *n = (dt_imageio_disk_t *)malloc(sizeof(dt_imageio_disk_t));
-    dt_imageio_disk_v2_t *o = (dt_imageio_disk_v2_t *)old_params;
-
-    g_strlcpy(n->filename, o->filename, sizeof(n->filename));
-    n->onsave_action = (o->overwrite) ? DT_EXPORT_ONCONFLICT_OVERWRITE: DT_EXPORT_ONCONFLICT_UNIQUEFILENAME;
-
-    *new_size = self->params_size(self);
-    return n;
-  }
   return NULL;
 }
 
@@ -220,8 +184,6 @@ void gui_cleanup(dt_imageio_module_storage_t *self)
 void gui_reset(dt_imageio_module_storage_t *self)
 {
   disk_t *d = (disk_t *)self->gui_data;
-  // global default can be annoying:
-  // gtk_entry_set_text(GTK_ENTRY(d->entry), "$(FILE_FOLDER)/darktable_exported/$(FILE_NAME)");
   dt_conf_set_string("plugins/imageio/storage/disk/file_directory", gtk_entry_get_text(d->entry));
   dt_conf_set_int("plugins/imageio/storage/disk/overwrite", dt_bauhaus_combobox_get(d->onsave_action));
 }
@@ -240,11 +202,11 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   g_strlcpy(pattern, d->filename, sizeof(pattern));
   gboolean from_cache = FALSE;
   dt_image_full_path(imgid, input_dir, sizeof(input_dir), &from_cache);
-  // set max_width and max_height values to expand them afterwards in darktable variables
   dt_variables_set_max_width_height(d->vp, fdata->max_width, fdata->max_height);
   int fail = 0;
   // we're potentially called in parallel. have sequence number synchronized:
   dt_pthread_mutex_lock(&darktable.plugin_threadsafe);
+
   {
 try_again:
     // avoid braindead export which is bound to overwrite at random:
@@ -323,8 +285,11 @@ try_again:
         return 0;
       }
   } // end of critical block
+
   dt_pthread_mutex_unlock(&darktable.plugin_threadsafe);
-  if(fail) return 1;
+
+  if(fail)
+    return 1;
 
   // export image to file
   if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, icc_type,

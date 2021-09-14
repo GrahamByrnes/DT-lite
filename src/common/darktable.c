@@ -320,7 +320,7 @@ static void dt_codepaths_init()
     darktable.codepath.SSE2 = 0;
 
   darktable.codepath.OPENMP_SIMD = 1;
-  fprintf(stderr, "[dt_codepaths_init] will be using HIGHLY EXPERIMENTAL plain OpenMP SIMD codepath.\n");
+  //fprintf(stderr, "[dt_codepaths_init] will be using HIGHLY EXPERIMENTAL plain OpenMP SIMD codepath.\n");
 }
 
 int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load_data, lua_State *L)

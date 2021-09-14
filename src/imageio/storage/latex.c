@@ -75,27 +75,6 @@ void *legacy_params(dt_imageio_module_storage_t *self, const void *const old_par
                     const size_t old_params_size, const int old_version, const int new_version,
                     size_t *new_size)
 {
-  if(old_version == 1 && new_version == 2)
-  {
-    typedef struct dt_imageio_latex_v1_t
-    {
-      char filename[1024];
-      char title[1024];
-      char cached_dirname[1024]; // expanded during first img store, not stored in param struct.
-      dt_variables_params_t *vp;
-      GList *l;
-    } dt_imageio_latex_v1_t;
-
-    dt_imageio_latex_t *n = (dt_imageio_latex_t *)malloc(sizeof(dt_imageio_latex_t));
-    dt_imageio_latex_v1_t *o = (dt_imageio_latex_v1_t *)old_params;
-
-    g_strlcpy(n->filename, o->filename, sizeof(n->filename));
-    g_strlcpy(n->title, o->title, sizeof(n->title));
-    g_strlcpy(n->cached_dirname, o->cached_dirname, sizeof(n->cached_dirname));
-
-    *new_size = self->params_size(self);
-    return n;
-  }
   return NULL;
 }
 
