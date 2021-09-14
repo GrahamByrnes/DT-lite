@@ -113,7 +113,7 @@ int output_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe,
 int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
                   void *new_params, const int new_version)
 {
-  return 1;
+  return 0;
 }
 
 static void intent_changed(GtkWidget *widget, gpointer user_data)
@@ -355,7 +355,7 @@ void commit_params(struct dt_iop_module_t *self, dt_iop_params_t *p1, dt_dev_pix
     out_intent = p->intent;
   }
   else if((pipe->type & DT_DEV_PIXELPIPE_THUMBNAIL) == DT_DEV_PIXELPIPE_THUMBNAIL)
-  {
+  { 
     out_type = dt_mipmap_cache_get_colorspace();
     out_filename = (out_type == DT_COLORSPACE_DISPLAY ? darktable.color_profiles->display_filename : "");
     out_intent = darktable.color_profiles->display_intent;

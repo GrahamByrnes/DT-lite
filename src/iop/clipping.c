@@ -104,7 +104,7 @@ static void keystone_type_populate(struct dt_iop_module_t *self, gboolean with_a
 int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
                   void *new_params, const int new_version)
 {
-  return 1;
+  return 0;
 }
 
 typedef struct dt_iop_clipping_gui_data_t

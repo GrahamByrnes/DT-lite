@@ -107,7 +107,7 @@ typedef struct dt_iop_borders_gui_data_t
 int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
                   void *new_params, const int new_version)
 {
-  return 1;
+  return 0;
 }
 
 typedef struct dt_iop_borders_global_data_t

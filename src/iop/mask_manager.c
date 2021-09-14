@@ -16,15 +16,6 @@
     along with darktable.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
- * This is a dummy module intended only to be used in history so hist->module is not NULL
- * when the entry correspond to the mask manager
- * 
- * It is always disabled and do not show in module list, only in history
- * 
- * We start at version 2 so previous version of dt can add records in history with NULL params
- */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -58,7 +49,7 @@ int default_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_p
 int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
                   void *new_params, const int new_version)
 {
-  return 1;
+  return 0;
 }
 
 void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const void *const i, void *const o,
