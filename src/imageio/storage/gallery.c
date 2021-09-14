@@ -76,7 +76,7 @@ void *legacy_params(dt_imageio_module_storage_t *self, const void *const old_par
                     const size_t old_params_size, const int old_version, const int new_version,
                     size_t *new_size)
 {
-  if(old_version == 1 && new_version == 2)
+ /* if(old_version == 1 && new_version == 2)
   {
     typedef struct dt_imageio_gallery_v1_t
     {
@@ -96,7 +96,7 @@ void *legacy_params(dt_imageio_module_storage_t *self, const void *const old_par
 
     *new_size = self->params_size(self);
     return n;
-  }
+  }*/
   return NULL;
 }
 
@@ -157,20 +157,21 @@ void gui_init(dt_imageio_module_storage_t *self)
   widget = gtk_entry_new();
   gtk_box_pack_start(GTK_BOX(hbox), widget, TRUE, TRUE, 0);
   gchar *dir = dt_conf_get_string("plugins/imageio/storage/gallery/file_directory");
+
   if(dir)
   {
     gtk_entry_set_text(GTK_ENTRY(widget), dir);
     g_free(dir);
   }
+
   d->entry = GTK_ENTRY(widget);
   dt_gui_key_accel_block_on_focus_connect(GTK_WIDGET(d->entry));
-
   dt_gtkentry_setup_completion(GTK_ENTRY(widget), dt_gtkentry_get_default_path_compl_list());
 
   char *tooltip_text = dt_gtkentry_build_completion_tooltip_text(
-      _("enter the path where to put exported images\nvariables support bash like string manipulation\n"
-        "recognized variables:"),
-      dt_gtkentry_get_default_path_compl_list());
+      _("enter the path the exported images\nvariables support bash like string manipulation\n"
+        "recognized variables:"), dt_gtkentry_get_default_path_compl_list());
+
   gtk_widget_set_tooltip_text(widget, tooltip_text);
   g_signal_connect(G_OBJECT(widget), "changed", G_CALLBACK(entry_changed_callback), self);
   g_free(tooltip_text);
@@ -191,11 +192,13 @@ void gui_init(dt_imageio_module_storage_t *self)
   dt_gui_key_accel_block_on_focus_connect(GTK_WIDGET(d->title_entry));
   gtk_widget_set_tooltip_text(GTK_WIDGET(d->title_entry), _("enter the title of the website"));
   dir = dt_conf_get_string("plugins/imageio/storage/gallery/title");
+
   if(dir)
   {
     gtk_entry_set_text(GTK_ENTRY(d->title_entry), dir);
     g_free(dir);
   }
+
   g_signal_connect(G_OBJECT(d->title_entry), "changed", G_CALLBACK(title_changed_callback), self);
 }
 
@@ -221,9 +224,8 @@ static gint sort_pos(pair_t *a, pair_t *b)
 
 int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, const int imgid,
           dt_imageio_module_format_t *format, dt_imageio_module_data_t *fdata, const int num, const int total,
-          const gboolean high_quality, const gboolean upscale, const gboolean export_masks,
-          dt_colorspaces_color_profile_type_t icc_type, const gchar *icc_filename, dt_iop_color_intent_t icc_intent,
-          dt_export_metadata_t *metadata)
+          const gboolean high_quality, const gboolean upscale, dt_colorspaces_color_profile_type_t icc_type,
+          const gchar *icc_filename, dt_iop_color_intent_t icc_intent, dt_export_metadata_t *metadata)
 {
   dt_imageio_gallery_t *d = (dt_imageio_gallery_t *)sdata;
 
@@ -233,7 +235,8 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   dt_image_full_path(imgid, dirname, sizeof(dirname), &from_cache);
 
   dt_pthread_mutex_lock(&darktable.plugin_threadsafe);
-    char tmp_dir[PATH_MAX] = { 0 };
+
+  char tmp_dir[PATH_MAX] = { 0 };
   d->vp->filename = filename;
   d->vp->jobcode = "export";
   d->vp->imgid = imgid;

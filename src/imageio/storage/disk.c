@@ -228,7 +228,7 @@ void gui_reset(dt_imageio_module_storage_t *self)
 
 int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, const int imgid,
           dt_imageio_module_format_t *format, dt_imageio_module_data_t *fdata, const int num, const int total,
-          const gboolean high_quality, const gboolean upscale, const gboolean export_masks,
+          const gboolean high_quality, const gboolean upscale,
           dt_colorspaces_color_profile_type_t icc_type, const gchar *icc_filename, dt_iop_color_intent_t icc_intent,
           dt_export_metadata_t *metadata)
 {
@@ -263,7 +263,6 @@ try_again:
     gchar *result_filename = dt_variables_expand(d->vp, pattern, TRUE);
     g_strlcpy(filename, result_filename, sizeof(filename));
     g_free(result_filename);
-
     // if filenamepattern is a directory just add ${FILE_NAME} as default..
     // this can happen if the filename component of the pattern is an empty variable
     char last_char = *(filename + strlen(filename) - 1);
@@ -299,7 +298,7 @@ try_again:
     size_t filename_free_space = sizeof(filename) - (c - filename);
     snprintf(c, filename_free_space, ".%s", ext);
 
-  /* prevent overwrite of files */
+  // prevent overwrite of files
   failed:
     g_free(output_dir);
 
@@ -315,7 +314,6 @@ try_again:
     }
 
     if(!fail && d->onsave_action == DT_EXPORT_ONCONFLICT_SKIP)
-    {
       if(g_file_test(filename, G_FILE_TEST_EXISTS))
       {
         dt_pthread_mutex_unlock(&darktable.plugin_threadsafe);
@@ -324,12 +322,11 @@ try_again:
                        num, total, filename);
         return 0;
       }
-    }
   } // end of critical block
   dt_pthread_mutex_unlock(&darktable.plugin_threadsafe);
   if(fail) return 1;
 
-  /* export image to file */
+  // export image to file
   if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, icc_type,
                        icc_filename, icc_intent, self, sdata, num, total, metadata))
   {
@@ -338,7 +335,6 @@ try_again:
     return 1;
   }
 
-  fprintf(stderr, "[export_job] exported to `%s'\n", filename);
   dt_control_log(ngettext("%d/%d exported to `%s'", "%d/%d exported to `%s'", num),
                  num, total, filename);
   return 0;
