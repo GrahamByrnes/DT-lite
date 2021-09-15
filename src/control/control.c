@@ -517,7 +517,7 @@ void dt_control_toast_busy_leave()
 
 void dt_control_queue_redraw()
 {
-  dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_REDRAW_ALL); /* *** */
+  dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_REDRAW_ALL);
 }
 
 void dt_control_queue_redraw_center()
@@ -527,7 +527,7 @@ void dt_control_queue_redraw_center()
 
 void dt_control_navigation_redraw()
 {
-  dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_NAVIGATION_REDRAW); /* *** */
+  dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_NAVIGATION_REDRAW);
 }
 
 void dt_control_log_redraw()

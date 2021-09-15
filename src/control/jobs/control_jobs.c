@@ -845,13 +845,12 @@ static int32_t dt_control_export_job_run(dt_job_t *job)
     h = sh < fh ? sh : fh;
 
   const guint total = g_list_length(t);
-  dt_control_log(ngettext("exporting %d image..", "exporting %d images..", total), total);
-  double fraction = 0;
+  dt_control_log(ngettext("exporting %d image...", "exporting %d images...", total), total);
+  double fraction = 0.0;
   // set up the fdata struct
   fdata->max_width = (settings->max_width != 0 && w != 0) ? MIN(w, settings->max_width) : MAX(w, settings->max_width);
   fdata->max_height = (settings->max_height != 0 && h != 0) ? MIN(h, settings->max_height) : MAX(h, settings->max_height);
-  // Invariant: the tagid for 'darktable|changed' will not change while this function runs. Is this a
-  // sensible assumption?
+  // Invariant: the tagid for 'darktable|changed' will not change while this function runs. Is this a sensible assumption?
   guint tagid = 0, etagid = 0;
   dt_tag_new("darktable|changed", &tagid);
   dt_tag_new("darktable|exported", &etagid);
@@ -862,7 +861,7 @@ static int32_t dt_control_export_job_run(dt_job_t *job)
 
   if (metadata.list)
   {
-    metadata.flags = strtol(metadata.list->data, NULL, 16);
+    metadata.flags = strtol(metadata.list->data, NULL, 15);
     metadata.list = g_list_remove(metadata.list, metadata.list->data);
   }
 
@@ -882,7 +881,7 @@ static int32_t dt_control_export_job_run(dt_job_t *job)
     // make sure the 'exported' tag is set on the image
     if(dt_tag_attach(etagid, imgid, FALSE, FALSE))
       tag_change = TRUE;
-    /* register export timestamp in cache */
+    // register export timestamp in cache
     dt_image_cache_set_export_timestamp(darktable.image_cache, imgid);
     // check if image still exists:
     const dt_image_t *image = dt_image_cache_get(darktable.image_cache, (int32_t)imgid, 'r');
@@ -904,8 +903,7 @@ static int32_t dt_control_export_job_run(dt_job_t *job)
       {
         dt_image_cache_read_release(darktable.image_cache, image);
         if(mstorage->store(mstorage, sdata, imgid, mformat, fdata, num, total, settings->high_quality, settings->upscale,
-                           settings->icc_type, settings->icc_filename, settings->icc_intent,
-                           &metadata) != 0)
+                           settings->icc_type, settings->icc_filename, settings->icc_intent, &metadata) != 0)
           dt_control_job_cancel(job);
       }
     }

@@ -883,7 +883,8 @@ static void dt_gui_presets_popup_menu_show_internal(dt_dev_operation_t op, int32
 
     if(dt_image_is_rawprepare_supported(image))
       iformat |= FOR_RAW;
-    else iformat |= FOR_LDR;
+    else
+      iformat |= FOR_LDR;
 
     if(dt_image_is_hdr(image))
       iformat |= FOR_HDR;
@@ -892,7 +893,8 @@ static void dt_gui_presets_popup_menu_show_internal(dt_dev_operation_t op, int32
 
     if(dt_image_monochrome_flags(image))
       excluded |= FOR_NOT_MONO;
-    else excluded |= FOR_NOT_COLOR;
+    else
+      excluded |= FOR_NOT_COLOR;
     
     query = g_strdup_printf
       ("SELECT name, op_params, writeprotect, description, blendop_params, "

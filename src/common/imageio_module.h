@@ -159,9 +159,8 @@ typedef struct dt_imageio_module_storage_t
   /* get storage recommended image dimension, return 0 if no recommendation exists. */
   int (*recommended_dimension)(struct dt_imageio_module_storage_t *self, dt_imageio_module_data_t *data, uint32_t *width, uint32_t *height);
 
-  /* called once at the beginning (before exporting image), if implemented
-     * can change the list of exported images (including a NULL list)
-   */
+  // called once at the beginning (before exporting image), if implemented
+  // can change the list of exported images (including a NULL list)
   int (*initialize_store)(struct dt_imageio_module_storage_t *self, dt_imageio_module_data_t *data,
                           dt_imageio_module_format_t **format, dt_imageio_module_data_t **fdata,
                           GList **images, const gboolean high_quality, const gboolean upscale);

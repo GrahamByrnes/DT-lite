@@ -76,27 +76,6 @@ void *legacy_params(dt_imageio_module_storage_t *self, const void *const old_par
                     const size_t old_params_size, const int old_version, const int new_version,
                     size_t *new_size)
 {
- /* if(old_version == 1 && new_version == 2)
-  {
-    typedef struct dt_imageio_gallery_v1_t
-    {
-      char filename[1024];
-      char title[1024];
-      char cached_dirname[1024]; // expanded during first img store, not stored in param struct.
-      dt_variables_params_t *vp;
-      GList *l;
-    } dt_imageio_gallery_v1_t;
-
-    dt_imageio_gallery_t *n = (dt_imageio_gallery_t *)malloc(sizeof(dt_imageio_gallery_t));
-    dt_imageio_gallery_v1_t *o = (dt_imageio_gallery_v1_t *)old_params;
-
-    g_strlcpy(n->filename, o->filename, sizeof(n->filename));
-    g_strlcpy(n->title, o->title, sizeof(n->title));
-    g_strlcpy(n->cached_dirname, o->cached_dirname, sizeof(n->cached_dirname));
-
-    *new_size = self->params_size(self);
-    return n;
-  }*/
   return NULL;
 }
 
@@ -231,13 +210,13 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
 
   char filename[PATH_MAX] = { 0 };
   char dirname[PATH_MAX] = { 0 };
+  char tmp_dir[PATH_MAX] = { 0 };
   gboolean from_cache = FALSE;
   dt_image_full_path(imgid, dirname, sizeof(dirname), &from_cache);
 
   dt_pthread_mutex_lock(&darktable.plugin_threadsafe);
-
-  char tmp_dir[PATH_MAX] = { 0 };
-  d->vp->filename = filename;
+  
+  d->vp->filename = dirname;
   d->vp->jobcode = "export";
   d->vp->imgid = imgid;
   d->vp->sequence = num;
@@ -288,12 +267,14 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
     c = filename + strlen(filename);
 
   sprintf(c, ".%s", ext);
+  g_strlcpy(tmp_dir, filename, strlen(filename)+1);
+  
   // save image to list, in order:
   pair_t *pair = malloc(sizeof(pair_t));
   char *title = NULL, *description = NULL;
   GList *res_title = NULL, *res_desc = NULL;
 
-  if ((metadata->flags & DT_META_METADATA) && !(metadata->flags & DT_META_CALCULATED))
+  if((metadata->flags & DT_META_METADATA) && !(metadata->flags & DT_META_CALCULATED))
   {
     res_title = dt_metadata_get(imgid, "Xmp.dc.title", NULL);
 
@@ -342,22 +323,8 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
            "      <img src=\"%s\" alt=\"img%d\" class=\"img\" onclick=\"openSwipe(%d)\"/></div>\n"
            "      <h1>%s</h1>\n"
            "      %s</div>\n",
-           esc_relthumbfilename,
-           num, num-1, title ? title : "&nbsp;", description ? description : "&nbsp;");
-
-  dt_pthread_mutex_unlock(&darktable.plugin_threadsafe);
-  
-  if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, icc_type,
-                       icc_filename, icc_intent, self, sdata, num, total, metadata) != 0)
-  {
-    dt_control_log(_("could not export to file `%s'!"), filename);
-    free(pair);
-    g_free(esc_relfilename);
-    g_free(esc_relthumbfilename);
-    return 1;
-  }
-
-  dt_pthread_mutex_lock(&darktable.plugin_threadsafe);
+           esc_relthumbfilename, num, num-1,
+                                 title ? title : "&nbsp;", description ? description : "&nbsp;");
   snprintf(pair->item, sizeof(pair->item),
            "{\n"
            "src: \"%s\",\n"
@@ -366,47 +333,58 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
            "msrc: \"%s\",\n"
            "},\n",
            esc_relfilename, fdata->width, fdata->height, esc_relthumbfilename);
-
-  g_free(esc_relfilename);
-  g_free(esc_relthumbfilename);
   pair->pos = num;
-  
+
   if(res_title)
     g_list_free_full(res_title, &g_free);
   if(res_desc)
     g_list_free_full(res_desc, &g_free);
 
   d->l = g_list_insert_sorted(d->l, pair, (GCompareFunc)sort_pos);
-  // also export thumbnail: 
-  // write with reduced resolution:
+  // prepare thumb filename
+  sc = filename + strlen(filename);
+
+  for(; sc > filename && *sc != '.' && *sc != '/'; sc--)
+    ;
+  if(sc <= filename || *sc == '/')
+    sc = filename + strlen(filename);
+
   const int save_max_width = fdata->max_width;
   const int save_max_height = fdata->max_height;
-  fdata->max_width = 200;
-  fdata->max_height = 200;
-  c = filename + strlen(filename);
-
-  for(; c > filename && *c != '.' && *c != '/'; c--)
-    ;
-  if(c <= filename || *c == '/')
-    c = filename + strlen(filename);
-
-  ext = format->extension(fdata);
-  sprintf(c, "-thumb.%s", ext);
+  gboolean printfail = FALSE;
 
   dt_pthread_mutex_unlock(&darktable.plugin_threadsafe);
 
-  if(dt_imageio_export(imgid, filename, format, fdata, FALSE, TRUE, FALSE, icc_type, icc_filename,
-                       icc_intent, self, sdata, num, total, NULL) != 0)
+  if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, icc_type,
+                       icc_filename, icc_intent, self, sdata, num, total, metadata) != 0)
   {
+    printfail = TRUE;
     dt_control_log(_("could not export to file `%s'!"), filename);
+  }
+  // also export thumbnail: 
+  fdata->max_width = 200;
+  fdata->max_height = 200;
+  sprintf(sc, "-thumb.%s", ext);
+
+  if(dt_imageio_export(imgid, filename, format, fdata, FALSE, FALSE, FALSE, icc_type,
+                       icc_filename, icc_intent, self, sdata, num, total, NULL) != 0)
+  {
+    printfail = TRUE;
+    dt_control_log(_("could not export to file `%s'!"), filename);
+  }
+
+  g_free(esc_relfilename);
+  g_free(esc_relthumbfilename);
+  dt_control_log(ngettext("%d/%d exported to `%s'", "%d/%d exported to `%s'", num), num, total, tmp_dir);
+  fdata->max_width = save_max_width;
+  fdata->max_height = save_max_height;
+
+  if(printfail)
+  {
+    free(pair);
     return 1;
   }
 
-  // restore for next image:
-  fdata->max_width = save_max_width;
-  fdata->max_height = save_max_height;
-  dt_control_log(ngettext("%d/%d exported to `%s'", "%d/%d exported to `%s'", num),
-                 num, total, filename);
   return 0;
 }
 
@@ -440,7 +418,7 @@ END:
 
 void finalize_store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *dd)
 {
-  dt_imageio_gallery_t *d = (dt_imageio_gallery_t *)dd;
+ dt_imageio_gallery_t *d = (dt_imageio_gallery_t *)dd;
   char filename[PATH_MAX] = { 0 };
   g_strlcpy(filename, d->cached_dirname, sizeof(filename));
   char *c = filename + strlen(filename);

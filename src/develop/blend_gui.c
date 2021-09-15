@@ -750,7 +750,7 @@ static void _blendop_blendif_tab_switch(GtkNotebook *notebook, GtkWidget *page, 
   }
 
   _blendop_blendif_update_tab(data->module, data->tab);
-}  /* *** */
+}
 
 static void _blendop_blendif_showmask_clicked(GtkWidget *button, GdkEventButton *event, dt_iop_module_t *module)
 {
@@ -1488,7 +1488,7 @@ void dt_iop_gui_init_blendif(GtkBox *blendw, dt_iop_module_t *module)
     bd->channel_tabs = GTK_NOTEBOOK(gtk_notebook_new());
 
     for(int ch = 0; ch < maxchannels; ch++)
-      dt_ui_notebook_page(bd->channel_tabs, labels[ch], tooltips[ch]);  /* *** */
+      dt_ui_notebook_page(bd->channel_tabs, labels[ch], tooltips[ch]);
 
     gtk_widget_show_all(GTK_WIDGET(gtk_notebook_get_nth_page(bd->channel_tabs, bd->tab)));
     gtk_notebook_set_current_page(GTK_NOTEBOOK(bd->channel_tabs), bd->tab);
