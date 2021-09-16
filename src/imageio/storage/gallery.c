@@ -261,8 +261,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   g_strlcpy(d->cached_dirname, dirname, sizeof(d->cached_dirname));
   c = filename + strlen(filename);
 
-  for(; c > filename && *c != '.' && *c != '/'; c--)
-    ;
+  for(; c > filename && *c != '.' && *c != '/'; c--);
   if(c <= filename || *c == '/')
     c = filename + strlen(filename);
 
@@ -290,8 +289,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   char relfilename[PATH_MAX] = { 0 }, relthumbfilename[PATH_MAX] = { 0 };
   c = filename + strlen(filename);
 
-  for(; c > filename && *c != '/'; c--)
-    ;
+  for(; c > filename && *c != '/'; c--);
   if(*c == '/')
     c++;
   if(c <= filename)
@@ -301,8 +299,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   g_strlcpy(relthumbfilename, relfilename, sizeof(relthumbfilename));
   c = relthumbfilename + strlen(relthumbfilename);
 
-  for(; c > relthumbfilename && *c != '.'; c--)
-    ;
+  for(; c > relthumbfilename && *c != '.'; c--);
   if(c <= relthumbfilename)
     c = relthumbfilename + strlen(relthumbfilename);
 
@@ -344,8 +341,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   // prepare thumb filename
   sc = filename + strlen(filename);
 
-  for(; sc > filename && *sc != '.' && *sc != '/'; sc--)
-    ;
+  for(; sc > filename && *sc != '.' && *sc != '/'; sc--);
   if(sc <= filename || *sc == '/')
     sc = filename + strlen(filename);
 
@@ -356,7 +352,7 @@ int store(dt_imageio_module_storage_t *self, dt_imageio_module_data_t *sdata, co
   dt_pthread_mutex_unlock(&darktable.plugin_threadsafe);
 
   if(dt_imageio_export(imgid, filename, format, fdata, high_quality, upscale, TRUE, icc_type,
-                       icc_filename, icc_intent, self, sdata, num, total, metadata) != 0)
+                       icc_filename, icc_intent, self, sdata, num, total, NULL) != 0)
   {
     printfail = TRUE;
     dt_control_log(_("could not export to file `%s'!"), filename);

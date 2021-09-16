@@ -523,10 +523,7 @@ int dt_imageio_is_hdr(const char *filename)
   while(c > filename && *c != '.') c--;
   if(*c == '.')
     if(!strcasecmp(c, ".pfm") || !strcasecmp(c, ".hdr")
-/*
-#ifdef HAVE_OPENEXR
-       || !strcasecmp(c, ".exr")
-#endif*/
+
 #ifdef HAVE_LIBAVIF
        || !strcasecmp(c, ".avif")
 #endif
@@ -700,6 +697,10 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
   dt_dev_pixelpipe_create_nodes(&pipe, &dev);
   dt_dev_pixelpipe_synch_all(&pipe, &dev);
 
+  const int ch = pipe.colors;
+  const int bch = ch < 4 ? ch : ch - 1;
+  pipe.colors = 4;
+
   if(filter)
   {
     if(!strncmp(filter, "pre:", 4))
@@ -729,7 +730,6 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
         sRGB = (!type || *type == DT_COLORSPACE_SRGB);
         break; // colorout can't have > 1 instance
       }
-                                     
     }
   }
   else
@@ -763,11 +763,8 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
   const gboolean iscropped =
     ((pipe.processed_width < (wd - img->crop_x - img->crop_width)) ||
      (pipe.processed_height < (ht - img->crop_y - img->crop_height)));
-  const gboolean exact_size = (
-      iscropped || upscale ||
-      (format_params->max_width != 0) ||
-      (format_params->max_height != 0) ||
-      thumbnail_export);
+  const gboolean exact_size = (iscropped || upscale || thumbnail_export ||
+                               (format_params->max_width != 0) || (format_params->max_height != 0));
   int width = format_params->max_width > 0 ? format_params->max_width : 0;
   int height = format_params->max_height > 0 ? format_params->max_height : 0;
 
@@ -841,18 +838,11 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
   const int bpp = format->bpp(format_params);
   dt_get_times(&start);
 
-  if(high_quality_processing)
-  {
-    /*
-     * if high quality processing was requested, downsampling will be done
-     * at the very end of the pipe (just before border and watermark)
-     */
+  if(high_quality_processing)  // if high quality, downsampling deferred to end.
     dt_dev_pixelpipe_process_no_gamma(&pipe, &dev, 0, 0, processed_width, processed_height, scale);
-  }
   else
   {
-    // else, downsampling will be right after demosaic
-    // so we need to turn temporarily disable in-pipe late downsampling iop.
+    // else,  need to turn temporarily disable in-pipe late downsampling iop.
     // find the finalscale module
     dt_dev_pixelpipe_iop_t *finalscale = NULL;
 
@@ -878,9 +868,9 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
 
     if(finalscale) finalscale->enabled = 1;
   }
+
   dt_show_times(&start, thumbnail_export ? "[dev_process_thumbnail] pixel pipeline processing"
                                          : "[dev_process_export] pixel pipeline processing");
-
   uint8_t *outbuf = pipe.backbuf;
 
   // downconversion to low-precision formats:
@@ -890,16 +880,27 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     {
       if(high_quality_processing)
       {
+        fprintf(stderr, "in the high qual data flipping, part 1\n"); /* *** */
         const float *const inbuf = (float *)outbuf;
-        for(size_t k = 0; k < (size_t)processed_width * processed_height; k++)
+        const size_t K = processed_width * processed_height;
+
+        for(size_t k = 0; k < (size_t)4 * K; k += 4)
         {
           // convert in place, this is unfortunately very serial..
-          const uint8_t r = CLAMP(inbuf[4 * k + 2] * 0xff, 0, 0xff);
-          const uint8_t g = CLAMP(inbuf[4 * k + 1] * 0xff, 0, 0xff);
-          const uint8_t b = CLAMP(inbuf[4 * k + 0] * 0xff, 0, 0xff);
-          outbuf[4 * k + 0] = r;
-          outbuf[4 * k + 1] = g;
-          outbuf[4 * k + 2] = b;
+          if(bch == 3)
+          {
+            const uint8_t r = CLAMP(inbuf[k + 0] * 0xff, 0, 0xff);
+            const uint8_t g = CLAMP(inbuf[k + 1] * 0xff, 0, 0xff);
+            const uint8_t b = CLAMP(inbuf[k + 2] * 0xff, 0, 0xff);
+            outbuf[k + 0] = r;
+            outbuf[k + 1] = g;
+            outbuf[k + 2] = b;
+          }
+          else
+          {
+            const uint8_t L = CLAMP(inbuf[k] * 0xff, 0, 0xff);
+            outbuf[k + 0] = outbuf[k + 1] = outbuf[k + 2] = L;
+          }
         }
       }
       // else processing output was 8-bit already, and no need to swap order
@@ -910,15 +911,25 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
       if(high_quality_processing)
       {
         const float *const inbuf = (float *)outbuf;
-        for(size_t k = 0; k < (size_t)processed_width * processed_height; k++)
+        const size_t K = processed_width * processed_height;
+
+        for(size_t k = 0; k < (size_t)4 * K; k += 4)
         {
           // convert in place, this is unfortunately very serial..
-          const uint8_t r = CLAMP(inbuf[4 * k + 0] * 0xff, 0, 0xff);
-          const uint8_t g = CLAMP(inbuf[4 * k + 1] * 0xff, 0, 0xff);
-          const uint8_t b = CLAMP(inbuf[4 * k + 2] * 0xff, 0, 0xff);
-          outbuf[4 * k + 0] = r;
-          outbuf[4 * k + 1] = g;
-          outbuf[4 * k + 2] = b;
+          if(bch == 3)
+          {
+            const uint8_t r = CLAMP(inbuf[k + 0] * 0xff, 0, 0xff);
+            const uint8_t g = CLAMP(inbuf[k + 1] * 0xff, 0, 0xff);
+            const uint8_t b = CLAMP(inbuf[k + 2] * 0xff, 0, 0xff);
+            outbuf[k + 0] = r;
+            outbuf[k + 1] = g;
+            outbuf[k + 2] = b;
+          }
+          else
+          {
+            const uint8_t L = CLAMP(inbuf[k] * 0xff, 0, 0xff);
+            outbuf[k + 0] = outbuf[k + 1] = outbuf[k + 2] = L;
+          }
         }
       }
       else
@@ -927,15 +938,15 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
         const size_t K = processed_width * processed_height;
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
-  dt_omp_firstprivate(processed_width, processed_height, buf8, K) \
+  dt_omp_firstprivate(buf8, K) \
   schedule(static)
 #endif
         // just flip byte order
-        for(size_t k = 0; k < K; k++)  
+        for(size_t k = 0; k < (size_t)4 * K; k += 4)
         {
-          uint8_t tmp = buf8[4 * k + 0];
-          buf8[4 * k + 0] = buf8[4 * k + 2];
-          buf8[4 * k + 2] = tmp;
+          uint8_t tmp = buf8[k + 0];
+          buf8[k + 0] = buf8[k + 2];
+          buf8[k + 2] = tmp;
         }
       }
     }
@@ -945,17 +956,22 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     // uint16_t per color channel
     float *buff = (float *)outbuf;
     uint16_t *buf16 = (uint16_t *)outbuf;
-    for(int y = 0; y < processed_height; y++)
-      for(int x = 0; x < processed_width; x++)
-      {
-        // convert in place
-        const size_t k = (size_t)processed_width * y + x;
-        for(int i = 0; i < 3; i++)
-          buf16[4 * k + i] = CLAMP(buff[4 * k + i] * 0x10000, 0, 0xffff);
-      }
+    const size_t K = processed_width * processed_height;
+/*
+#ifdef _OPENMP
+#pragma omp parallel for default(none) \
+  dt_omp_firstprivate(buf16, buff, bch, K) \
+  schedule(static)
+#endif*/
+// would like to understand why OMP doesn't work here... different buffers compared to the one case where it works?
+    for(size_t k = 0; k < (size_t)4 * K; k += 4)
+    {
+      // convert in place
+      for(int i = 0; i < 3; i++)
+        buf16[k + i] = CLAMP(buff[k + i] * 0x10000, 0, 0xffff);
+    }
   }
   // else output float, no further harm done to the pixels :)
-
   format_params->width = processed_width;
   format_params->height = processed_height;
   
@@ -970,10 +986,8 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     dt_image_full_path(imgid, pathname, sizeof(pathname), &from_cache);
     // last param is dng mode, it's false here
     length = dt_exif_read_blob(&exif_profile, pathname, imgid, sRGB, processed_width, processed_height, 0);
-
     res = format->write_image(format_params, filename, outbuf, icc_type, icc_filename, exif_profile, length, imgid,
                               num, total, &pipe);
-
     free(exif_profile);
   }
   else
