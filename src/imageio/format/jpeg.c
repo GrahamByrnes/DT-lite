@@ -383,7 +383,7 @@ int write_image(dt_imageio_module_data_t *jpg_tmp, const char *filename, const v
     buf = in + (size_t)jpg->cinfo.next_scanline * jpg->cinfo.image_width * 4;
     for(int i = 0; i < jpg->global.width; i++)
       for(int k = 0; k < 3; k++)
-        row[3 * i + k] = pipe->colors > 1 ? buf[4 * i + k] : buf[4 * i];////////////////////
+        row[3 * i + k] = pipe->colors > 1 ? buf[4 * i + k] : buf[4 * i];
         
     tmp[0] = row;
     jpeg_write_scanlines(&(jpg->cinfo), tmp, 1);
