@@ -968,7 +968,7 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     {
       // convert in place
       for(int i = 0; i < 3; i++)
-        buf16[k + i] = CLAMP(buff[k + i] * 0xffff, 0, 0xffff);
+        buf16[k + i] = CLAMP(buff[k + i] * 0x10000, 0, 0xffff);
     }
   }
   // else output float, no further harm done to the pixels :)
