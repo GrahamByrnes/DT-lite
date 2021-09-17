@@ -880,7 +880,6 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     {
       if(high_quality_processing)
       {
-        fprintf(stderr, "in the high qual data flipping, part 1\n"); /* *** */
         const float *const inbuf = (float *)outbuf;
         const size_t K = processed_width * processed_height;
 
