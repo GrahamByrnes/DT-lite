@@ -1772,14 +1772,11 @@ static gchar *get_query_string(const dt_collection_properties_t property, const 
       {
         int i = 0;
         for(i = 0; i < DT_IOP_ORDER_LAST; i++)
-        {
-          if(strcmp(escaped_text, _(dt_iop_order_string(i))) == 0) break;
-        }
-        if(i < DT_IOP_ORDER_LAST)
-          query = dt_util_dstrcat(query, "(id IN (SELECT imgid FROM main.module_order "
+          if(strcmp(escaped_text, _(dt_iop_order_string(i))) == 0)
+            break;
+
+        query = dt_util_dstrcat(query, "(id IN (SELECT imgid FROM main.module_order "
                                          "WHERE version = %d))", i);
-        else
-          query = dt_util_dstrcat(query, "(id NOT IN (SELECT imgid FROM main.module_order))");
       }
       break;
 

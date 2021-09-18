@@ -1692,10 +1692,9 @@ static void list_view(dt_lib_collect_rule_t *dr)
         {
           char *orders = NULL;
           for(int i = 0; i < DT_IOP_ORDER_LAST; i++)
-          {
             orders = dt_util_dstrcat(orders, "WHEN mo.version = %d THEN '%s' ",
                                      i, _(dt_iop_order_string(i)));
-          }
+
           orders = dt_util_dstrcat(orders, "ELSE '%s' ", _("none"));
           snprintf(query, sizeof(query),
                    "SELECT CASE %s END as ver, 1, COUNT(*) AS count"

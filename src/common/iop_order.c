@@ -64,13 +64,6 @@ const char *dt_iop_order_string(const dt_iop_order_t order)
     return iop_order_string[order];
 }
 
-// note v30_order has the original iop-order double that is
-// used only for the initial database migration.
-//
-// in the new code only the iop-order as int is used to order the module on the GUI.
-
-// @@_NEW_MOUDLE: For new module it is required to insert the new module name in both lists below.
-
 const dt_iop_order_entry_t v30_order[] = {
   { { 1.0f }, "rawprepare", 0},
   { { 2.0f }, "temperature", 0},
