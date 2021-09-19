@@ -129,12 +129,6 @@ gboolean dt_thumbtable_reset_first_offset(dt_thumbtable_t *table);
 // scrollbar change
 void dt_thumbtable_scrollbar_changed(dt_thumbtable_t *table, int x, int y);
 
-// init all accels
-void dt_thumbtable_init_accels(dt_thumbtable_t *table);
-// connect all accels if thumbtable is active in the view and they are not loaded
-// disconnect them if not
-void dt_thumbtable_update_accels_connection(dt_thumbtable_t *table, int view);
-
 // change the type of overlays that should be shown (over or under the image)
 void dt_thumbtable_set_overlays_mode(dt_thumbtable_t *table, dt_thumbnail_overlay_t over);
 // change the timeout of the overlays block

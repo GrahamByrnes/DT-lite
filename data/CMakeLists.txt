@@ -104,13 +104,6 @@ install(FILES noiseprofiles.json DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/darkta
 # Transform darktableconfig.xml into darktablerc
 #
 
-set(DEFCONFIG_AUDIOPLAYER "aplay")
-if(APPLE)
-  # OS X doesn't have aplay, but afplay should do
-  set(DEFCONFIG_AUDIOPLAYER "afplay")
-endif(APPLE)
-configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/darktableconfig.dtd ${CMAKE_CURRENT_BINARY_DIR}/darktableconfig.dtd COPYONLY )
-
 # get_property(DT_PLUGIN_IOPS GLOBAL PROPERTY DT_PLUGIN_IOPS)
 get_property(DT_PLUGIN_IOPS_VISIBLE_BY_DEFAULT GLOBAL PROPERTY DT_PLUGIN_IOPS_VISIBLE_BY_DEFAULT)
 

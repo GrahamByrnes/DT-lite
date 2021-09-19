@@ -57,23 +57,19 @@ gboolean restart_required = FALSE;
   <!-- reset callbacks -->
 
   <xsl:for-each select="./dtconfiglist/dtconfig[@prefs]">
-    <xsl:if test="name != 'opencl' or $HAVE_OPENCL=1">
-      <xsl:text>static gboolean&#xA;reset_widget_</xsl:text><xsl:value-of select="generate-id(.)"/><xsl:text> (GtkWidget *label, GdkEventButton *event, GtkWidget *widget)&#xA;{&#xA;  if(event->type == GDK_2BUTTON_PRESS)&#xA;  {&#xA;</xsl:text>
-      <xsl:apply-templates select="." mode="reset"/>
-      <xsl:text>&#xA;    return TRUE;&#xA;  }&#xA;  return FALSE;&#xA;}&#xA;&#xA;</xsl:text>
-    </xsl:if>
+    <xsl:text>static gboolean&#xA;reset_widget_</xsl:text><xsl:value-of select="generate-id(.)"/><xsl:text> (GtkWidget *label, GdkEventButton *event, GtkWidget *widget)&#xA;{&#xA;  if(event->type == GDK_2BUTTON_PRESS)&#xA;  {&#xA;</xsl:text>
+    <xsl:apply-templates select="." mode="reset"/>
+    <xsl:text>&#xA;    return TRUE;&#xA;  }&#xA;  return FALSE;&#xA;}&#xA;&#xA;</xsl:text>
   </xsl:for-each>
 
   <!-- response callbacks (on dialog close) -->
 
   <xsl:for-each select="./dtconfiglist/dtconfig[@prefs]">
-    <xsl:if test="name != 'opencl' or $HAVE_OPENCL=1">
-      <xsl:text>static void&#xA;preferences_response_callback_</xsl:text><xsl:value-of select="generate-id(.)"/><xsl:text> (GtkDialog *dialog, gint response_id, GtkWidget *widget)&#xA;{&#xA;  if(response_id != GTK_RESPONSE_DELETE_EVENT) return;&#xA;</xsl:text>
-      <xsl:text>gtk_widget_set_can_focus(GTK_WIDGET(dialog), TRUE);&#xA;</xsl:text>
-      <xsl:text>gtk_widget_grab_focus(GTK_WIDGET(dialog));&#xA;</xsl:text>
-      <xsl:apply-templates select="." mode="change"/>
-      <xsl:text>&#xA;}&#xA;&#xA;</xsl:text>
-    </xsl:if>
+    <xsl:text>static void&#xA;preferences_response_callback_</xsl:text><xsl:value-of select="generate-id(.)"/><xsl:text> (GtkDialog *dialog, gint response_id, GtkWidget *widget)&#xA;{&#xA;  if(response_id != GTK_RESPONSE_DELETE_EVENT) return;&#xA;</xsl:text>
+    <xsl:text>gtk_widget_set_can_focus(GTK_WIDGET(dialog), TRUE);&#xA;</xsl:text>
+    <xsl:text>gtk_widget_grab_focus(GTK_WIDGET(dialog));&#xA;</xsl:text>
+    <xsl:apply-templates select="." mode="change"/>
+    <xsl:text>&#xA;}&#xA;&#xA;</xsl:text>
   </xsl:for-each>
 
   <!-- restart callbacks (on change) -->
@@ -194,18 +190,6 @@ gboolean restart_required = FALSE;
   <xsl:for-each select="./dtconfiglist/dtconfig[@prefs='misc' and @section='tags']">
     <xsl:apply-templates select="." mode="tab_block"/>
   </xsl:for-each>
-
-<xsl:text>
-   {
-      GtkWidget *seclabel = gtk_label_new(_("keyboard shortcuts with multiple instances"));
-      GtkWidget *lbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-      gtk_box_pack_start(GTK_BOX(lbox), seclabel, FALSE, FALSE, 0);
-      gtk_widget_set_hexpand(lbox, TRUE);
-      gtk_widget_set_name(lbox, "pref_section");
-      gtk_grid_attach(GTK_GRID(grid), lbox, 0, line++, 2, 1);
-      g_object_set(lbox,  "tooltip-text", _("where multiple module instances are present, these preferences control rules that are applied (in order) to decide which module instance keyboard shortcuts will be applied to"), (gchar *)0);
-   }
-</xsl:text>
 
   <xsl:for-each select="./dtconfiglist/dtconfig[@prefs='misc' and @section='accel']">
     <xsl:apply-templates select="." mode="tab_block"/>

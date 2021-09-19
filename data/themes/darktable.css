@@ -491,7 +491,7 @@ overshoot.right
 }
 
 /* Size of control-buttons an duplicate module ones */
-  /* control-buttons are: filter in collect images, filter in header toolbar and arrow in filmic */
+  /* control-buttons are: filter in collect images, filter in header toolbar */
 #iop-plugin-ui-main #control-button,
 #lib-plugin-ui-main #control-button,
 #header-toolbar #control-button

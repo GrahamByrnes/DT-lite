@@ -375,7 +375,6 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
       dt_ui_container_foreach(darktable.gui->ui, l,(GtkCallback)_remove_child);
   }
   vm->current_view = new_view;
-  dt_thumbtable_update_accels_connection(dt_ui_thumbtable(darktable.gui->ui), new_view->view(new_view));
   dt_ui_restore_panels(darktable.gui->ui);
   // lets add plugins related to new view into panels.
   // this has to be done in reverse order to have the lowest position at the bottom!
