@@ -304,33 +304,17 @@ void dt_accel_connect_view(dt_view_t *self, const gchar *path, GClosure *closure
   self->accel_closures = g_slist_prepend(self->accel_closures, laccel);
 }
 
-dt_accel_t *dt_accel_connect_lib_as_view(dt_lib_module_t *module, gchar *view_name, const gchar *path, GClosure *closure)
-{
-  gchar accel_path[256];
-  dt_accel_path_view(accel_path, sizeof(accel_path), view_name, path);
-  gtk_accel_group_connect_by_path(darktable.control->accelerators, accel_path, closure);
-
-  dt_accel_t *accel = _lookup_accel(accel_path);
-  if(!accel) return NULL; // this happens when the path doesn't match any accel (typos, ...)
-
-  accel->closure = closure;
-
-  module->accel_closures = g_slist_prepend(module->accel_closures, accel);
-  return accel;
-}
-
 dt_accel_t *dt_accel_connect_lib_as_global(dt_lib_module_t *module, const gchar *path, GClosure *closure)
 {
   gchar accel_path[256];
   dt_accel_path_global(accel_path, sizeof(accel_path), path);
-
   dt_accel_t *accel = _lookup_accel(accel_path);
-  if(!accel) return NULL; // this happens when the path doesn't match any accel (typos, ...)
+  
+  if(!accel)
+    return NULL; // this happens when the path doesn't match any accel (typos, ...)
 
   gtk_accel_group_connect_by_path(darktable.control->accelerators, accel_path, closure);
-
   accel->closure = closure;
-
   module->accel_closures = g_slist_prepend(module->accel_closures, accel);
   return accel;
 }
