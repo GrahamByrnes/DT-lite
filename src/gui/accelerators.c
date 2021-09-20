@@ -293,17 +293,6 @@ void dt_accel_connect_global(const gchar *path, GClosure *closure)
   gtk_accel_group_connect_by_path(darktable.control->accelerators, accel_path, closure);
 }
 
-void dt_accel_connect_view(dt_view_t *self, const gchar *path, GClosure *closure)
-{
-  gchar accel_path[256];
-  dt_accel_path_view(accel_path, sizeof(accel_path), self->module_name, path);
-  gtk_accel_group_connect_by_path(darktable.control->accelerators, accel_path, closure);
-  dt_accel_t *laccel = _lookup_accel(accel_path);
-  laccel->closure = closure;
-
-  self->accel_closures = g_slist_prepend(self->accel_closures, laccel);
-}
-
 dt_accel_t *dt_accel_connect_lib_as_global(dt_lib_module_t *module, const gchar *path, GClosure *closure)
 {
   gchar accel_path[256];

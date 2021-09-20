@@ -94,7 +94,6 @@ void dt_accel_register_manual(const gchar *full_path, dt_view_type_flags_t views
 
 // Accelerator connection functions
 void dt_accel_connect_global(const gchar *path, GClosure *closure);
-void dt_accel_connect_view(dt_view_t *self, const gchar *path, GClosure *closure);
 dt_accel_t *dt_accel_connect_iop(dt_iop_module_t *module, const gchar *path, GClosure *closure);
 dt_accel_t *dt_accel_connect_lib(dt_lib_module_t *module, const gchar *path, GClosure *closure);
 //connect lib as a global shortcut
