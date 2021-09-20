@@ -59,7 +59,6 @@ typedef enum dt_accel_iop_slider_scale_t
 
 // Accel path string building functions
 void dt_accel_path_global(char *s, size_t n, const char *path);
-void dt_accel_path_view(char *s, size_t n, char *module, const char *path);
 void dt_accel_path_iop(char *s, size_t n, char *module, const char *path);
 void dt_accel_path_lib(char *s, size_t n, char *module, const char *path);
 void dt_accel_path_manual(char *s, size_t n, const char *full_path);
@@ -71,7 +70,6 @@ void dt_accel_path_manual(char *s, size_t n, const char *full_path);
  * 3 - Slider edit path
  * 4 - Slider dynamic path
  */
-/*void dt_accel_paths_slider_iop(char *s[], size_t n, char *module, const char *path);*/
 
 // Accelerator search functions
 dt_accel_dynamic_t *dt_dynamic_accel_find_by_key(guint accel_key, GdkModifierType mods);
@@ -80,7 +78,6 @@ dt_accel_t *dt_accel_find_by_path(const gchar *path);
 
 // Accelerator registration functions
 void dt_accel_register_global(const gchar *path, guint accel_key, GdkModifierType mods);
-void dt_accel_register_view(dt_view_t *self, const gchar *path, guint accel_key, GdkModifierType mods);
 void dt_accel_register_iop(dt_iop_module_so_t *so, gboolean local, const gchar *path, guint accel_key,
                            GdkModifierType mods);
 void dt_accel_register_lib(dt_lib_module_t *self, const gchar *path, guint accel_key, GdkModifierType mods);

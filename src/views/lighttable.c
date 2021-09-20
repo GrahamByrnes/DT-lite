@@ -520,55 +520,6 @@ int key_pressed(dt_view_t *self, guint key, guint state)
   return 0;
 }
 
-void init_key_accels(dt_view_t *self)
-{
-  // movement keys
-  dt_accel_register_view(self, NC_("accel", "move page up"), GDK_KEY_Page_Up, 0);
-  dt_accel_register_view(self, NC_("accel", "move page down"), GDK_KEY_Page_Down, 0);
-  dt_accel_register_view(self, NC_("accel", "move up"), GDK_KEY_Up, 0);
-  dt_accel_register_view(self, NC_("accel", "move down"), GDK_KEY_Down, 0);
-  dt_accel_register_view(self, NC_("accel", "move left"), GDK_KEY_Left, 0);
-  dt_accel_register_view(self, NC_("accel", "move right"), GDK_KEY_Right, 0);
-  dt_accel_register_view(self, NC_("accel", "move start"), GDK_KEY_Home, 0);
-  dt_accel_register_view(self, NC_("accel", "move end"), GDK_KEY_End, 0);
-
-  // movement keys with selection
-  dt_accel_register_view(self, NC_("accel", "move page up and select"), GDK_KEY_Page_Up, GDK_SHIFT_MASK);
-  dt_accel_register_view(self, NC_("accel", "move page down and select"), GDK_KEY_Page_Down, GDK_SHIFT_MASK);
-  dt_accel_register_view(self, NC_("accel", "move up and select"), GDK_KEY_Up, GDK_SHIFT_MASK);
-  dt_accel_register_view(self, NC_("accel", "move down and select"), GDK_KEY_Down, GDK_SHIFT_MASK);
-  dt_accel_register_view(self, NC_("accel", "move left and select"), GDK_KEY_Left, GDK_SHIFT_MASK);
-  dt_accel_register_view(self, NC_("accel", "move right and select"), GDK_KEY_Right, GDK_SHIFT_MASK);
-  dt_accel_register_view(self, NC_("accel", "move start and select"), GDK_KEY_Home, GDK_SHIFT_MASK);
-  dt_accel_register_view(self, NC_("accel", "move end and select"), GDK_KEY_End, GDK_SHIFT_MASK);
-
-  dt_accel_register_view(self, NC_("accel", "align images to grid"), 0, 0);
-  dt_accel_register_view(self, NC_("accel", "reset first image offset"), 0, 0);
-  dt_accel_register_view(self, NC_("accel", "select toggle image"), GDK_KEY_space, 0);
-  dt_accel_register_view(self, NC_("accel", "select single image"), GDK_KEY_Return, 0);
-
-  // Preview key
-  dt_accel_register_view(self, NC_("accel", "preview"), GDK_KEY_w, 0);
-  dt_accel_register_view(self, NC_("accel", "preview with focus detection"), GDK_KEY_w, GDK_CONTROL_MASK);
-  dt_accel_register_view(self, NC_("accel", "sticky preview"), GDK_KEY_w, GDK_MOD1_MASK);
-  dt_accel_register_view(self, NC_("accel", "sticky preview with focus detection"), GDK_KEY_w,
-                         GDK_MOD1_MASK | GDK_CONTROL_MASK);
-
-  // undo/redo
-  dt_accel_register_view(self, NC_("accel", "undo"), GDK_KEY_z, GDK_CONTROL_MASK);
-  dt_accel_register_view(self, NC_("accel", "redo"), GDK_KEY_y, GDK_CONTROL_MASK);
-
-  // zoom for full culling & preview
-  dt_accel_register_view(self, NC_("accel", "preview zoom 100%"), 0, 0);
-  dt_accel_register_view(self, NC_("accel", "preview zoom fit"), 0, 0);
-
-  // zoom in/out/min/max
-  dt_accel_register_view(self, NC_("accel", "zoom in"), GDK_KEY_plus, GDK_CONTROL_MASK);
-  dt_accel_register_view(self, NC_("accel", "zoom max"), GDK_KEY_plus, GDK_MOD1_MASK);
-  dt_accel_register_view(self, NC_("accel", "zoom out"), GDK_KEY_minus, GDK_CONTROL_MASK);
-  dt_accel_register_view(self, NC_("accel", "zoom min"), GDK_KEY_minus, GDK_MOD1_MASK);
-}
-
 GSList *mouse_actions(const dt_view_t *self)
 {
   dt_library_t *lib = (dt_library_t *)self->data;
