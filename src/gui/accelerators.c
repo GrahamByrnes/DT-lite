@@ -128,36 +128,6 @@ void dt_accel_register_iop(dt_iop_module_so_t *so, gboolean local, const gchar *
   darktable.control->accelerator_list = g_slist_prepend(darktable.control->accelerator_list, accel);
 }
 
-void dt_accel_register_lib_as_view(gchar *view_name, const gchar *path, guint accel_key, GdkModifierType mods)
-{
-  //register a lib shortcut but place it in the path of a view
-  gchar accel_path[256];
-  dt_accel_path_view(accel_path, sizeof(accel_path), view_name, path);
-  if (dt_accel_find_by_path(accel_path)) return; // return if nothing to add, to avoid multiple entries
-
-  dt_accel_t *accel = (dt_accel_t *)g_malloc(sizeof(dt_accel_t));
-  gtk_accel_map_add_entry(accel_path, accel_key, mods);
-  g_strlcpy(accel->path, accel_path, sizeof(accel->path));
-
-  snprintf(accel_path, sizeof(accel_path), "<Darktable>/%s/%s/%s", C_("accel", "views"),
-           g_dgettext(NULL, view_name),
-           g_dpgettext2(NULL, "accel", path));
-
-  g_strlcpy(accel->translated_path, accel_path, sizeof(accel->translated_path));
-
-  g_strlcpy(accel->module, view_name, sizeof(accel->module));
-  accel->local = FALSE;
-
-  if(strcmp(view_name, "lighttable") == 0)
-    accel->views = DT_VIEW_LIGHTTABLE;
-  else if(strcmp(view_name, "darkroom") == 0)
-    accel->views = DT_VIEW_DARKROOM;
-  else if(strcmp(view_name, "print") == 0)
-    accel->views = DT_VIEW_PRINT;
-
-  darktable.control->accelerator_list = g_slist_prepend(darktable.control->accelerator_list, accel);
-}
-
 void dt_accel_register_lib_for_views(dt_lib_module_t *self, dt_view_type_flags_t views, const gchar *path,
                                      guint accel_key, GdkModifierType mods)
 {

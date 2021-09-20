@@ -86,8 +86,6 @@ void dt_accel_register_iop(dt_iop_module_so_t *so, gboolean local, const gchar *
 void dt_accel_register_lib(dt_lib_module_t *self, const gchar *path, guint accel_key, GdkModifierType mods);
 void dt_accel_register_lib_for_views(dt_lib_module_t *self, dt_view_type_flags_t views, const gchar *path,
                                      guint accel_key, GdkModifierType mods);
-//register lib shortcut but make it look like a view shortcut
-void dt_accel_register_lib_as_view(gchar *view_name, const gchar *path, guint accel_key, GdkModifierType mods);
 void dt_accel_register_combobox_iop(dt_iop_module_so_t *so, gboolean local, const gchar *path);
 void dt_accel_register_manual(const gchar *full_path, dt_view_type_flags_t views, guint accel_key,
                               GdkModifierType mods);
