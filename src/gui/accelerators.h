@@ -115,7 +115,6 @@ void dt_accel_deregister_global(const gchar *path);
 void dt_accel_rename_preset_iop(dt_iop_module_t *module, const gchar *path, const gchar *new_path);
 void dt_accel_rename_preset_lib(dt_lib_module_t *module, const gchar *path, const gchar *new_path);
 void dt_accel_rename_global(const gchar *path, const gchar *new_path);
-void dt_accel_rename_lua(const gchar *path, const gchar *new_path);
 
 // UX miscellaneous functions
 void dt_accel_widget_toast(GtkWidget *widget);
