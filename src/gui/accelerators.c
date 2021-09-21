@@ -379,7 +379,7 @@ void dt_accel_widget_toast(GtkWidget *widget)
         break;
     }
 
-    if (show)
+    if(show)
     {
       if(w->label[0] != '\0')
       { // label is not empty
@@ -495,7 +495,9 @@ void dt_accel_connect_locals_iop(dt_iop_module_t *module)
   while(l)
   {
     dt_accel_t *accel = (dt_accel_t *)l->data;
-    if(accel) gtk_accel_group_connect_by_path(darktable.control->accelerators, accel->path, accel->closure);
+    if(accel)
+      gtk_accel_group_connect_by_path(darktable.control->accelerators, accel->path, accel->closure);
+
     l = g_slist_next(l);
   }
 
@@ -508,7 +510,9 @@ void dt_accel_disconnect_list(GSList **list_ptr)
   while(list)
   {
     dt_accel_t *accel = (dt_accel_t *)list->data;
-    if(accel) gtk_accel_group_disconnect(darktable.control->accelerators, accel->closure);
+    if(accel)
+      gtk_accel_group_disconnect(darktable.control->accelerators, accel->closure);
+
     list = g_slist_delete_link(list, list);
   }
   *list_ptr = NULL;
