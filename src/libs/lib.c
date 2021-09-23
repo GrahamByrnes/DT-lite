@@ -848,7 +848,6 @@ static void popup_callback(GtkButton *button, GdkEventButton *event, dt_lib_modu
   dtgtk_button_set_active(DTGTK_BUTTON(button), FALSE);
 }
 
-
 void dt_lib_gui_set_expanded(dt_lib_module_t *module, gboolean expanded)
 {
   if(!module->expander) return;

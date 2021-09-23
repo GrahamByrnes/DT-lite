@@ -176,6 +176,7 @@ static void default_process(struct dt_iop_module_t *self, struct dt_dev_pixelpip
                             const void *const i, void *const o, const struct dt_iop_roi_t *const roi_in,
                             const struct dt_iop_roi_t *const roi_out)
 {
+  if(roi_in->width <= 1 || roi_in->height <= 1 || roi_out->width <= 1 || roi_out->height <= 1) return;
   if(darktable.codepath.OPENMP_SIMD && self->process_plain)
     self->process_plain(self, piece, i, o, roi_in, roi_out);
   else if(self->process_plain)
@@ -208,8 +209,8 @@ void dt_iop_default_init(dt_iop_module_t *module)
 {
   size_t param_size = module->so->get_introspection()->size;
   module->params_size = param_size;
-  module->params = (dt_iop_params_t *)malloc(param_size);
-  module->default_params = (dt_iop_params_t *)malloc(param_size);
+  module->params = (dt_iop_params_t *)calloc(1, param_size);
+  module->default_params = (dt_iop_params_t *)calloc(1, param_size);
 
   module->default_enabled = 0;
   module->gui_data = NULL;
@@ -649,7 +650,6 @@ static void dt_iop_gui_delete_callback(GtkButton *button, dt_iop_module_t *modul
     // we just hide the module to avoid lots of gtk critical warnings
     gtk_widget_hide(module->expander);
     // we move the module far away, to avoid problems when reordering instance after that
-    // FIXME: ?????
     gtk_box_reorder_child(dt_ui_get_container(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER),
                           module->expander, -1);
     dt_iop_gui_cleanup_module(module);
@@ -1147,11 +1147,11 @@ static void init_presets(dt_iop_module_so_t *module_so)
   {
     const char *name = (char *)sqlite3_column_text(stmt, 0);
     int32_t old_params_version = sqlite3_column_int(stmt, 1);
-    void *old_params = (void *)sqlite3_column_blob(stmt, 2);
-    int32_t old_params_size = sqlite3_column_bytes(stmt, 2);
-    int32_t old_blend_params_version = sqlite3_column_int(stmt, 3);
-    void *old_blend_params = (void *)sqlite3_column_blob(stmt, 4);
-    int32_t old_blend_params_size = sqlite3_column_bytes(stmt, 4);
+    const void *old_params = (void *)sqlite3_column_blob(stmt, 2);
+    const int32_t old_params_size = sqlite3_column_bytes(stmt, 2);
+    const int32_t old_blend_params_version = sqlite3_column_int(stmt, 3);
+    const void *old_blend_params = (void *)sqlite3_column_blob(stmt, 4);
+    const int32_t old_blend_params_size = sqlite3_column_bytes(stmt, 4);
 
     if(old_params_version == 0)
     {
@@ -1588,8 +1588,8 @@ void dt_iop_request_focus(dt_iop_module_t *module)
       darktable.develop->gui_module->gui_focus(darktable.develop->gui_module, FALSE);
 
     dt_iop_color_picker_reset(darktable.develop->gui_module, TRUE);
-    gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(darktable.develop->gui_module), GTK_STATE_FLAG_NORMAL,
-                               TRUE);
+    gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(darktable.develop->gui_module),
+                               GTK_STATE_FLAG_NORMAL, TRUE);
 
     if(darktable.develop->gui_module->operation_tags_filter())
       dt_dev_invalidate_from_gui(darktable.develop);

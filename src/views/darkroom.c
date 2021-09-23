@@ -699,6 +699,7 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   }
   // get current plugin in focus before defocus
   gchar *active_plugin = NULL;
+
   if(darktable.develop->gui_module)
     active_plugin = g_strdup(darktable.develop->gui_module->op);
 
@@ -837,7 +838,7 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   // set the module list order
   dt_dev_reorder_gui_module_list(dev);
   dt_dev_masks_list_change(dev);
-  // cleanup histograms */
+  // cleanup histograms
   g_list_foreach(dev->iop, (GFunc)dt_iop_cleanup_histogram, (gpointer)NULL);
   // make signals work again, we can't restore the active_plugin while signals
   //   are blocked due to implementation of dt_iop_request_focus so we do it now
@@ -2118,7 +2119,10 @@ void enter(dt_view_t *self)
     while(modules)
     {
       dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
-      if(!strcmp(module->op, active_plugin)) dt_iop_request_focus(module);
+
+      if(!strcmp(module->op, active_plugin))
+        dt_iop_request_focus(module);
+
       modules = g_list_next(modules);
     }
 

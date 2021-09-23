@@ -204,9 +204,7 @@ static void _update_samples_output(dt_lib_module_t *self)
 {
   for(GSList *samples = darktable.lib->proxy.colorpicker.live_samples;
       samples; samples = g_slist_next(samples))
-  {
     _update_sample_label(samples->data);
-  }
 }
 
 static gboolean _sample_tooltip_callback(GtkWidget *widget, gint x, gint y, gboolean keyboard_mode,
@@ -248,8 +246,8 @@ static gboolean _sample_tooltip_callback(GtkWidget *widget, gint x, gint y, gboo
 
   gchar *tooltip_text = g_strjoinv("\n", sample_parts);
   g_strfreev(sample_parts);
-
   static GtkWidget *view = NULL;
+
   if(!view)
   {
     view = gtk_text_view_new();
@@ -272,7 +270,6 @@ static gboolean _sample_tooltip_callback(GtkWidget *widget, gint x, gint y, gboo
 static void _statistic_changed(GtkWidget *widget, dt_lib_module_t *p)
 {
   dt_conf_set_int("ui_last/colorpicker_mode", dt_bauhaus_combobox_get(widget));
-
   _update_picker_output(p);
   _update_samples_output((dt_lib_module_t *)p);
 }
@@ -280,7 +277,6 @@ static void _statistic_changed(GtkWidget *widget, dt_lib_module_t *p)
 static void _color_mode_changed(GtkWidget *widget, dt_lib_module_t *p)
 {
   dt_conf_set_int("ui_last/colorpicker_model", dt_bauhaus_combobox_get(widget));
-
   _update_picker_output(p);
   _update_samples_output((dt_lib_module_t *)p);
 }
@@ -290,7 +286,6 @@ static void _label_size_allocate_callback(GtkWidget *widget, GdkRectangle *alloc
   gint label_width;
   gtk_label_set_attributes(GTK_LABEL(widget), NULL);
   gtk_widget_get_preferred_width(widget, NULL, &label_width);
-
   double scale = (double)allocation->width / label_width;
 
   while(label_width > allocation->width && scale > .25)
@@ -394,7 +389,6 @@ static void _add_sample(GtkButton *widget, dt_lib_module_t *self)
 
   gtk_box_pack_start(GTK_BOX(data->samples_container), sample->container, TRUE, TRUE, 0);
   gtk_widget_show_all(sample->container);
-
   // Setting the actual data
   if(darktable.lib->proxy.colorpicker.size)
   {
@@ -421,6 +415,7 @@ static void _add_sample(GtkButton *widget, dt_lib_module_t *self)
 
   // Updating the display
   _update_samples_output((dt_lib_module_t *)self);
+
   if(darktable.lib->proxy.colorpicker.display_samples)
     dt_dev_invalidate_from_gui(darktable.develop);
 }
@@ -524,7 +519,6 @@ void gui_init(dt_lib_module_t *self)
 
   // The picker button, mode and statistic combo boxes
   GtkWidget *picker_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-
   data->statistic_selector = dt_bauhaus_combobox_new(NULL);
   dt_bauhaus_combobox_add(data->statistic_selector, _("mean"));
   dt_bauhaus_combobox_add(data->statistic_selector, _("min"));
@@ -533,8 +527,8 @@ void gui_init(dt_lib_module_t *self)
   dt_bauhaus_combobox_set_entries_ellipsis(data->statistic_selector, PANGO_ELLIPSIZE_NONE);
   g_signal_connect(G_OBJECT(data->statistic_selector), "value-changed", G_CALLBACK(_statistic_changed), self);
   gtk_widget_set_valign(data->statistic_selector, GTK_ALIGN_END);
-  gtk_box_pack_start(GTK_BOX(picker_row), data->statistic_selector, TRUE, TRUE, 0);
 
+  gtk_box_pack_start(GTK_BOX(picker_row), data->statistic_selector, TRUE, TRUE, 0);
   data->color_mode_selector = dt_bauhaus_combobox_new(NULL);
   dt_bauhaus_combobox_add(data->color_mode_selector, _("RGB"));
   dt_bauhaus_combobox_add(data->color_mode_selector, _("Lab"));
@@ -545,13 +539,13 @@ void gui_init(dt_lib_module_t *self)
   dt_bauhaus_combobox_set_entries_ellipsis(data->color_mode_selector, PANGO_ELLIPSIZE_NONE);
   g_signal_connect(G_OBJECT(data->color_mode_selector), "value-changed", G_CALLBACK(_color_mode_changed), self);
   gtk_widget_set_valign(data->color_mode_selector, GTK_ALIGN_END);
-  gtk_box_pack_start(GTK_BOX(picker_row), data->color_mode_selector, TRUE, TRUE, 0);
 
+  gtk_box_pack_start(GTK_BOX(picker_row), data->color_mode_selector, TRUE, TRUE, 0);
   data->picker_button = dt_color_picker_new(NULL, DT_COLOR_PICKER_POINT_AREA, picker_row);
   gtk_widget_set_tooltip_text(data->picker_button, _("turn on color picker\nctrl+click to select an area"));
   gtk_widget_set_name(GTK_WIDGET(data->picker_button), "color-picker-button");
   g_signal_connect(G_OBJECT(data->picker_button), "toggled", G_CALLBACK(_picker_button_toggled), data);
-
+  
   gtk_box_pack_start(GTK_BOX(self->widget), picker_row, TRUE, TRUE, 0);
 
   // The small sample, label and add button
@@ -591,7 +585,6 @@ void gui_init(dt_lib_module_t *self)
 
   data->samples_container = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   gtk_box_pack_start(GTK_BOX(self->widget), data->samples_container, TRUE, TRUE, 0);
-
   data->display_samples_check_box = gtk_check_button_new_with_label(_("display sample areas on image"));
   gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(data->display_samples_check_box))),
                           PANGO_ELLIPSIZE_MIDDLE);
@@ -639,6 +632,10 @@ void gui_reset(dt_lib_module_t *self)
   dt_lib_colorpicker_t *data = self->data;
   // First turning off any active picking
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->picker_button), FALSE);
+  if(darktable.lib->proxy.colorpicker.restrict_histogram)
+    dt_dev_invalidate_from_gui(darktable.develop);
+
+  dt_iop_color_picker_reset(NULL, FALSE);
   // Resetting the picked colors
   for(int i = 0; i < 3; i++)
   {

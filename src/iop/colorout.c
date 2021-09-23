@@ -95,6 +95,7 @@ int output_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe,
                       dt_dev_pixelpipe_iop_t *piece)
 {
   int cst = iop_cs_rgb;
+
   if(piece)
   {
     const dt_iop_colorout_data_t *const d = (dt_iop_colorout_data_t *)piece->data;
@@ -151,7 +152,10 @@ static void output_profile_changed(GtkWidget *widget, gpointer user_data)
 static void _signal_profile_changed(gpointer instance, gpointer user_data)
 {
   dt_develop_t *dev = (dt_develop_t *)user_data;
-  if(!dev->gui_attached || dev->gui_leaving) return;
+
+  if(!dev->gui_attached || dev->gui_leaving)
+    return;
+
   dt_dev_reprocess_center(dev);
 }
 
@@ -276,7 +280,7 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
       const float *in = ((float *)ivoid) + (size_t)k;
       float *out = ((float *)ovoid) + (size_t)k;
       dt_Lab_to_XYZ_mono(*in, out);
-      out[2] = out[1] = out[0];//////////////////
+      out[2] = out[1] = out[0];
       out[3] = in[3];
 
       if(gamutcheck && (out[0] < 0.0f))
@@ -374,10 +378,10 @@ void commit_params(struct dt_iop_module_t *self, dt_iop_params_t *p1, dt_dev_pix
     out_filename = darktable.color_profiles->display_filename;
     out_intent = darktable.color_profiles->display_intent;
   }
-
   // when the output type is Lab then process is a nop, so we can avoid creating a transform
   // and the subsequent error messages
   d->type = out_type;
+
   if(out_type == DT_COLORSPACE_LAB)
     return;
 
@@ -613,7 +617,9 @@ void gui_init(struct dt_iop_module_t *self)
   for(GList *l = darktable.color_profiles->profiles; l; l = g_list_next(l))
   {
     dt_colorspaces_color_profile_t *prof = (dt_colorspaces_color_profile_t *)l->data;
-    if(prof->out_pos > -1) dt_bauhaus_combobox_add(g->output_profile, prof->name);
+
+    if(prof->out_pos > -1)
+      dt_bauhaus_combobox_add(g->output_profile, prof->name);
   }
 
   gtk_widget_set_tooltip_text(g->output_intent, _("rendering intent"));

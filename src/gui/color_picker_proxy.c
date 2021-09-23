@@ -152,10 +152,11 @@ static gboolean _iop_color_picker_callback_button_press(GtkWidget *button, GdkEv
 {
   dt_iop_module_t *module = self->module ? self->module : dt_iop_get_colorout_module();
 
-  if(!module || module->dt->gui->reset) return FALSE;
-
+  if(!module || module->dt->gui->reset)
+    return FALSE;
   // set module active if not yet the case
-  if(module->off) gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(module->off), TRUE);
+  if(module->off)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(module->off), TRUE);
 
   const GdkModifierType state
       = e != NULL ? e->state & gtk_accelerator_get_default_mod_mask() : dt_key_modifier_state();
@@ -179,9 +180,8 @@ static gboolean _iop_color_picker_callback_button_press(GtkWidget *button, GdkEv
     module->request_color_pick = DT_REQUEST_COLORPICK_MODULE;
 
     if(kind == DT_COLOR_PICKER_POINT_AREA)
-    {
       kind = ctrl_key_pressed ? DT_COLOR_PICKER_AREA : DT_COLOR_PICKER_POINT;
-    }
+
     if(kind == DT_COLOR_PICKER_AREA)
     {
       float box[4];
