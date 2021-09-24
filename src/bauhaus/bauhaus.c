@@ -1926,7 +1926,9 @@ void dt_bauhaus_hide_popup()
 
 void dt_bauhaus_show_popup(dt_bauhaus_widget_t *w)
 {
-  if(darktable.bauhaus->current) dt_bauhaus_hide_popup();
+  if(darktable.bauhaus->current)
+    dt_bauhaus_hide_popup();
+
   darktable.bauhaus->current = w;
   darktable.bauhaus->keys_cnt = 0;
   memset(darktable.bauhaus->keys, 0, sizeof(darktable.bauhaus->keys));
@@ -2003,33 +2005,27 @@ static gboolean dt_bauhaus_slider_add_delta_internal(GtkWidget *widget, float de
 {
   dt_bauhaus_widget_t *w = (dt_bauhaus_widget_t *)widget;
   dt_bauhaus_slider_data_t *d = &w->data.slider;
-
   float multiplier;
-
   GdkModifierType modifiers = gtk_accelerator_get_default_mod_mask();
+
   if((state & modifiers) == GDK_SHIFT_MASK)
-  {
     multiplier = dt_conf_get_float("darkroom/ui/scale_rough_step_multiplier");
-  }
   else if((state & modifiers) == GDK_CONTROL_MASK)
-  {
     multiplier = dt_conf_get_float("darkroom/ui/scale_precise_step_multiplier");
-  }
   else
-  {
     multiplier = dt_conf_get_float("darkroom/ui/scale_step_multiplier");
-  }
 
   const float min_visible = powf(10.0f, -d->digits) / (d->max - d->min);
+  
   if(fabsf(delta*multiplier) < min_visible) 
     multiplier = min_visible / fabsf(delta);
 
   delta *= multiplier;
 
-  if(w->module) dt_iop_request_focus(w->module);
+  if(w->module)
+    dt_iop_request_focus(w->module);
 
   dt_bauhaus_slider_set_normalized(w, d->pos + delta);
-
   return TRUE;
 }
 
@@ -2074,7 +2070,8 @@ static gboolean dt_bauhaus_slider_key_press(GtkWidget *widget, GdkEventKey *even
     delta = -d->scale / 5.0f;
   }
 
-  if(!handled) return dt_control_key_pressed(gdk_keyval_to_lower(event->keyval), dt_gui_translated_key_state(event));
+  if(!handled)
+    return dt_control_key_pressed(gdk_keyval_to_lower(event->keyval), dt_gui_translated_key_state(event));
 
   return dt_bauhaus_slider_add_delta_internal(widget, delta, event->state);
 }
