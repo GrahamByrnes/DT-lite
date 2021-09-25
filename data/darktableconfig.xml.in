@@ -431,9 +431,6 @@
 	<option>RGB</option>
 	<option>Lab</option>
 	<option>LCh</option>
-	<option>HSL</option>
-	<option>Hex</option>
-	<option>none</option>
       </enum>
     </type>
     <default>RGB</default>
@@ -441,30 +438,10 @@
     <longdescription/>
   </dtconfig>
   <dtconfig>
-    <name>ui_last/colorpicker_mode</name>
-    <type>
-      <enum>
-	<option>mean</option>
-	<option>min</option>
-	<option>max</option>
-      </enum>
-    </type>
-    <default>mean</default>
-    <shortdescription>statistic used to describe colorpicker box</shortdescription>
-    <longdescription/>
-  </dtconfig>
-  <dtconfig>
     <name>ui_last/colorpicker_display_samples</name>
     <type>boolean</type>
     <default>false</default>
-    <shortdescription>display live sample areas on image</shortdescription>
-    <longdescription/>
-  </dtconfig>
-  <dtconfig>
-    <name>ui_last/colorpicker_restrict_histogram</name>
-    <type>boolean</type>
-    <default>false</default>
-    <shortdescription>restrict histogram to selection</shortdescription>
+    <shortdescription>display live sample areas on histogram</shortdescription>
     <longdescription/>
   </dtconfig>
   <dtconfig>

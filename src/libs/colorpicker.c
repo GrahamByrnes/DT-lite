@@ -37,7 +37,7 @@ DT_MODULE(1);
 typedef struct dt_lib_colorpicker_t
 {
   GtkWidget *large_color_patch;
-  GtkWidget *color_model_selector;
+  GtkWidget *color_mode_selector;
   GtkWidget *picker_button;
   GtkWidget *samples_container;
   GtkWidget *add_sample_button;
@@ -189,7 +189,7 @@ static void _update_samples_output(dt_lib_module_t *self)
     _update_sample_label(samples->data);
 }
 
-static void _color_model_changed(GtkWidget *widget, dt_lib_module_t *p)
+static void _color_mode_changed(GtkWidget *widget, dt_lib_module_t *p)
 {
   dt_conf_set_int("ui_last/colorpicker_model", dt_bauhaus_combobox_get(widget));
   _update_picker_output(p);
@@ -283,15 +283,15 @@ void gui_init(dt_lib_module_t *self)
   // The picker button, mode and statistic combo boxes
   GtkWidget *picker_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 
-  data->color_model_selector = dt_bauhaus_combobox_new(NULL);
-  dt_bauhaus_combobox_add(data->color_model_selector, _("RGB"));
-  dt_bauhaus_combobox_add(data->color_model_selector, _("Lab"));
-  dt_bauhaus_combobox_add(data->color_model_selector, _("LCh"));
-  dt_bauhaus_combobox_set(data->color_model_selector, dt_conf_get_int("ui_last/colorpicker_model"));
-  dt_bauhaus_combobox_set_entries_ellipsis(data->color_model_selector, PANGO_ELLIPSIZE_NONE);
-  g_signal_connect(G_OBJECT(data->color_model_selector), "value-changed", G_CALLBACK(_color_model_changed), self);
-  gtk_widget_set_valign(data->color_model_selector, GTK_ALIGN_END);
-  gtk_box_pack_start(GTK_BOX(picker_row), data->color_model_selector, TRUE, TRUE, 0);
+  data->color_mode_selector = dt_bauhaus_combobox_new(NULL);
+  dt_bauhaus_combobox_add(data->color_mode_selector, _("RGB"));
+  dt_bauhaus_combobox_add(data->color_mode_selector, _("Lab"));
+  dt_bauhaus_combobox_add(data->color_mode_selector, _("LCh"));
+  dt_bauhaus_combobox_set(data->color_mode_selector, dt_conf_get_int("ui_last/colorpicker_model"));
+  dt_bauhaus_combobox_set_entries_ellipsis(data->color_mode_selector, PANGO_ELLIPSIZE_NONE);
+  g_signal_connect(G_OBJECT(data->color_mode_selector), "value-changed", G_CALLBACK(_color_mode_changed), self);
+  gtk_widget_set_valign(data->color_mode_selector, GTK_ALIGN_END);
+  gtk_box_pack_start(GTK_BOX(picker_row), data->color_mode_selector, TRUE, TRUE, 0);
 
   data->picker_button = dt_color_picker_new(NULL, DT_COLOR_PICKER_POINT_AREA, picker_row);
   gtk_widget_set_tooltip_text(data->picker_button, _("turn on color picker"));
@@ -365,6 +365,8 @@ void gui_reset(dt_lib_module_t *self)
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->picker_button), FALSE);
   dt_iop_color_picker_reset(NULL, FALSE);  // Resetting the picked colors
 
+  dt_iop_color_picker_reset(NULL, FALSE);
+  // Resetting the picked colors
   for(int i = 0; i < 3; i++)
   {
     darktable.lib->proxy.colorpicker.picked_color_rgb_mean[i]
@@ -377,7 +379,7 @@ void gui_reset(dt_lib_module_t *self)
   }
   _update_picker_output(self);
   // Resetting GUI elements
-  dt_bauhaus_combobox_set(data->color_model_selector, 0);
+  dt_bauhaus_combobox_set(data->color_mode_selector, 0);
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->display_samples_check_box), FALSE);
 }
 
