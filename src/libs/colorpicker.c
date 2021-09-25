@@ -365,8 +365,6 @@ void gui_reset(dt_lib_module_t *self)
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->picker_button), FALSE);
   dt_iop_color_picker_reset(NULL, FALSE);  // Resetting the picked colors
 
-  dt_iop_color_picker_reset(NULL, FALSE);
-  // Resetting the picked colors
   for(int i = 0; i < 3; i++)
   {
     darktable.lib->proxy.colorpicker.picked_color_rgb_mean[i]
