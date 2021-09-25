@@ -2556,13 +2556,6 @@ char *dt_gui_show_standalone_string_dialog(const char *title, const char *markup
   return NULL;
 }
 
-// TODO: should that go to another place than gtk.c?
-void dt_gui_add_help_link(GtkWidget *widget, const char *link)
-{
-  g_object_set_data(G_OBJECT(widget), "dt-help-url", (void *)link);
-  gtk_widget_add_events(widget, GDK_BUTTON_PRESS_MASK);
-}
-
 // load a CSS theme
 void dt_gui_load_theme(const char *theme)
 {

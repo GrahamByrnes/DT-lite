@@ -645,8 +645,6 @@ void gui_init(dt_lib_module_t *self)
   grid = (GtkGrid *)gtk_grid_new();
   d->metadata_grid = grid;
   gtk_grid_attach(GTK_GRID(self->widget), GTK_WIDGET(grid), 0, 0, 1, 1);
-
-  dt_gui_add_help_link(self->widget, "metadata_editor.html#metadata_editor_usage");
   gtk_grid_set_row_spacing(grid, DT_PIXEL_APPLY_DPI(5));
   gtk_grid_set_column_spacing(grid, DT_PIXEL_APPLY_DPI(10));
 

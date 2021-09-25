@@ -1809,7 +1809,6 @@ GtkWidget *dt_iop_gui_get_expander(dt_iop_module_t *module)
   g_signal_connect(G_OBJECT(hw[IOP_MODULE_INSTANCE]), "button-press-event", G_CALLBACK(dt_iop_gui_multiinstance_callback),
                    module);
   gtk_widget_set_name(GTK_WIDGET(hw[IOP_MODULE_INSTANCE]), "module-instance-button");
-  dt_gui_add_help_link(expander, dt_get_help_url(module->op));
   // add reset button
   hw[IOP_MODULE_RESET] = dtgtk_button_new(dtgtk_cairo_paint_reset, CPF_STYLE_FLAT, NULL);
   module->reset_button = GTK_WIDGET(hw[IOP_MODULE_RESET]);
@@ -1866,7 +1865,6 @@ GtkWidget *dt_iop_gui_get_expander(dt_iop_module_t *module)
   gtk_box_pack_start(GTK_BOX(iopw), module->widget, TRUE, TRUE, 0);
   dt_iop_gui_init_blending(iopw, module);
   gtk_widget_set_name(module->widget, "iop-plugin-ui-main");
-  dt_gui_add_help_link(module->widget, dt_get_help_url(module->op));
   gtk_widget_hide(iopw);
 
   module->expander = expander;

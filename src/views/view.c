@@ -379,7 +379,7 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
   // lets add plugins related to new view into panels.
   // this has to be done in reverse order to have the lowest position at the bottom!
   for(GList *iter = g_list_last(darktable.lib->plugins); iter; iter = g_list_previous(iter))
-  {
+  {    
     dt_lib_module_t *plugin = (dt_lib_module_t *)(iter->data);
     if(dt_lib_is_visible_in_view(plugin, new_view))
     {
@@ -389,19 +389,6 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
       // if we didn't get an expander let's add the widget
       if(!w)
         w = plugin->widget;
-
-      dt_gui_add_help_link(w, dt_get_help_url(plugin->plugin_name));
-      // some plugins help links depend on the view
-      if(!strcmp(plugin->plugin_name,"module_toolbox")
-        || !strcmp(plugin->plugin_name,"view_toolbox"))
-      {
-        dt_view_type_flags_t view_type = new_view->view(new_view);
-
-        if(view_type == DT_VIEW_LIGHTTABLE)
-          dt_gui_add_help_link(w,"lighttable_chapter.html#lighttable_overview");
-        if(view_type == DT_VIEW_DARKROOM)
-          dt_gui_add_help_link(w,"darkroom_bottom_panel.html#darkroom_bottom_panel");
-      }
       // add module to its container
       dt_ui_container_add_widget(darktable.gui->ui, plugin->container(plugin), w);
     }

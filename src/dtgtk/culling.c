@@ -780,14 +780,14 @@ dt_culling_t *dt_culling_new(dt_culling_mode_t mode)
   dt_culling_t *table = (dt_culling_t *)calloc(1, sizeof(dt_culling_t));
   table->mode = mode;
   table->widget = gtk_layout_new(NULL, NULL);
-  // TODO dt_gui_add_help_link(table->widget, dt_get_help_url("lighttable_filemanager"));
-
   // set css name and class
   if(mode == DT_CULLING_MODE_PREVIEW)
     gtk_widget_set_name(table->widget, "preview");
   else
     gtk_widget_set_name(table->widget, "culling");
+
   GtkStyleContext *context = gtk_widget_get_style_context(table->widget);
+
   if(mode == DT_CULLING_MODE_PREVIEW)
     gtk_style_context_add_class(context, "dt_preview");
   else

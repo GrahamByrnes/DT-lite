@@ -727,8 +727,6 @@ void gui_init(dt_lib_module_t *self)
 
   d->scrolled_window = GTK_WIDGET(scrolled_window);
   self->widget = d->scrolled_window;
-
-  dt_gui_add_help_link(self->widget, dt_get_help_url(self->plugin_name));
   gtk_grid_set_column_spacing(GTK_GRID(child_grid_window), DT_PIXEL_APPLY_DPI(5));
 
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(d->scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);

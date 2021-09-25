@@ -370,8 +370,6 @@ char *dt_gui_show_standalone_string_dialog(const char *title, const char *markup
 void *dt_gui_show_splashscreen();
 void dt_gui_close_splashscreen(void *splashscreen);
 
-void dt_gui_add_help_link(GtkWidget *widget, const char *link);
-
 // load a CSS theme
 void dt_gui_load_theme(const char *theme);
 
@@ -390,8 +388,10 @@ static inline GtkWidget *dt_ui_button_new(const gchar *label, const gchar *toolt
 {
   GtkWidget *button = gtk_button_new_with_label(label);
   gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(button))), PANGO_ELLIPSIZE_END);
-  if(tooltip) gtk_widget_set_tooltip_text(button, tooltip);
-  if(help) dt_gui_add_help_link(button, help);
+
+  if(tooltip)
+    gtk_widget_set_tooltip_text(button, tooltip);
+
   return button;
 };
 
