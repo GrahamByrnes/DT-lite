@@ -351,7 +351,7 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   }
 
 #ifdef M_MMAP_THRESHOLD
-  mallopt(M_MMAP_THRESHOLD, 128 * 1024); /* use mmap() for large allocations */
+  mallopt(M_MMAP_THRESHOLD, 128 * 1024); // use mmap() for large allocations
 #endif
 
   // make sure that stack/frame limits are good (musl)
@@ -738,10 +738,8 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
       }
 #ifdef __APPLE__
       else if(!strncmp(argv[k], "-psn_", 5))
-      {
         // "-psn_*" argument is added automatically by macOS and should be ignored
         argv[k] = NULL;
-      }
 #endif
       else
         return usage(argv[0]); // fail on unrecognized options
@@ -758,13 +756,11 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
     if(k > i)
     {
       k -= i;
-
       for(int j = i + k; j < argc; j++)
       {
         argv[j-k] = argv[j];
         argv[j] = NULL;
       }
-
       argc -= k;
     }
   }
@@ -906,16 +902,17 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   else
   {
     if(dbfilename_from_command && !strcmp(dbfilename_from_command, ":memory:"))
-      dt_gui_presets_init(); // init preset db schema.
+      dt_gui_presets_init();
+  // init preset db schema.
     darktable.control->running = 0;
     darktable.control->accelerators = NULL;
     dt_pthread_mutex_init(&darktable.control->run_mutex, NULL);
   }
   // initialize collection query
   darktable.collection = dt_collection_new(NULL);
-  /* initialize selection */
+  // initialize selection
   darktable.selection = dt_selection_new();
-  /* capabilities set to NULL */
+  // capabilities set to NULL
   darktable.capabilities = NULL;
   // Initialize the password storage engine
   darktable.pwstorage = dt_pwstorage_new();
@@ -923,13 +920,13 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   darktable.themes = NULL;
 
 #ifdef HAVE_GRAPHICSMAGICK
-  /* GraphicsMagick init */
+  // GraphicsMagick init
   InitializeMagick(darktable.progname);
 
   // *SIGH*
   dt_set_signal_handlers();
 #elif defined HAVE_IMAGEMAGICK
-  /* ImageMagick init */
+  // ImageMagick init
   MagickWandGenesis();
 #endif
 
@@ -945,6 +942,7 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   // The GUI must be initialized before the views, because the init()
   // functions of the views depend on darktable.control->accels_* to register
   // their keyboard accelerators
+  
   if(init_gui)
   {
     darktable.gui = (dt_gui_gtk_t *)calloc(1, sizeof(dt_gui_gtk_t));
@@ -990,12 +988,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 
   if(init_gui)
   {
-#ifdef HAVE_GPHOTO2
-    // Initialize the camera control.
-    // this is done late so that the gui can react to the signal sent but before switching to lighttable!
-    darktable.camctl = dt_camctl_new();
-#endif
-
     darktable.lib = (dt_lib_t *)calloc(1, sizeof(dt_lib_t));
     dt_lib_init(darktable.lib);
     dt_gui_gtk_load_config();
@@ -1030,25 +1022,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
   if(init_gui)
   {
     const char *mode = "lighttable";
-#ifdef HAVE_GAME
-    // april 1st: you have to earn using dt first! or know that you can switch views with keyboard shortcuts
-    time_t now;
-    time(&now);
-    struct tm lt;
-    localtime_r(&now, &lt);
-
-    if(lt.tm_mon == 3 && lt.tm_mday == 1)
-    {
-      const int current_year = lt.tm_year + 1900;
-      const int last_year = dt_conf_get_int("ui_last/april1st");
-      const gboolean kill_april1st = dt_conf_get_bool("ui_last/no_april1st");
-      if(!kill_april1st && last_year < current_year)
-      {
-        dt_conf_set_int("ui_last/april1st", current_year);
-        mode = "knight";
-      }
-    }
-#endif
     // we have to call dt_ctl_switch_mode_to() here already to not run into a lua deadlock.
     // having another call later is ok
     dt_ctl_switch_mode_to(mode);
@@ -1079,10 +1052,10 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
       dt_control_set_mouse_over_id(last_id);
       dt_ctl_switch_mode_to("darkroom");
     }
+
 #endif
   }
-  // last but not least construct the popup that asks the user about images whose xmp files are newer than the
-  // db entry
+  // construct the popup that asks the user about images whose xmp files are newer than the db entry
   if(init_gui && changed_xmp_files)
     dt_control_crawler_show_image_list(changed_xmp_files);
 
@@ -1237,12 +1210,12 @@ void dt_free_align(void *mem)
 
 void dt_show_times(const dt_times_t *start, const char *prefix)
 {
-  /* Skip all the calculations an everything if -d perf isn't on */
+  // Skip all the calculations an everything if -d perf isn't on
   if(darktable.unmuted & DT_DEBUG_PERF)
   {
     dt_times_t end;
     dt_get_times(&end);
-    char buf[140]; /* Arbitrary size, should be lots big enough for everything used in DT */
+    char buf[140]; // Arbitrary size, should be lots big enough for everything used in DT
     snprintf(buf, sizeof(buf), "%s took %.3f secs (%.3f CPU)", prefix, end.clock - start->clock,
              end.user - start->user);
     dt_print(DT_DEBUG_PERF, "%s\n", buf);
@@ -1251,12 +1224,12 @@ void dt_show_times(const dt_times_t *start, const char *prefix)
 
 void dt_show_times_f(const dt_times_t *start, const char *prefix, const char *suffix, ...)
 {
-  /* Skip all the calculations an everything if -d perf isn't on */
+  // Skip all the calculations an everything if -d perf isn't on
   if(darktable.unmuted & DT_DEBUG_PERF)
   {
     dt_times_t end;
     dt_get_times(&end);
-    char buf[160]; /* Arbitrary size, should be lots big enough for everything used in DT */
+    char buf[160]; // Arbitrary size, should be lots big enough for everything used in DT
     const int n = snprintf(buf, sizeof(buf), "%s took %.3f secs (%.3f CPU) ", prefix, end.clock - start->clock,
                            end.user - start->user);
 

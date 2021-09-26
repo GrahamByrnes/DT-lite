@@ -575,18 +575,12 @@ void dt_bauhaus_init()
   dt_osx_disallow_fullscreen(darktable.bauhaus->popup_window);
 #endif
   // this is needed for popup, not for toplevel.
-  // since popup_area gets the focus if we show the window, this is all
-  // we need.
+  // since popup_area gets the focus if we show the window, this is all we need.
   dt_gui_key_accel_block_on_focus_connect(darktable.bauhaus->popup_area);
 
   gtk_widget_set_size_request(darktable.bauhaus->popup_area, DT_PIXEL_APPLY_DPI(300), DT_PIXEL_APPLY_DPI(300));
   gtk_window_set_resizable(GTK_WINDOW(darktable.bauhaus->popup_window), FALSE);
   gtk_window_set_default_size(GTK_WINDOW(darktable.bauhaus->popup_window), 260, 260);
-  // gtk_window_set_modal(GTK_WINDOW(c->popup_window), TRUE);
-  // gtk_window_set_decorated(GTK_WINDOW(c->popup_window), FALSE);
-
-  // for pie menu:
-  // gtk_window_set_position(GTK_WINDOW(c->popup_window), GTK_WIN_POS_MOUSE);// | GTK_WIN_POS_CENTER);
 
   // needed on macOS to avoid fullscreening the popup with newer GTK
   gtk_window_set_type_hint(GTK_WINDOW(darktable.bauhaus->popup_window), GDK_WINDOW_TYPE_HINT_POPUP_MENU);
