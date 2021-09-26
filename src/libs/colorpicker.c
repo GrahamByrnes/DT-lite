@@ -259,8 +259,6 @@ void gui_init(dt_lib_module_t *self)
   darktable.lib->proxy.colorpicker.picked_color_lab_max = data->proxy_linked.picked_color_lab_max;
   darktable.lib->proxy.colorpicker.update_panel = _update_picker_output;
   darktable.lib->proxy.colorpicker.update_samples = _update_samples_output;
-  darktable.lib->proxy.colorpicker.set_sample_area = _set_sample_area;
-  darktable.lib->proxy.colorpicker.set_sample_box_area = _set_sample_box_area;
   darktable.lib->proxy.colorpicker.set_sample_point = _set_sample_point;
 
   // Setting up the GUI
