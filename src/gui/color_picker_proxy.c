@@ -46,23 +46,18 @@ static gboolean _iop_record_point_area(dt_iop_color_picker_t *self)
   if(self && self->module)
   {
     for(int k = 0; k < 2; k++)
-    {
       if(self->pick_pos[k] != self->module->color_picker_point[k])
       {
-      
         self->pick_pos[k] = self->module->color_picker_point[k];
         selection_changed = TRUE;
       }
-
-    }
+      
     for(int k = 0; k < 4; k++) 
-    {
       if (self->pick_box[k] != self->module->color_picker_box[k])
       {
         self->pick_box[k] = self->module->color_picker_box[k];
         selection_changed = TRUE;
       }
-    }
   }
 
   return selection_changed;
@@ -82,9 +77,7 @@ static void _iop_get_point(dt_iop_color_picker_t *self, float *pos)
 static void _iop_get_area(dt_iop_color_picker_t *self, float *box)
 {
   if(!isnan(self->pick_box[0]) && !isnan(self->pick_box[1]))
-  {
     for(int k = 0; k < 4; k++) box[k] = self->pick_box[k];
-  }
   else
   {
     const float size = 0.99f;
@@ -97,13 +90,9 @@ static void _iop_get_area(dt_iop_color_picker_t *self, float *box)
 static void _iop_color_picker_apply(dt_iop_module_t *module, dt_dev_pixelpipe_iop_t *piece)
 {
   if(_iop_record_point_area(module->picker))
-  {
     if(!module->blend_data || !blend_color_picker_apply(module, module->picker->colorpick, piece))
-    {
       if(module->color_picker_apply) 
         module->color_picker_apply(module, module->picker->colorpick, piece);
-    }
-  }
 }
 
 static void _iop_color_picker_reset(dt_iop_color_picker_t *picker)
@@ -124,14 +113,12 @@ static void _iop_color_picker_reset(dt_iop_color_picker_t *picker)
 void dt_iop_color_picker_reset(dt_iop_module_t *module, gboolean keep)
 {
   if(module && module->picker)
-  {
     if(!keep || (strcmp(gtk_widget_get_name(module->picker->colorpick), "keep-active") != 0))
     {
       _iop_color_picker_reset(module->picker);
       module->picker = NULL;
       module->request_color_pick = DT_REQUEST_COLORPICK_OFF;
     }
-  }
 }
 
 static void _iop_init_picker(dt_iop_color_picker_t *picker, dt_iop_module_t *module,
@@ -142,8 +129,11 @@ static void _iop_init_picker(dt_iop_color_picker_t *picker, dt_iop_module_t *mod
   picker->picker_cst = iop_cs_NONE;
   picker->colorpick  = button;
   
-  for(int j = 0; j<2; j++) picker->pick_pos[j] = NAN;
-  for(int j = 0; j < 4; j++) picker->pick_box[j] = NAN;
+  for(int j = 0; j<2; j++)
+    picker->pick_pos[j] = NAN;
+
+  for(int j = 0; j < 4; j++)
+    picker->pick_box[j] = NAN;
 
   _iop_color_picker_reset(picker);
 }
@@ -258,7 +248,9 @@ GtkWidget *dt_color_picker_new(dt_iop_module_t *module, dt_iop_color_picker_kind
     _iop_init_picker(color_picker, module, kind, button);
     g_signal_connect_data(G_OBJECT(button), "button-press-event", 
                           G_CALLBACK(_iop_color_picker_callback_button_press), color_picker, (GClosureNotify)g_free, 0);
-    if (w) gtk_box_pack_start(GTK_BOX(w), button, FALSE, FALSE, 0);
+
+    if(w)
+      gtk_box_pack_start(GTK_BOX(w), button, FALSE, FALSE, 0);
 
     return button;
   }
