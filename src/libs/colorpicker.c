@@ -225,13 +225,12 @@ void gui_init(dt_lib_module_t *self)
 
   // The color patch
   GtkWidget *color_patch_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_widget_set_name(GTK_WIDGET(color_patch_row), "color-picker-area");
   GtkWidget *color_patch = gtk_drawing_area_new();
+  gtk_widget_set_name(GTK_WIDGET(color_patch), "color sample");
   g_signal_connect(G_OBJECT(color_patch), "draw", G_CALLBACK(_sample_draw_callback), &data->proxy_linked);
   gtk_box_pack_start(GTK_BOX(color_patch_row), color_patch, TRUE, TRUE, 0);
   gtk_widget_show(color_patch);
   GtkWidget *info_col = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-  gtk_box_pack_start(GTK_BOX(self->widget), color_patch_row, FALSE, FALSE, 0);
 
   // The picker button and mode combo boxes
   GtkWidget *picker_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
