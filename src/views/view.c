@@ -253,10 +253,8 @@ void dt_vm_remove_child(GtkWidget *widget, gpointer data)
   gtk_container_remove(GTK_CONTAINER(data), widget);
 }
 
-/*
-   When expanders get destroyed, they destroy the child
-   so remove the child before that
-   */
+//When expanders get destroyed, they destroy the child
+//so remove the child before that
 static void _remove_child(GtkWidget *child,GtkContainer *container)
 {
     if(DTGTK_IS_EXPANDER(child))

@@ -17,7 +17,6 @@
 */
 
 #include "dtgtk/expander.h"
-
 #include <gtk/gtk.h>
 
 G_DEFINE_TYPE(GtkDarktableExpander, dtgtk_expander, GTK_TYPE_BOX);
@@ -29,35 +28,30 @@ static void dtgtk_expander_class_init(GtkDarktableExpanderClass *class)
 GtkWidget *dtgtk_expander_get_frame(GtkDarktableExpander *expander)
 {
   g_return_val_if_fail(DTGTK_IS_EXPANDER(expander), NULL);
-
   return expander->frame;
 }
 
 GtkWidget *dtgtk_expander_get_header(GtkDarktableExpander *expander)
 {
   g_return_val_if_fail(DTGTK_IS_EXPANDER(expander), NULL);
-
   return expander->header;
 }
 
 GtkWidget *dtgtk_expander_get_header_event_box(GtkDarktableExpander *expander)
 {
   g_return_val_if_fail(DTGTK_IS_EXPANDER(expander), NULL);
-
   return expander->header_evb;
 }
 
 GtkWidget *dtgtk_expander_get_body(GtkDarktableExpander *expander)
 {
   g_return_val_if_fail(DTGTK_IS_EXPANDER(expander), NULL);
-
   return expander->body;
 }
 
 GtkWidget *dtgtk_expander_get_body_event_box(GtkDarktableExpander *expander)
 {
   g_return_val_if_fail(DTGTK_IS_EXPANDER(expander), NULL);
-
   return expander->body_evb;
 }
 
@@ -70,9 +64,7 @@ void dtgtk_expander_set_expanded(GtkDarktableExpander *expander, gboolean expand
   if(expander->expanded != expanded)
   {
     GtkWidget *widget = GTK_WIDGET(expander);
-
     expander->expanded = expanded;
-
     GtkWidget *frame = expander->body;
 
     if(frame)
@@ -86,7 +78,6 @@ void dtgtk_expander_set_expanded(GtkDarktableExpander *expander, gboolean expand
 gboolean dtgtk_expander_get_expanded(GtkDarktableExpander *expander)
 {
   g_return_val_if_fail(DTGTK_IS_EXPANDER(expander), FALSE);
-
   return expander->expanded;
 }
 
@@ -98,12 +89,11 @@ static void dtgtk_expander_init(GtkDarktableExpander *expander)
 GtkWidget *dtgtk_expander_new(GtkWidget *header, GtkWidget *body)
 {
   GtkDarktableExpander *expander;
-
   g_return_val_if_fail(GTK_IS_WIDGET(header), NULL);
   g_return_val_if_fail(GTK_IS_WIDGET(body), NULL);
 
-  expander
-      = g_object_new(dtgtk_expander_get_type(), "orientation", GTK_ORIENTATION_VERTICAL, "spacing", 0, NULL);
+  expander = g_object_new(dtgtk_expander_get_type(), "orientation", GTK_ORIENTATION_VERTICAL,
+                          "spacing", 0, NULL);
   expander->expanded = -1;
   expander->header = header;
   expander->body = body;
