@@ -77,22 +77,6 @@ static gboolean _sample_draw_callback(GtkWidget *widget, cairo_t *cr, dt_colorpi
   gdk_cairo_set_source_rgba(cr, &sample->rgb);
   cairo_rectangle(cr, 0, 0, width, height);
   cairo_fill (cr);
-  // if the sample is locked we want to add a lock
-  if(sample->locked)
-  {
-    const int border = DT_PIXEL_APPLY_DPI(2);
-    const int icon_width = width - 2 * border;
-    const int icon_height = height - 2 * border;
-
-    if(icon_width > 0 && icon_height > 0)
-    {
-      GdkRGBA fg_color;
-      gtk_style_context_get_color(gtk_widget_get_style_context(widget), gtk_widget_get_state_flags(widget), &fg_color);
-      gdk_cairo_set_source_rgba(cr, &fg_color);
-      dtgtk_cairo_paint_lock(cr, border, border, icon_width, icon_height, 0, NULL);
-    }
-  }
-
   return FALSE;
 }
 
@@ -222,19 +206,19 @@ void gui_init(dt_lib_module_t *self)
   self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   GtkStyleContext *context = gtk_widget_get_style_context(self->widget);
   gtk_style_context_add_class(context, "picker-module");
-
+  
   // The color patch
   GtkWidget *color_patch_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_box_set_homogeneous(GTK_BOX(color_patch_row), TRUE);
   GtkWidget *color_patch = gtk_drawing_area_new();
-  gtk_widget_set_name(GTK_WIDGET(color_patch), "color sample");
+  gtk_widget_set_name(GTK_WIDGET(color_patch), "color-sampler");
   g_signal_connect(G_OBJECT(color_patch), "draw", G_CALLBACK(_sample_draw_callback), &data->proxy_linked);
   gtk_box_pack_start(GTK_BOX(color_patch_row), color_patch, TRUE, TRUE, 0);
   gtk_widget_show(color_patch);
+
+  // color model
   GtkWidget *info_col = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-
-  // The picker button and mode combo boxes
   GtkWidget *picker_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-
   data->color_mode_selector = dt_bauhaus_combobox_new(NULL);
   dt_bauhaus_combobox_add(data->color_mode_selector, _("RGB"));
   dt_bauhaus_combobox_add(data->color_mode_selector, _("Lab"));
@@ -243,36 +227,39 @@ void gui_init(dt_lib_module_t *self)
   dt_bauhaus_combobox_set_entries_ellipsis(data->color_mode_selector, PANGO_ELLIPSIZE_NONE);
   g_signal_connect(G_OBJECT(data->color_mode_selector), "value-changed",
                    G_CALLBACK(_color_mode_changed), self);
-  gtk_widget_set_valign(data->color_mode_selector, GTK_ALIGN_END);
   gtk_box_pack_start(GTK_BOX(picker_row), data->color_mode_selector, TRUE, TRUE, 0);
+  gtk_widget_show(data->color_mode_selector);
 
+  // Picker button 
   data->picker_button = dt_color_picker_new(NULL, DT_COLOR_PICKER_POINT_AREA, picker_row);
-  gtk_widget_set_tooltip_text(data->picker_button, _("turn on color picker\nctrl+click to select an area"));
+  gtk_widget_set_tooltip_text(data->picker_button, _("turn on color picker"));
   gtk_widget_set_name(GTK_WIDGET(data->picker_button), "color-picker-button");
   g_signal_connect(G_OBJECT(data->picker_button), "toggled", G_CALLBACK(_picker_button_toggled), data);
-  gtk_box_pack_start(GTK_BOX(picker_row), data->picker_button, TRUE, TRUE, 0);
-  gtk_box_pack_start(GTK_BOX(info_col), picker_row, FALSE, FALSE, 0);
+  gtk_box_pack_end(GTK_BOX(picker_row), data->picker_button, FALSE, TRUE, 0);
+  gtk_box_pack_start(GTK_BOX(info_col), picker_row, TRUE, FALSE, 0);
+  gtk_widget_show(data->picker_button);
 
-  // The label
+  // color label
   GtkWidget *col_label = data->proxy_linked.output_label = gtk_label_new("color_label");
   gtk_label_set_justify(GTK_LABEL(col_label), GTK_JUSTIFY_CENTER);
   gtk_label_set_ellipsize(GTK_LABEL(col_label), PANGO_ELLIPSIZE_START);
-  gtk_widget_set_valign(col_label, GTK_ALIGN_START);
-  gtk_box_pack_start(GTK_BOX(info_col), col_label, FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(info_col), col_label, FALSE, TRUE, 0);
   gtk_widget_show(col_label);
 
-  gtk_box_pack_start(GTK_BOX(color_patch_row), info_col, TRUE, TRUE, 0);
-  gtk_box_pack_start(GTK_BOX(self->widget), color_patch_row, TRUE, TRUE, 0);
-  
-  //Check box
-  data->display_check_box = gtk_check_button_new_with_label(_("display on histogram"));
+  // display on histogram
+  GtkWidget *display_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  data->display_check_box = gtk_check_button_new_with_label(_("histogram"));
   gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(data->display_check_box))),
                           PANGO_ELLIPSIZE_MIDDLE);
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->display_check_box),
-                               dt_conf_get_int("ui_last/colorpicker_display_samples"));
+                               dt_conf_get_bool("ui_last/colorpicker_display_samples"));
   g_signal_connect(G_OBJECT(data->display_check_box), "toggled",
                    G_CALLBACK(_display_samples_changed), NULL);
-  gtk_box_pack_start(GTK_BOX(self->widget), data->display_check_box, TRUE, TRUE, 0);
+  gtk_box_pack_start(GTK_BOX(display_row), data->display_check_box, TRUE, TRUE, 5);
+  gtk_box_pack_start(GTK_BOX(info_col), display_row, TRUE, TRUE, 0);
+  gtk_widget_show(data->display_check_box);
+  gtk_box_pack_start(GTK_BOX(color_patch_row), info_col, TRUE, TRUE, 0);
+  gtk_box_pack_start(GTK_BOX(self->widget), color_patch_row, TRUE, TRUE, 0);
 }
 
 void gui_cleanup(dt_lib_module_t *self)
