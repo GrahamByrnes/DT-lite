@@ -161,7 +161,7 @@ static void _color_mode_changed(GtkWidget *widget, dt_lib_module_t *p)
 
 static void _display_samples_changed(GtkToggleButton *button, gpointer data)
 {
-  dt_conf_set_int("ui_last/colorpicker_display_samples", gtk_toggle_button_get_active(button));
+  dt_conf_set_bool("ui_last/colorpicker_display_samples", gtk_toggle_button_get_active(button));
   darktable.lib->proxy.colorpicker.display_samples = gtk_toggle_button_get_active(button);
 }
 
@@ -190,7 +190,7 @@ void gui_init(dt_lib_module_t *self)
   // Initializing proxy functions and data
   darktable.lib->proxy.colorpicker.module = self;
   darktable.lib->proxy.colorpicker.size = dt_conf_get_int("ui_last/colorpicker_size");
-  darktable.lib->proxy.colorpicker.display_samples = dt_conf_get_int("ui_last/colorpicker_display_samples");
+  darktable.lib->proxy.colorpicker.display_samples = dt_conf_get_bool("ui_last/colorpicker_display_samples");
   darktable.lib->proxy.colorpicker.live_samples = NULL;
   darktable.lib->proxy.colorpicker.picked_color_rgb_mean = data->proxy_linked.picked_color_rgb_mean;
   darktable.lib->proxy.colorpicker.picked_color_rgb_min = data->proxy_linked.picked_color_rgb_min;
