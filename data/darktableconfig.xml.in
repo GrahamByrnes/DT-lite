@@ -425,13 +425,6 @@
     <longdescription>when this option is enabled then darktable will try to scroll the module to the top of the visible list</longdescription>
   </dtconfig>
   <dtconfig>
-    <name>ui_last/colorpicker_size</name>
-    <type>int</type>
-    <default>0</default>
-    <shortdescription/>
-    <longdescription/>
-  </dtconfig>
-  <dtconfig>
     <name>ui_last/colorpicker_model</name>
     <type>
       <enum>

@@ -107,7 +107,8 @@ static void _update_sample_label(dt_colorpicker_sample_t *sample)
     if(alt[1] < 0.01)
       alt[2] = 0.0f;
 
-    snprintf(text, sizeof(text), "%6.02f %6.02f %6.02f", CLAMP(alt[0], .0f, 100.0f), alt[1], alt[2] * 360);
+    snprintf(text, sizeof(text), "%6.02f %6.02f %6.02f", CLAMP(alt[0], .0f, 100.0f),
+                                  alt[1] >= 0.0f ? alt[1] : 0.0f, alt[2] * 360);
   }
 
   gtk_label_set_text(GTK_LABEL(sample->output_label), text);
@@ -139,12 +140,6 @@ static void _picker_button_toggled(GtkToggleButton *button, dt_lib_colorpicker_t
   }
 }
 
-static void _update_size(dt_lib_module_t *self, int size)
-{
-  darktable.lib->proxy.colorpicker.size = size;
-  _update_picker_output(self);
-}
-
 static void _update_samples_output(dt_lib_module_t *self)
 {
   for(GSList *samples = darktable.lib->proxy.colorpicker.live_samples;
@@ -173,7 +168,7 @@ static void _set_sample_point(dt_lib_module_t *self, float x, float y)
     darktable.develop->gui_module->color_picker_point[1] = y;
   }
 
-  _update_size(self, DT_COLORPICKER_SIZE_POINT);
+  _update_picker_output(self);
 }
 
 void gui_init(dt_lib_module_t *self)
@@ -189,7 +184,6 @@ void gui_init(dt_lib_module_t *self)
 
   // Initializing proxy functions and data
   darktable.lib->proxy.colorpicker.module = self;
-  darktable.lib->proxy.colorpicker.size = dt_conf_get_int("ui_last/colorpicker_size");
   darktable.lib->proxy.colorpicker.display_samples = dt_conf_get_bool("ui_last/colorpicker_display_samples");
   darktable.lib->proxy.colorpicker.live_samples = NULL;
   darktable.lib->proxy.colorpicker.picked_color_rgb_mean = data->proxy_linked.picked_color_rgb_mean;
