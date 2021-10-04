@@ -425,6 +425,13 @@
     <longdescription>when this option is enabled then darktable will try to scroll the module to the top of the visible list</longdescription>
   </dtconfig>
   <dtconfig>
+    <name>ui_last/colorpicker_size</name>
+    <type>int</type>
+    <default>0</default>
+    <shortdescription/>
+    <longdescription/>
+  </dtconfig>
+  <dtconfig>
     <name>ui_last/colorpicker_model</name>
     <type>
       <enum>
@@ -442,13 +449,6 @@
     <type>boolean</type>
     <default>false</default>
     <shortdescription>display live sample areas on histogram</shortdescription>
-    <longdescription/>
-  </dtconfig>
-  <dtconfig>
-    <name>ui_last/colorpicker_large</name>
-    <type>boolean</type>
-    <default>false</default>
-    <shortdescription>display large colorpicker patch</shortdescription>
     <longdescription/>
   </dtconfig>
   <dtconfig>
