@@ -21,6 +21,8 @@
 #include <gtk/gtk.h>
 #include <inttypes.h>
 
+#define DT_COLORPICKER_SIZE_BOX 1
+
 /** The struct for live color picker samples */
 typedef struct dt_colorpicker_sample_t
 {

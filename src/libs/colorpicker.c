@@ -147,6 +147,13 @@ static void _update_samples_output(dt_lib_module_t *self)
     _update_sample_label(samples->data);
 }
 
+static void _remove_sample(dt_colorpicker_sample_t *sample)
+{
+  darktable.lib->proxy.colorpicker.live_samples
+    = g_slist_remove(darktable.lib->proxy.colorpicker.live_samples, (gpointer)sample);
+  free(sample);
+}
+
 static void _color_mode_changed(GtkWidget *widget, dt_lib_module_t *p)
 {
   dt_conf_set_int("ui_last/colorpicker_model", dt_bauhaus_combobox_get(widget));
@@ -271,6 +278,9 @@ void gui_cleanup(dt_lib_module_t *self)
       = darktable.lib->proxy.colorpicker.picked_color_lab_min
       = darktable.lib->proxy.colorpicker.picked_color_lab_max = NULL;
 
+  while(darktable.lib->proxy.colorpicker.live_samples)
+    _remove_sample(darktable.lib->proxy.colorpicker.live_samples->data);
+
   free(self->data);
   self->data = NULL;
 }
@@ -278,8 +288,6 @@ void gui_cleanup(dt_lib_module_t *self)
 void gui_reset(dt_lib_module_t *self)
 {
   dt_lib_colorpicker_t *data = self->data;
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->picker_button), FALSE);
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->display_check_box), FALSE);
 
   for(int i = 0; i < 3; i++)
   {
@@ -291,8 +299,13 @@ void gui_reset(dt_lib_module_t *self)
         = darktable.lib->proxy.colorpicker.picked_color_lab_max[i] = 0;
   }
 
+  while(darktable.lib->proxy.colorpicker.live_samples)
+    _remove_sample(darktable.lib->proxy.colorpicker.live_samples->data);
+
   _update_picker_output(self);
   dt_bauhaus_combobox_set(data->color_mode_selector, 0);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->picker_button), FALSE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->display_check_box), FALSE);
 }
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
