@@ -20,7 +20,7 @@ add_custom_target(
 )
 
 # The modules
-set(MODULES export import copy_history styles tagging image select collect recentcollect metadata metadata_view module_view navigation histogram history snapshots backgroundjobs colorpicker masks duplicate)
+set(MODULES export import copy_history colorpicker styles tagging image select collect recentcollect metadata metadata_view module_view navigation histogram history snapshots backgroundjobs masks duplicate)
 
 # The tools
 set(MODULES ${MODULES} viewswitcher)
@@ -60,7 +60,6 @@ add_library(snapshots MODULE "snapshots.c")
 add_library(backgroundjobs MODULE "backgroundjobs.c")
 add_library(colorpicker MODULE "colorpicker.c")
 add_library(masks MODULE "masks.c")
-#add_library(session MODULE "session.c")
 add_library(duplicate MODULE "duplicate.c")
 add_library(module_view MODULE "module_view.c")
 

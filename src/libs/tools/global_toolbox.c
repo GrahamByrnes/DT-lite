@@ -501,12 +501,13 @@ void _lib_preferences_button_clicked(GtkWidget *widget, gpointer user_data)
 
 static void _lib_filter_grouping_button_clicked(GtkWidget *widget, gpointer user_data)
 {
-
   darktable.gui->grouping = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+
   if(darktable.gui->grouping)
     gtk_widget_set_tooltip_text(widget, _("expand grouped images"));
   else
     gtk_widget_set_tooltip_text(widget, _("collapse grouped images"));
+
   dt_conf_set_bool("ui_last/grouping", darktable.gui->grouping);
   darktable.gui->expanded_group_id = -1;
   dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD, NULL);
@@ -531,7 +532,6 @@ static char *get_help_url(GtkWidget *widget)
 static void _main_do_event(GdkEvent *event, gpointer data)
 {
   dt_lib_tool_preferences_t *d = (dt_lib_tool_preferences_t *)data;
-
   gboolean handled = FALSE;
 
   switch(event->type)
@@ -657,7 +657,8 @@ static void _main_do_event(GdkEvent *event, gpointer data)
       break;
   }
 
-  if(!handled) gtk_main_do_event(event);
+  if(!handled)
+    gtk_main_do_event(event);
 }
 
 static void _lib_help_button_clicked(GtkWidget *widget, gpointer user_data)
