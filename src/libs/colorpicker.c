@@ -207,7 +207,7 @@ void gui_init(dt_lib_module_t *self)
   self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   GtkStyleContext *context = gtk_widget_get_style_context(self->widget);
   gtk_style_context_add_class(context, "picker-module");
-  
+
   // The color patch
   GtkWidget *color_patch_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   gtk_box_set_homogeneous(GTK_BOX(color_patch_row), TRUE);
@@ -229,23 +229,20 @@ void gui_init(dt_lib_module_t *self)
   g_signal_connect(G_OBJECT(data->color_mode_selector), "value-changed",
                    G_CALLBACK(_color_mode_changed), self);
   gtk_box_pack_start(GTK_BOX(picker_row), data->color_mode_selector, TRUE, TRUE, 0);
-  gtk_widget_show(data->color_mode_selector);
 
   // Picker button 
   data->picker_button = dt_color_picker_new(NULL, DT_COLOR_PICKER_POINT_AREA, picker_row);
+  // note: dt_color_picker_new contains its very own gtk_box_pack_end
   gtk_widget_set_tooltip_text(data->picker_button, _("turn on color picker"));
   gtk_widget_set_name(GTK_WIDGET(data->picker_button), "color-picker-button");
   g_signal_connect(G_OBJECT(data->picker_button), "toggled", G_CALLBACK(_picker_button_toggled), data);
-  gtk_box_pack_end(GTK_BOX(picker_row), data->picker_button, FALSE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(info_col), picker_row, TRUE, FALSE, 0);
-  gtk_widget_show(data->picker_button);
 
   // color label
   GtkWidget *col_label = data->proxy_linked.output_label = gtk_label_new("color_label");
   gtk_label_set_justify(GTK_LABEL(col_label), GTK_JUSTIFY_CENTER);
   gtk_label_set_ellipsize(GTK_LABEL(col_label), PANGO_ELLIPSIZE_START);
   gtk_box_pack_start(GTK_BOX(info_col), col_label, FALSE, TRUE, 0);
-  gtk_widget_show(col_label);
 
   // display on histogram
   GtkWidget *display_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -258,9 +255,10 @@ void gui_init(dt_lib_module_t *self)
                    G_CALLBACK(_display_samples_changed), NULL);
   gtk_box_pack_start(GTK_BOX(display_row), data->display_check_box, TRUE, TRUE, 5);
   gtk_box_pack_start(GTK_BOX(info_col), display_row, TRUE, TRUE, 0);
-  gtk_widget_show(data->display_check_box);
   gtk_box_pack_start(GTK_BOX(color_patch_row), info_col, TRUE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(self->widget), color_patch_row, TRUE, TRUE, 0);
+
+  gtk_widget_show_all(self->widget);
 }
 
 void gui_cleanup(dt_lib_module_t *self)

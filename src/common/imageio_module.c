@@ -72,9 +72,13 @@ static int dt_imageio_load_module_format(dt_imageio_module_format_t *module, con
   g_strlcpy(module->plugin_name, plugin_name, sizeof(module->plugin_name));
   dt_print(DT_DEBUG_CONTROL, "[imageio_load_module] loading format module `%s' from %s\n", plugin_name, libname);
   module->module = g_module_open(libname, G_MODULE_BIND_LAZY | G_MODULE_BIND_LOCAL);
+
   if(!module->module) goto error;
+
   int (*version)();
+
   if(!g_module_symbol(module->module, "dt_module_dt_version", (gpointer) & (version))) goto error;
+
   if(version() != dt_version())
   {
     fprintf(
@@ -89,32 +93,37 @@ static int dt_imageio_load_module_format(dt_imageio_module_format_t *module, con
   if(!g_module_symbol(module->module, "init", (gpointer) & (module->init))) goto error;
   if(!g_module_symbol(module->module, "cleanup", (gpointer) & (module->cleanup))) goto error;
   if(!g_module_symbol(module->module, "gui_reset", (gpointer) & (module->gui_reset))) goto error;
+
   if(darktable.gui)
   {
     if(!g_module_symbol(module->module, "gui_init", (gpointer) & (module->gui_init))) goto error;
   }
   else
-  {
     module->gui_init = _default_format_gui_init;
-  }
-  if(!g_module_symbol(module->module, "gui_cleanup", (gpointer) & (module->gui_cleanup))) goto error;
 
+  if(!g_module_symbol(module->module, "gui_cleanup", (gpointer) & (module->gui_cleanup))) goto error;
   if(!g_module_symbol(module->module, "mime", (gpointer) & (module->mime))) goto error;
   if(!g_module_symbol(module->module, "extension", (gpointer) & (module->extension))) goto error;
+
   if(!g_module_symbol(module->module, "dimension", (gpointer) & (module->dimension)))
     module->dimension = _default_format_dimension;
+
   if(!g_module_symbol(module->module, "legacy_params", (gpointer) & (module->legacy_params)))
     module->legacy_params = NULL;
+
   if(!g_module_symbol(module->module, "params_size", (gpointer) & (module->params_size))) goto error;
   if(!g_module_symbol(module->module, "get_params", (gpointer) & (module->get_params))) goto error;
   if(!g_module_symbol(module->module, "free_params", (gpointer) & (module->free_params))) goto error;
   if(!g_module_symbol(module->module, "set_params", (gpointer) & (module->set_params))) goto error;
   if(!g_module_symbol(module->module, "write_image", (gpointer) & (module->write_image))) goto error;
   if(!g_module_symbol(module->module, "bpp", (gpointer) & (module->bpp))) goto error;
+
   if(!g_module_symbol(module->module, "flags", (gpointer) & (module->flags)))
     module->flags = _default_format_flags;
+
   if(!g_module_symbol(module->module, "levels", (gpointer) & (module->levels)))
     module->levels = _default_format_levels;
+
   if(!g_module_symbol(module->module, "read_image", (gpointer) & (module->read_image)))
     module->read_image = NULL;
 
@@ -123,7 +132,10 @@ static int dt_imageio_load_module_format(dt_imageio_module_format_t *module, con
 
 error:
   fprintf(stderr, "[imageio_load_module] failed to open format `%s': %s\n", plugin_name, g_module_error());
-  if(module->module) g_module_close(module->module);
+
+  if(module->module)
+    g_module_close(module->module);
+
   return 1;
 }
 
@@ -138,30 +150,45 @@ static int dt_imageio_load_modules_format(dt_imageio_t *iio)
   dt_loc_get_plugindir(plugindir, sizeof(plugindir));
   g_strlcat(plugindir, "/plugins/imageio/format", sizeof(plugindir));
   GDir *dir = g_dir_open(plugindir, 0, NULL);
+
   if(!dir) return 1;
+
   const int name_offset = strlen(SHARED_MODULE_PREFIX),
             name_end = strlen(SHARED_MODULE_PREFIX) + strlen(SHARED_MODULE_SUFFIX);
+
   while((d_name = g_dir_read_name(dir)))
   {
     // get lib*.so
     if(!g_str_has_prefix(d_name, SHARED_MODULE_PREFIX)) continue;
     if(!g_str_has_suffix(d_name, SHARED_MODULE_SUFFIX)) continue;
+
     g_strlcpy(plugin_name, d_name + name_offset, strlen(d_name) - name_end + 1);
     module = (dt_imageio_module_format_t *)malloc(sizeof(dt_imageio_module_format_t));
     gchar *libname = g_module_build_path(plugindir, (const gchar *)plugin_name);
+
     if(dt_imageio_load_module_format(module, libname, plugin_name))
     {
       free(module);
       continue;
     }
+
     module->gui_data = NULL;
-    if(darktable.gui) ++darktable.gui->reset;
+
+    if(darktable.gui)
+      ++darktable.gui->reset;
+
     module->gui_init(module);
-    if(darktable.gui) --darktable.gui->reset;
-    if(module->widget) g_object_ref(module->widget);
+
+    if(darktable.gui)
+      --darktable.gui->reset;
+
+    if(module->widget)
+      g_object_ref(module->widget);
+
     g_free(libname);
     res = g_list_insert_sorted(res, module, dt_imageio_sort_modules_format);
   }
+
   g_dir_close(dir);
   iio->plugins_format = res;
   return 0;
@@ -193,52 +220,64 @@ static int dt_imageio_load_module_storage(dt_imageio_module_storage_t *module, c
   g_strlcpy(module->plugin_name, plugin_name, sizeof(module->plugin_name));
   dt_print(DT_DEBUG_CONTROL, "[imageio_load_module] loading storage module `%s' from %s\n", plugin_name, libname);
   module->module = g_module_open(libname, G_MODULE_BIND_LAZY | G_MODULE_BIND_LOCAL);
+
   if(!module->module) goto error;
+
   int (*version)();
+
   if(!g_module_symbol(module->module, "dt_module_dt_version", (gpointer) & (version))) goto error;
+
   if(version() != dt_version())
   {
-    fprintf(
-        stderr,
+    fprintf(stderr,
         "[imageio_load_module] `%s' is compiled for another version of dt (module %d (%s) != dt %d (%s)) !\n",
         libname, abs(version()), version() < 0 ? "debug" : "opt", abs(dt_version()),
         dt_version() < 0 ? "debug" : "opt");
     goto error;
   }
+  
   if(!g_module_symbol(module->module, "dt_module_mod_version", (gpointer) & (module->version))) goto error;
   if(!g_module_symbol(module->module, "name", (gpointer) & (module->name))) goto error;
   if(!g_module_symbol(module->module, "gui_reset", (gpointer) & (module->gui_reset))) goto error;
+
   if(darktable.gui)
   {
     if(!g_module_symbol(module->module, "gui_init", (gpointer) & (module->gui_init))) goto error;
   }
   else
-  {
     module->gui_init = _default_storage_nop;
-  }
+
   if(!g_module_symbol(module->module, "gui_cleanup", (gpointer) & (module->gui_cleanup))) goto error;
   if(!g_module_symbol(module->module, "init", (gpointer) & (module->init))) goto error;
-
   if(!g_module_symbol(module->module, "store", (gpointer) & (module->store))) goto error;
+
   if(!g_module_symbol(module->module, "legacy_params", (gpointer) & (module->legacy_params)))
     module->legacy_params = NULL;
+
   if(!g_module_symbol(module->module, "params_size", (gpointer) & (module->params_size))) goto error;
   if(!g_module_symbol(module->module, "get_params", (gpointer) & (module->get_params))) goto error;
   if(!g_module_symbol(module->module, "free_params", (gpointer) & (module->free_params))) goto error;
+
   if(!g_module_symbol(module->module, "initialize_store", (gpointer) & (module->initialize_store)))
     module->initialize_store = NULL;
+
   if(!g_module_symbol(module->module, "finalize_store", (gpointer) & (module->finalize_store)))
     module->finalize_store = NULL;
+
   if(!g_module_symbol(module->module, "set_params", (gpointer) & (module->set_params))) goto error;
 
   if(!g_module_symbol(module->module, "supported", (gpointer) & (module->supported)))
     module->supported = _default_supported;
+
   if(!g_module_symbol(module->module, "dimension", (gpointer) & (module->dimension)))
     module->dimension = _default_storage_dimension;
+
   if(!g_module_symbol(module->module, "recommended_dimension", (gpointer) & (module->recommended_dimension)))
     module->recommended_dimension = _default_storage_dimension;
+
   if(!g_module_symbol(module->module, "export_dispatched", (gpointer) & (module->export_dispatched)))
     module->export_dispatched = _default_storage_nop;
+
   if(!g_module_symbol(module->module, "ask_user_confirmation", (gpointer) & (module->ask_user_confirmation)))
     module->ask_user_confirmation = NULL;
 
@@ -246,7 +285,10 @@ static int dt_imageio_load_module_storage(dt_imageio_module_storage_t *module, c
   return 0;
 error:
   fprintf(stderr, "[imageio_load_module] failed to open storage `%s': %s\n", plugin_name, g_module_error());
-  if(module->module) g_module_close(module->module);
+
+  if(module->module)
+    g_module_close(module->module);
+
   return 1;
 }
 
@@ -345,8 +387,12 @@ dt_imageio_module_format_t *dt_imageio_get_format()
   g_free(format_name);
   // if the format from the config isn't available default to jpeg, if that's not available either just use
   // the first we have
-  if(!format) format = dt_imageio_get_format_by_name("jpeg");
-  if(!format) format = iio->plugins_format->data;
+  if(!format)
+    format = dt_imageio_get_format_by_name("jpeg");
+
+  if(!format)
+    format = iio->plugins_format->data;
+
   return format;
 }
 
@@ -358,8 +404,12 @@ dt_imageio_module_storage_t *dt_imageio_get_storage()
   g_free(storage_name);
   // if the storage from the config isn't available default to disk, if that's not available either just use
   // the first we have
-  if(!storage) storage = dt_imageio_get_storage_by_name("disk");
-  if(!storage) storage = iio->plugins_storage->data;
+  if(!storage)
+    storage = dt_imageio_get_storage_by_name("disk");
+
+  if(!storage)
+    storage = iio->plugins_storage->data;
+
   return storage;
 }
 
@@ -367,13 +417,19 @@ dt_imageio_module_format_t *dt_imageio_get_format_by_name(const char *name)
 {
   dt_imageio_t *iio = darktable.imageio;
   GList *it = iio->plugins_format;
+
   if(!name) return NULL;
+
   while(it)
   {
     dt_imageio_module_format_t *module = (dt_imageio_module_format_t *)it->data;
-    if(!strcmp(module->plugin_name, name)) return module;
+
+    if(!strcmp(module->plugin_name, name))
+      return module;
+
     it = g_list_next(it);
   }
+
   return NULL;
 }
 
@@ -381,11 +437,15 @@ dt_imageio_module_storage_t *dt_imageio_get_storage_by_name(const char *name)
 {
   dt_imageio_t *iio = darktable.imageio;
   GList *it = iio->plugins_storage;
+
   if(!name) return NULL;
+
   while(it)
   {
     dt_imageio_module_storage_t *module = (dt_imageio_module_storage_t *)it->data;
+
     if(!strcmp(module->plugin_name, name)) return module;
+
     it = g_list_next(it);
   }
   return NULL;
@@ -395,7 +455,10 @@ dt_imageio_module_format_t *dt_imageio_get_format_by_index(int index)
 {
   dt_imageio_t *iio = darktable.imageio;
   GList *it = g_list_nth(iio->plugins_format, index);
-  if(!it) it = iio->plugins_format;
+
+  if(!it)
+    it = iio->plugins_format;
+
   return (dt_imageio_module_format_t *)it->data;
 }
 
@@ -403,7 +466,10 @@ dt_imageio_module_storage_t *dt_imageio_get_storage_by_index(int index)
 {
   dt_imageio_t *iio = darktable.imageio;
   GList *it = g_list_nth(iio->plugins_storage, index);
-  if(!it) it = iio->plugins_storage;
+
+  if(!it)
+    it = iio->plugins_storage;
+
   return (dt_imageio_module_storage_t *)it->data;
 }
 
