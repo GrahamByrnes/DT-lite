@@ -186,9 +186,7 @@ void dt_lib_cancel_postponed_update(dt_lib_module_t *mod);
 /*
  * Proxy functions
  */
-
-/** set the colorpicker area selection tool and size, size 0.0 - 1.0 */
-void dt_lib_colorpicker_set_area(dt_lib_t *lib, float size);
+ 
 /** set the colorpicker area selection tool and size, box[k] 0.0 - 1.0 */
 void dt_lib_colorpicker_set_box_area(dt_lib_t *lib, const float *const box);
 
