@@ -42,6 +42,7 @@
 #include "dtgtk/gradientslider.h"
 #include "dtgtk/icon.h"
 #include "gui/accelerators.h"
+#include "gui/color_picker_proxy.h"
 #include "gui/gtk.h"
 #include "gui/presets.h"
 #include "gui/color_picker_proxy.h"
@@ -964,6 +965,7 @@ static void dt_iop_gui_multiinstance_callback(GtkButton *button, GdkEventButton 
   GtkWidget *item;
   item = gtk_menu_item_new_with_label(_("new instance"));
   g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(dt_iop_gui_copy_callback), module);
+  fprintf(stderr, "imageop.c, L967\n");  /////////////////////
   gtk_widget_set_sensitive(item, module->multi_show_new);
   gtk_menu_shell_append(menu, item);
   item = gtk_menu_item_new_with_label(_("duplicate instance"));
@@ -1595,15 +1597,10 @@ void dt_iop_request_focus(dt_iop_module_t *module)
       dt_dev_invalidate_from_gui(darktable.develop);
 
     dt_accel_disconnect_locals_iop(darktable.develop->gui_module);
-    // reset mask view
     dt_masks_reset_form_gui();
-    // do stuff needed in the blending gui
     dt_iop_gui_blending_lose_focus(darktable.develop->gui_module);
-    // redraw the expander
     gtk_widget_queue_draw(darktable.develop->gui_module->expander);
-    // and finally remove hinter messages
     dt_control_hinter_message(darktable.control, "");
-    // we also remove the focus css class
     GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(darktable.develop->gui_module));
     GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
     gtk_style_context_remove_class(context, "dt_module_focus");
@@ -1622,9 +1619,7 @@ void dt_iop_request_focus(dt_iop_module_t *module)
 
     if(module->gui_focus)
       module->gui_focus(module, TRUE);
-    // redraw the expander
     gtk_widget_queue_draw(module->expander);
-    // we also add the focus css class
     GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(darktable.develop->gui_module));
     GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
     gtk_style_context_add_class(context, "dt_module_focus");
@@ -1642,8 +1637,7 @@ static void dt_iop_gui_set_single_expanded(dt_iop_module_t *module, gboolean exp
     return;
   // update expander arrow state
   dtgtk_expander_set_expanded(DTGTK_EXPANDER(module->expander), expanded);
-  // store expanded state of module.
-  // we do that first, so update_expanded won't think it should be visible
+  // store expanded state of module, so update_expanded won't think it should be visible
   // and undo our changes right away.
   module->expanded = expanded;
   // show / hide plugin widget
@@ -1904,7 +1898,6 @@ void dt_iop_nap(int32_t usec)
 {
   if(usec <= 0)
     return;
-  // relinquish processor
   sched_yield();// additionally wait the given amount of time
   g_usleep(usec);
 }
