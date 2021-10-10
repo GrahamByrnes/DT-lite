@@ -177,6 +177,11 @@ gchar *dt_conf_get_string(const char *name)
   return g_strdup(str);
 }
 
+const char *dt_conf_get_string_const(const char *name)
+{
+  return dt_conf_get_var(name);
+}
+
 void dt_conf_init(dt_conf_t *cf, const char *filename, GSList *override_entries)
 {
   cf->table = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);

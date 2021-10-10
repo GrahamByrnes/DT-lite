@@ -836,70 +836,7 @@ error:
   free(wbuf);
   g_free(utf8);
 }
-///////////////////////////////
-/*
-void rgb2hsl(const float rgb[3], float *h, float *s, float *l)
-{
-  const float r = rgb[0], g = rgb[1], b = rgb[2];
-  const float pmax = fmaxf(r, fmax(g, b));
-  const float pmin = fminf(r, fmin(g, b));
-  const float delta = (pmax - pmin);
-  float hv = 0, sv = 0, lv = (pmin + pmax) / 2.0;
 
-  if(delta != 0.0f)
-  {
-    sv = lv < 0.5 ? delta / fmaxf(pmax + pmin, 1.52587890625e-05f)
-                  : delta / fmaxf(2.0 - pmax - pmin, 1.52587890625e-05f);
-
-    if(pmax == r)
-      hv = (g - b) / delta;
-    else if(pmax == g)
-      hv = 2.0 + (b - r) / delta;
-    else if(pmax == b)
-      hv = 4.0 + (r - g) / delta;
-    hv /= 6.0;
-    if(hv < 0.0)
-      hv += 1.0;
-    else if(hv > 1.0)
-      hv -= 1.0;
-  }
-  *h = hv;
-  *s = sv;
-  *l = lv;
-}
-
-static inline float hue2rgb(float m1, float m2, float hue)
-{
-  if(hue < 0.0)
-    hue += 1.0;
-  else if(hue > 1.0)
-    hue -= 1.0;
-
-  if(hue < 1.0 / 6.0)
-    return (m1 + (m2 - m1) * hue * 6.0);
-  else if(hue < 1.0 / 2.0)
-    return m2;
-  else if(hue < 2.0 / 3.0)
-    return (m1 + (m2 - m1) * ((2.0 / 3.0) - hue) * 6.0);
-  else
-    return m1;
-}
-
-void hsl2rgb(float rgb[3], float h, float s, float l)
-{
-  float m1, m2;
-  if(s == 0)
-  {
-    rgb[0] = rgb[1] = rgb[2] = l;
-    return;
-  }
-  m2 = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
-  m1 = (2.0 * l - m2);
-  rgb[0] = hue2rgb(m1, m2, h + (1.0 / 3.0));
-  rgb[1] = hue2rgb(m1, m2, h);
-  rgb[2] = hue2rgb(m1, m2, h - (1.0 / 3.0));
-}*/
-/////////////////////////////////////
 static dt_colorspaces_color_profile_t *_create_profile(dt_colorspaces_color_profile_type_t type,
                                                        cmsHPROFILE profile, const char *name, int in_pos,
                                                        int out_pos, int display_pos, int category_pos,
@@ -1278,18 +1215,18 @@ dt_colorspaces_t *dt_colorspaces_init()
   res->display2_type = dt_conf_get_int("ui_last/color/display2_type");
   res->softproof_type = dt_conf_get_int("ui_last/color/softproof_type");
   res->histogram_type = dt_conf_get_int("ui_last/color/histogram_type");
-  char *tmp = dt_conf_get_string("ui_last/color/display_filename");
+  const char *tmp = dt_conf_get_string_const("ui_last/color/display_filename");
   g_strlcpy(res->display_filename, tmp, sizeof(res->display_filename));
-  g_free(tmp);
-  tmp = dt_conf_get_string("ui_last/color/display2_filename");
+//  g_free(tmp);
+  tmp = dt_conf_get_string_const("ui_last/color/display2_filename");
   g_strlcpy(res->display2_filename, tmp, sizeof(res->display2_filename));
-  g_free(tmp);
-  tmp = dt_conf_get_string("ui_last/color/softproof_filename");
+//  g_free(tmp);
+  tmp = dt_conf_get_string_const("ui_last/color/softproof_filename");
   g_strlcpy(res->softproof_filename, tmp, sizeof(res->softproof_filename));
-  g_free(tmp);
-  tmp = dt_conf_get_string("ui_last/color/histogram_filename");
+//  g_free(tmp);
+  tmp = dt_conf_get_string_const("ui_last/color/histogram_filename");
   g_strlcpy(res->histogram_filename, tmp, sizeof(res->histogram_filename));
-  g_free(tmp);
+//  g_free(tmp);
   res->display_intent = dt_conf_get_int("ui_last/color/display_intent");
   res->display2_intent = dt_conf_get_int("ui_last/color/display2_intent");
   res->softproof_intent = dt_conf_get_int("ui_last/color/softproof_intent");
@@ -1540,16 +1477,15 @@ void dt_colorspaces_set_display_profile(const dt_colorspaces_color_profile_type_
   gboolean use_xatom = TRUE;
 #if defined USE_COLORDGTK
   gboolean use_colord = TRUE;
-  gchar *display_profile_source = (profile_type == DT_COLORSPACE_DISPLAY2)
-                                      ? dt_conf_get_string("ui_last/display2_profile_source")
-                                      : dt_conf_get_string("ui_last/display_profile_source");
+  const char *display_profile_source = (profile_type == DT_COLORSPACE_DISPLAY2)
+                                      ? dt_conf_get_string_const("ui_last/display2_profile_source")
+                                      : dt_conf_get_string_const("ui_last/display_profile_source");
   if(display_profile_source)
   {
     if(!strcmp(display_profile_source, "xatom"))
       use_colord = FALSE;
     else if(!strcmp(display_profile_source, "colord"))
       use_xatom = FALSE;
-    g_free(display_profile_source);
   }
 #endif
 
@@ -1710,6 +1646,224 @@ gboolean dt_colorspaces_is_profile_equal(const char *fullname, const char *filen
     ? !strcmp(_colorspaces_get_base_name(fullname), filename)
     : !strcmp(_colorspaces_get_base_name(fullname), _colorspaces_get_base_name(filename));
 }
+
+
+
+dt_colorspaces_color_profile_type_t dt_colorspaces_cicp_to_type(const dt_colorspaces_cicp_t *cicp, const char *filename)
+{
+  switch(cicp->color_primaries)
+  {
+    /* Give up immediately if unspecified */
+    case DT_CICP_COLOR_PRIMARIES_UNSPECIFIED:
+      if(cicp->transfer_characteristics == DT_CICP_TRANSFER_CHARACTERISTICS_UNSPECIFIED
+         && cicp->matrix_coefficients == DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED)
+        return DT_COLORSPACE_NONE;
+      break; /* unspecified */
+
+    /* REC709 */
+    case DT_CICP_COLOR_PRIMARIES_REC709:
+
+      switch(cicp->transfer_characteristics)
+      {
+        /* SRGB */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_SRGB:
+
+          switch(cicp->matrix_coefficients)
+          {
+            case DT_CICP_MATRIX_COEFFICIENTS_IDENTITY: /* support RGB (4:4:4 or lossless) */
+            case DT_CICP_MATRIX_COEFFICIENTS_SYCC:
+            case DT_CICP_MATRIX_COEFFICIENTS_REC601: /* support equivalents just in case of mistagging */
+            case DT_CICP_MATRIX_COEFFICIENTS_REC709: /* support incorrectly tagged legacy AVIFs exported before dt 3.8 */
+            case DT_CICP_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL: /* support incorrectly tagged files */
+            case DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED:
+              return DT_COLORSPACE_SRGB;
+            default:
+              break;
+          }
+
+          break; /* SRGB */
+
+        /* REC709 */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_REC709:
+        case DT_CICP_TRANSFER_CHARACTERISTICS_REC601:      /* support equivalents just in case of mistagging */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_REC2020_10B: /* support equivalents just in case of mistagging */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_REC2020_12B: /* support equivalents just in case of mistagging */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_GAMMA22: /* support incorrectly tagged legacy AVIFs exported before dt 3.6 (gamma 2.2) */
+
+          switch(cicp->matrix_coefficients)
+          {
+            case DT_CICP_MATRIX_COEFFICIENTS_IDENTITY: /* support RGB (4:4:4 or lossless) */
+            case DT_CICP_MATRIX_COEFFICIENTS_REC709:
+            case DT_CICP_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL:
+            case DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED:
+              return DT_COLORSPACE_REC709;
+            default:
+              break;
+          }
+
+          break; /* REC709 */
+
+        /* LINEAR REC709 */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_LINEAR:
+
+          switch(cicp->matrix_coefficients)
+          {
+            case DT_CICP_MATRIX_COEFFICIENTS_IDENTITY: /* support RGB (4:4:4 or lossless) */
+            case DT_CICP_MATRIX_COEFFICIENTS_REC709:
+            case DT_CICP_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL:
+            case DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED:
+              return DT_COLORSPACE_LIN_REC709;
+            default:
+              break;
+          }
+
+          break; /* LINEAR REC709 */
+
+        default:
+          break;
+      }
+
+      break; /* REC709 */
+
+    /* REC2020 */
+    case DT_CICP_COLOR_PRIMARIES_REC2020:
+
+      switch(cicp->transfer_characteristics)
+      {
+        /* LINEAR REC2020 */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_LINEAR:
+
+          switch(cicp->matrix_coefficients)
+          {
+            case DT_CICP_MATRIX_COEFFICIENTS_IDENTITY: /* support RGB (4:4:4 or lossless) */
+            case DT_CICP_MATRIX_COEFFICIENTS_REC2020_NCL:
+            case DT_CICP_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL:
+            case DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED:
+              return DT_COLORSPACE_LIN_REC2020;
+            default:
+              break;
+          }
+
+          break; /* LINEAR REC2020 */
+
+        /* PQ REC2020 */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_PQ:
+
+          switch(cicp->matrix_coefficients)
+          {
+            case DT_CICP_MATRIX_COEFFICIENTS_IDENTITY: /* support RGB (4:4:4 or lossless) */
+            case DT_CICP_MATRIX_COEFFICIENTS_REC2020_NCL:
+            case DT_CICP_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL:
+            case DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED:
+              return DT_COLORSPACE_PQ_REC2020;
+            default:
+              break;
+          }
+
+          break; /* PQ REC2020 */
+
+        /* HLG REC2020 */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_HLG:
+
+          switch(cicp->matrix_coefficients)
+          {
+            case DT_CICP_MATRIX_COEFFICIENTS_IDENTITY: /* support RGB (4:4:4 or lossless) */
+            case DT_CICP_MATRIX_COEFFICIENTS_REC2020_NCL:
+            case DT_CICP_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL:
+            case DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED:
+              return DT_COLORSPACE_HLG_REC2020;
+            default:
+              break;
+          }
+
+          break; /* HLG REC2020 */
+
+        default:
+          break;
+      }
+
+      break; /* REC2020 */
+
+    /* P3 */
+    case DT_CICP_COLOR_PRIMARIES_P3:
+
+      switch(cicp->transfer_characteristics)
+      {
+        /* PQ P3 */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_PQ:
+
+          switch(cicp->matrix_coefficients)
+          {
+            case DT_CICP_MATRIX_COEFFICIENTS_IDENTITY: /* support RGB (4:4:4 or lossless) */
+            case DT_CICP_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL:
+            case DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED:
+              return DT_COLORSPACE_PQ_P3;
+            default:
+              break;
+          }
+
+          break; /* PQ P3 */
+
+        /* HLG P3 */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_HLG:
+
+          switch(cicp->matrix_coefficients)
+          {
+            case DT_CICP_MATRIX_COEFFICIENTS_IDENTITY: /* support RGB (4:4:4 or lossless) */
+            case DT_CICP_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL:
+            case DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED:
+              return DT_COLORSPACE_HLG_P3;
+            default:
+              break;
+          }
+
+          break; /* HLG P3 */
+
+        default:
+          break;
+      }
+
+      break; /* P3 */
+
+    /* XYZ */
+    case DT_CICP_COLOR_PRIMARIES_XYZ:
+
+      switch(cicp->transfer_characteristics)
+      {
+        /* LINEAR XYZ */
+        case DT_CICP_TRANSFER_CHARACTERISTICS_LINEAR:
+
+          switch(cicp->matrix_coefficients)
+          {
+            case DT_CICP_MATRIX_COEFFICIENTS_IDENTITY:
+            case DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED:
+              return DT_COLORSPACE_XYZ;
+            default:
+              break;
+          }
+
+          break; /* LINEAR XYZ */
+
+        default:
+          break;
+      }
+
+      break; /* XYZ */
+
+    default:
+      break;
+  }
+
+  if(filename != NULL)
+    dt_print(DT_DEBUG_IMAGEIO, "[colorin] unsupported CICP color profile for `%s': %d/%d/%d\n", filename,
+             cicp->color_primaries, cicp->transfer_characteristics, cicp->matrix_coefficients);
+
+  return DT_COLORSPACE_NONE;
+}
+
+
+
+
 
 static const dt_colorspaces_color_profile_t *_get_profile(dt_colorspaces_t *self,
                                                           dt_colorspaces_color_profile_type_t type,

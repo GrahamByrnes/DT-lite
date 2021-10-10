@@ -52,6 +52,7 @@ int64_t dt_conf_get_int64(const char *name);
 float dt_conf_get_float(const char *name);
 int dt_conf_get_bool(const char *name);
 gchar *dt_conf_get_string(const char *name);
+const char *dt_conf_get_string_const(const char *name);
 void dt_conf_init(dt_conf_t *cf, const char *filename, GSList *override_entries);
 void dt_conf_cleanup(dt_conf_t *cf);
 int dt_conf_key_exists(const char *key);

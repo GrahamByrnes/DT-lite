@@ -330,9 +330,8 @@ static void process_cmatrix_bm(struct dt_iop_module_t *self, dt_dev_pixelpipe_io
         {
           _xyz[c] = 0.0f;
           for(int k = 0; k < 3; k++)
-          {
             _xyz[c] += d->cmatrix[3 * c + k] * cam[k];
-          }
+
         }
 
         dt_XYZ_to_Lab(_xyz, out);
@@ -340,29 +339,25 @@ static void process_cmatrix_bm(struct dt_iop_module_t *self, dt_dev_pixelpipe_io
       else
       {
         float nRGB[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        
         for(int c = 0; c < 3; c++)
         {
           nRGB[c] = 0.0f;
           for(int k = 0; k < 3; k++)
-          {
             nRGB[c] += d->nmatrix[3 * c + k] * cam[k];
-          }
+
         }
 
         float cRGB[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
         for(int c = 0; c < 3; c++)
-        {
           cRGB[c] = CLAMP(nRGB[c], 0.0f, 1.0f);
-        }
 
         float XYZ[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
         for(int c = 0; c < 3; c++)
         {
           XYZ[c] = 0.0f;
           for(int k = 0; k < 3; k++)
-          {
             XYZ[c] += d->lmatrix[3 * c + k] * cRGB[k];
-          }
         }
 
         dt_XYZ_to_Lab(XYZ, out);
@@ -388,16 +383,13 @@ static void process_cmatrix_fastpath_simple(struct dt_iop_module_t *self, dt_dev
   {
     float *in = (float *)ivoid + (size_t)4 * k;
     float *out = (float *)ovoid + (size_t)4 * k;
-
     float _xyz[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
     for(int c = 0; c < 3; c++)
     {
       _xyz[c] = 0.0f;
       for(int i = 0; i < 3; i++)
-      {
         _xyz[c] += d->cmatrix[3 * c + i] * in[i];
-      }
     }
 
     dt_XYZ_to_Lab(_xyz, out);
@@ -427,25 +419,19 @@ static void process_cmatrix_fastpath_clipping(struct dt_iop_module_t *self, dt_d
     {
       nRGB[c] = 0.0f;
       for(int i = 0; i < 3; i++)
-      {
         nRGB[c] += d->nmatrix[3 * c + i] * in[i];
-      }
     }
 
     float cRGB[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     for(int c = 0; c < 3; c++)
-    {
       cRGB[c] = CLAMP(nRGB[c], 0.0f, 1.0f);
-    }
 
     float XYZ[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     for(int c = 0; c < 3; c++)
     {
       XYZ[c] = 0.0f;
       for(int i = 0; i < 3; i++)
-      {
         XYZ[c] += d->lmatrix[3 * c + i] * cRGB[i];
-      }
     }
 
     dt_XYZ_to_Lab(XYZ, out);
@@ -1066,19 +1052,11 @@ void reload_defaults(dt_iop_module_t *module)
 #ifdef HAVE_LIBAVIF
     else if(!strcmp(ext, "avif"))
     {
-      struct avif_color_profile cp = {
-          .type = DT_COLORSPACE_NONE,
-      };
-
-      img->profile_size = dt_imageio_avif_read_color_profile(filename, &cp);
-      if (cp.type != DT_COLORSPACE_NONE) {
-        color_profile = cp.type;
-      } else {
-        img->profile_size = cp.icc_profile_size;
-        img->profile      = cp.icc_profile;
-
-        use_eprofile = (img->profile_size > 0);
-      }
+      dt_colorspaces_cicp_t cicp;
+      img->profile_size = dt_imageio_avif_read_profile(filename, &img->profile, &cicp);
+      /* try the nclx box before falling back to any ICC profile */
+      if((color_profile = dt_colorspaces_cicp_to_type(&cicp, filename)) == DT_COLORSPACE_NONE)
+        color_profile = (img->profile_size > 0) ? DT_COLORSPACE_EMBEDDED_ICC : DT_COLORSPACE_NONE;
     }
 #endif
     g_free(ext);
