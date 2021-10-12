@@ -240,23 +240,18 @@ int dt_colorspaces_get_matrix_from_output_profile(cmsHPROFILE prof, float *matri
                                                   float *lutb, const int lutsize, const int intent);
 
 /** wrapper to get the name from a color profile. this tries to handle character encodings. */
-void dt_colorspaces_get_profile_name(cmsHPROFILE p, const char *language, const char *country, char *name,
-                                     size_t len);
+void dt_colorspaces_get_profile_name(cmsHPROFILE p, const char *language, const char *country,
+                                     char *name, size_t len);
 
 /** get a nice printable name. */
 const char *dt_colorspaces_get_name(dt_colorspaces_color_profile_type_t type, const char *filename);
-
-/** common functions to change between colorspaces, used in iop modules */
-void rgb2hsl(const float rgb[3], float *h, float *s, float *l);
-void hsl2rgb(float rgb[3], float h, float s, float l);
 
 /** trigger updating the display profile from the system settings (x atom, colord, ...) */
 void dt_colorspaces_set_display_profile(const dt_colorspaces_color_profile_type_t profile_type);
 /** get the profile described by type & filename.
  *  this doesn't support image specifics like embedded profiles or camera matrices */
-const dt_colorspaces_color_profile_t *
-dt_colorspaces_get_profile(dt_colorspaces_color_profile_type_t type, const char *filename,
-                           dt_colorspaces_profile_direction_t direction);
+const dt_colorspaces_color_profile_t *dt_colorspaces_get_profile(dt_colorspaces_color_profile_type_t type,
+                                        const char *filename, dt_colorspaces_profile_direction_t direction);
 
 /** check whether filename is the same profil as fullname, this is taking into account that
  *  fullname is always the fullpathname to the profile and filename may be a full pathname
