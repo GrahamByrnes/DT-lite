@@ -416,7 +416,7 @@ static bool _exif_decode_xmp_data(dt_image_t *img, Exiv2::XmpData &xmpData, int 
 {
   // as this can be called several times during the image lifetime, clean up first
   GList *imgs = NULL;
-  imgs = g_list_append(imgs, GINT_TO_POINTER(img->id));
+  imgs = g_list_prepend(imgs, GINT_TO_POINTER(img->id));
   try
   {
     Exiv2::XmpData::iterator pos;
@@ -435,10 +435,10 @@ static bool _exif_decode_xmp_data(dt_image_t *img, Exiv2::XmpData &xmpData, int 
         {
           char *value = strdup(pos->toString().c_str());
           char *adr = value;
-          if(strncmp(value, "lang=", 5) == 0)
+          while(!strncmp(value, "lang=", 5) || !strncmp(value, "charset=", 8))
           {
-            value = strchr(value, ' ');
-            if(value != NULL) value++;
+            while(*value != ' ' && *value) value++;
+            while(*value == ' ') value++;
           }
           dt_metadata_set_import(img->id, key, value);
           free(adr);
