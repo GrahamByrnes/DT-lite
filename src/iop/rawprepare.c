@@ -118,24 +118,10 @@ void init_presets(dt_iop_module_so_t *self)
   DT_DEBUG_SQLITE3_EXEC(dt_database_get(darktable.db), "COMMIT", NULL, NULL, NULL);
 }
 
-// value to round,   reference on how to round:
-//  if ref was even, returned value will be even
-//  if ref was odd,  returned value will be odd
-static int round_smart(float val, int ref)
-{
-  // first, just round it
-  int round = (int)roundf(val);
-
-  if((ref & 1) ^ (round & 1))
-    round++;
-
-  return round;
-}
-
 static int compute_proper_crop(dt_dev_pixelpipe_iop_t *piece, const dt_iop_roi_t *const roi_in, int value)
 {
   const float scale = roi_in->scale / piece->iscale;
-  return round_smart((float)value * scale, value);
+  return (int)roundf((float)value * scale);
 }
 
 int distort_transform(dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, float *points, size_t points_count)
@@ -147,6 +133,13 @@ int distort_transform(dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, floa
 
   const float scale = piece->buf_in.scale / piece->iscale;
   const float x = (float)d->x * scale, y = (float)d->y * scale;
+
+#ifdef _OPENMP
+#pragma omp parallel for simd default(none) \
+    dt_omp_firstprivate(points_count, points, y, x) \
+    schedule(static) \
+    aligned(points:64) if(points_count > 100)
+#endif
   for(size_t i = 0; i < points_count * 2; i += 2)
   {
     points[i] -= x;
@@ -167,6 +160,12 @@ int distort_backtransform(dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, 
   const float scale = piece->buf_in.scale / piece->iscale;
   const float x = (float)d->x * scale, y = (float)d->y * scale;
 
+#ifdef _OPENMP
+#pragma omp parallel for simd default(none) \
+    dt_omp_firstprivate(points_count, points, y, x) \
+    schedule(static) \
+    aligned(points:64) if(points_count > 100)
+#endif
   for(size_t i = 0; i < points_count * 2; i += 2)
   {
     points[i] += x;
@@ -192,8 +191,8 @@ void modify_roi_out(dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, dt_iop
   roi_out->x = roi_out->y = 0;
   int32_t x = d->x + d->width, y = d->y + d->height;
   const float scale = roi_in->scale / piece->iscale;
-  roi_out->width -= round_smart((float)x * scale, x);
-  roi_out->height -= round_smart((float)y * scale, y);
+  roi_out->width -= (int)roundf((float)x * scale);
+  roi_out->height -= (int)roundf((float)y * scale);
 }
 
 void modify_roi_in(dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const dt_iop_roi_t *const roi_out,
@@ -203,8 +202,8 @@ void modify_roi_in(dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const d
   dt_iop_rawprepare_data_t *d = (dt_iop_rawprepare_data_t *)piece->data;
   int32_t x = d->x + d->width, y = d->y + d->height;
   const float scale = roi_in->scale / piece->iscale;
-  roi_in->width += round_smart((float)x * scale, x);
-  roi_in->height += round_smart((float)y * scale, y);
+  roi_in->width += (int)roundf((float)x * scale);
+  roi_in->height += (int)roundf((float)y * scale);
 }
 
 void output_format(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_pixelpipe_iop_t *piece,
@@ -328,7 +327,7 @@ static int image_is_normalized(const dt_image_t *const image)
   return image->buf_dsc.channels == 1 && image->buf_dsc.datatype == TYPE_FLOAT;
 }
 
-static gboolean image_set_rawcrops(const int32_t imgid, int dx, int dy)
+static gboolean image_set_rawcrops(const uint32_t imgid, int dx, int dy)
 {
   dt_image_t *img = NULL;
   img = dt_image_cache_get(darktable.image_cache, imgid, 'r');
@@ -399,7 +398,6 @@ void commit_params(dt_iop_module_t *self, dt_iop_params_t *params, dt_dev_pixelp
 void init_pipe(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_pixelpipe_iop_t *piece)
 {
   piece->data = calloc(1, sizeof(dt_iop_rawprepare_data_t));
-  self->commit_params(self, self->default_params, pipe, piece);
 }
 
 void cleanup_pipe(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_pixelpipe_iop_t *piece)
