@@ -944,67 +944,21 @@ int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t 
   // we transfer cached image on a cairo_surface (with colorspace transform if needed)
   cairo_surface_t *tmp_surface = NULL;
   uint8_t *rgbbuf = (uint8_t *)calloc(buf_wd * buf_ht * 4, sizeof(uint8_t));
+
   if(rgbbuf)
   {
-    gboolean have_lock = FALSE;
-    cmsHTRANSFORM transform = NULL;
-
-    if(dt_conf_get_bool("cache_color_managed"))
-    {
-      pthread_rwlock_rdlock(&darktable.color_profiles->xprofile_lock);
-      have_lock = TRUE;
-      // we only color manage when a thumbnail is sRGB or AdobeRGB. everything else just gets dumped to the
-      // screen
-      if(buf.color_space == DT_COLORSPACE_SRGB && darktable.color_profiles->transform_srgb_to_display)
-        transform = darktable.color_profiles->transform_srgb_to_display;
-      else if(buf.color_space == DT_COLORSPACE_ADOBERGB && darktable.color_profiles->transform_adobe_rgb_to_display)
-        transform = darktable.color_profiles->transform_adobe_rgb_to_display;
-      else
-      {
-        pthread_rwlock_unlock(&darktable.color_profiles->xprofile_lock);
-        have_lock = FALSE;
-
-        if(buf.color_space == DT_COLORSPACE_NONE)
-          fprintf(stderr, "oops, there seems to be a code path not setting the color space of thumbnails!\n");
-        else if(buf.color_space != DT_COLORSPACE_DISPLAY && buf.color_space != DT_COLORSPACE_DISPLAY2)
-          fprintf(stderr,
-                  "oops, there seems to be a code path setting an unhandled color space of thumbnails (%s)!\n",
-                  dt_colorspaces_get_name(buf.color_space, "from file"));
-      }
-
-      if(have_lock)
-      {
-        fprintf(stderr, "in views.c L981, heading to OPENMP with transform, imgid = %d\n", imgid); /////////////
-#ifdef _OPENMP
-#pragma omp parallel for schedule(static) default(none) shared(buf, rgbbuf, transform)
-#endif
-        for(int i = 0; i < buf.height; i++)
-        {
-          const uint8_t *in = buf.buf + i * buf.width * 4;
-          uint8_t *out = rgbbuf + i * buf.width * 4;
-          cmsDoTransform(transform, in, out, buf.width);
-        }
-
-        pthread_rwlock_unlock(&darktable.color_profiles->xprofile_lock);
-      }
-    }
-    
-    if(!have_lock)
-    {
-      fprintf(stderr, "in views.c L1001, heading to OPENMP no transform, imgid = %d\n", imgid); /////////////
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) default(none) shared(buf, rgbbuf)
 #endif
-      for(int i = 0; i < buf.height; i++)
+    for(int i = 0; i < buf.height; i++)
+    {
+      const uint8_t *in = buf.buf + i * buf.width * 4;
+      uint8_t *out = rgbbuf + i * buf.width * 4;
+      for(int j = 0; j < buf.width; j++, in += 4, out += 4)
       {
-        const uint8_t *in = buf.buf + i * buf.width * 4;
-        uint8_t *out = rgbbuf + i * buf.width * 4;
-        for(int j = 0; j < buf.width; j++, in += 4, out += 4)
-        {
-          out[0] = in[2];
-          out[1] = in[1];
-          out[2] = in[0];
-        }
+        out[0] = in[2];
+        out[1] = in[1];
+        out[2] = in[0];
       }
     }
 

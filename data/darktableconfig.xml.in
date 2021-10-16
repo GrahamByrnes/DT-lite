@@ -100,13 +100,6 @@
     <shortdescription>enable disk backend for full preview cache</shortdescription>
     <longdescription>if enabled, write full preview to disk (.cache/darktable/) when evicted from the memory cache. note that this can take a lot of memory.</longdescription>
   </dtconfig>
-  <dtconfig prefs="lighttable">
-    <name>cache_color_managed</name>
-    <type>bool</type>
-    <default>true</default>
-    <shortdescription>color manage cached thumbnails</shortdescription>
-    <longdescription>if enabled, cached thumbnails will be color managed so that lighttable and filmstrip can show correct colors. otherwise the results depend on the display profile.</longdescription>
-  </dtconfig>
   <dtconfig prefs="cpugpu" restart="true">
     <name>worker_threads</name>
     <type min="1" max="64">int</type>
