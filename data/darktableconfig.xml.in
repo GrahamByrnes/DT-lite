@@ -1511,7 +1511,14 @@
     </type>
     <default>lanczos3</default>
     <shortdescription>pixel interpolator</shortdescription>
-    <longdescription>pixel interpolator used in rotation and lens correction, also darkroom.</longdescription>
+    <longdescription>pixel interpolator used in rotation and lens correction, also darkroom</longdescription>
+  </dtconfig>
+  <dtconfig prefs="processing">
+    <name>expose_again_delay</name>
+    <type>int</type>
+    <default>250</default>
+    <shortdescription>milliseconds delay before trying again to match to a cached mip</shortdescription>
+    <longdescription/>
   </dtconfig>
   <dtconfig>
     <name>plugins/lighttable/export/high_quality_processing</name>

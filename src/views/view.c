@@ -78,12 +78,14 @@ void dt_view_manager_init(dt_view_manager_t *vm)
   for(GList *iter = vm->views; iter; iter = g_list_next(iter))
   {
     dt_view_t *view = (dt_view_t *)iter->data;
+
     if(!strcmp(view->module_name, "darkroom"))
     {
       darktable.develop = (dt_develop_t *)view->data;
       break;
     }
   }
+  vm->current_view = NULL;
 }
 
 void dt_view_manager_gui_init(dt_view_manager_t *vm)
@@ -158,6 +160,7 @@ static int dt_view_load_module(void *v, const char *libname, const char *module_
   g_strlcpy(view->module_name, module_name, sizeof(view->module_name));
   dt_print(DT_DEBUG_CONTROL, "[view_load_module] loading view `%s' from %s\n", module_name, libname);
   view->module = g_module_open(libname, G_MODULE_BIND_LAZY | G_MODULE_BIND_LOCAL);
+
   if(!view->module)
   {
     fprintf(stderr, "[view_load_module] could not open %s (%s)!\n", libname, g_module_error());
@@ -165,6 +168,7 @@ static int dt_view_load_module(void *v, const char *libname, const char *module_
   }
   
   int (*version)();
+
   if(!g_module_symbol(view->module, "dt_module_dt_version", (gpointer) & (version)))
     goto error;
     
@@ -344,7 +348,7 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
 
   if(new_view->try_enter)
   {
-    int error = new_view->try_enter(new_view);
+    const int error = new_view->try_enter(new_view);
     if(error)
       return error;
   }
@@ -372,12 +376,13 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
     for(int l = 0; l < DT_UI_CONTAINER_SIZE; l++)
       dt_ui_container_foreach(darktable.gui->ui, l,(GtkCallback)_remove_child);
   }
+
   vm->current_view = new_view;
   dt_ui_restore_panels(darktable.gui->ui);
   // lets add plugins related to new view into panels.
   // this has to be done in reverse order to have the lowest position at the bottom!
   for(GList *iter = g_list_last(darktable.lib->plugins); iter; iter = g_list_previous(iter))
-  {    
+  {
     dt_lib_module_t *plugin = (dt_lib_module_t *)(iter->data);
     if(dt_lib_is_visible_in_view(plugin, new_view))
     {
@@ -537,13 +542,14 @@ void dt_view_manager_mouse_moved(dt_view_manager_t *vm, double x, double y, doub
   dt_view_t *v = vm->current_view;
   /* lets check if any plugins want to handle mouse move */
   gboolean handled = FALSE;
-    for(const GList *plugins = g_list_last(darktable.lib->plugins);
+  for(const GList *plugins = g_list_last(darktable.lib->plugins);
       plugins; plugins = g_list_previous(plugins))
   {
     dt_lib_module_t *plugin = (dt_lib_module_t *)(plugins->data);
     // does this module belong to current view ?
     if(plugin->mouse_moved && dt_lib_is_visible_in_view(plugin, v))
-      if(plugin->mouse_moved(plugin, x, y, pressure, which)) handled = TRUE;
+      if(plugin->mouse_moved(plugin, x, y, pressure, which))
+        handled = TRUE;
   }
   // if not handled by any plugin let pass to view handler
   if(!handled && v->mouse_moved)
@@ -718,11 +724,11 @@ static void _images_to_act_on_insert_in_list(GList **list, const int imgid, gboo
     else
     {
       sqlite3_stmt *stmt;
-      gchar *query = dt_util_dstrcat(
+      gchar *query = g_strdup_printf(
           NULL,
-          "SELECT id "
-          "FROM main.images "
-          "WHERE group_id = %d AND id IN (%s)",
+          "SELECT id"
+          "  FROM main.images"
+          "  WHERE group_id = %d AND id IN (%s)",
           img_group_id, dt_collection_get_query_no_group(dt_selection_get_collection(darktable.selection)));
       DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), query, -1, &stmt, NULL);
       while(sqlite3_step(stmt) == SQLITE_ROW)
@@ -753,11 +759,12 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
    *
    *  if only_visible is FALSE, then it will add also not visible images because of grouping
    **/
-
   const int mouseover = dt_control_get_mouse_over_id();
 
   // if possible, we return the cached list
-  if(!force && darktable.view_manager->act_on.ok && darktable.view_manager->act_on.image_over == mouseover
+  if(!force 
+      && darktable.view_manager->act_on.ok
+      && darktable.view_manager->act_on.image_over == mouseover
      && darktable.view_manager->act_on.inside_table == dt_ui_thumbtable(darktable.gui->ui)->mouse_inside
      && g_slist_length(darktable.view_manager->act_on.active_imgs)
             == g_slist_length(darktable.view_manager->active_images))
@@ -780,7 +787,9 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
         l1 = g_slist_next(l1);
       }
     }
-    if(ok) return darktable.view_manager->act_on.images;
+
+    if(ok)
+      return darktable.view_manager->act_on.images;
   }
 
   GList *l = NULL;
@@ -792,7 +801,7 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
       // collumn 1,2
       sqlite3_stmt *stmt;
       gboolean inside_sel = FALSE;
-      gchar *query = dt_util_dstrcat(NULL, "SELECT imgid FROM main.selected_images WHERE imgid =%d", mouseover);
+      gchar *query = g_strdup_printf("SELECT imgid FROM main.selected_images WHERE imgid =%d", mouseover);
       DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), query, -1, &stmt, NULL);
       if(stmt != NULL && sqlite3_step(stmt) == SQLITE_ROW)
       {
@@ -862,7 +871,6 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
   darktable.view_manager->act_on.active_imgs = g_slist_copy(darktable.view_manager->active_images);
   darktable.view_manager->act_on.inside_table = dt_ui_thumbtable(darktable.gui->ui)->mouse_inside;
   darktable.view_manager->act_on.ok = TRUE;
-
   return darktable.view_manager->act_on.images;
 }
 
@@ -908,39 +916,29 @@ int dt_view_get_image_to_act_on()
 int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t **surface, const gboolean quality)
 {
   // if surface not null, clean it up
-  if(*surface && cairo_surface_get_reference_count(*surface) > 0) cairo_surface_destroy(*surface);
-  *surface = NULL;
+  if(*surface && cairo_surface_get_reference_count(*surface) > 0)
+    cairo_surface_destroy(*surface);
 
+  *surface = NULL;
   // get mipmap cahe image
   dt_mipmap_cache_t *cache = darktable.mipmap_cache;
   dt_mipmap_size_t mip = dt_mipmap_cache_get_matching_size(cache, width * darktable.gui->ppd, height * darktable.gui->ppd);
-
   // if needed, we load the mimap buffer
   dt_mipmap_buffer_t buf;
-  gboolean buf_ok = TRUE;
-  int buf_wd = 0;
-  int buf_ht = 0;
-
   dt_mipmap_cache_get(cache, &buf, imgid, mip, DT_MIPMAP_BEST_EFFORT, 'r');
-  buf_wd = buf.width;
-  buf_ht = buf.height;
+  const int buf_wd = buf.width;
+  const int buf_ht = buf.height;
 
   if(!buf.buf)
-    buf_ok = FALSE;
-  else if(mip != buf.size)
-    buf_ok = FALSE;
-  // if we got a different mip than requested, and it's not a skull (8x8 px), we count
-  // this thumbnail as missing (to trigger re-exposure)
-  if(!buf_ok && buf_wd != 8 && buf_ht != 8)
   {
     dt_mipmap_cache_release(darktable.mipmap_cache, &buf);
     return 1;
   }
-
   // so we create a new image surface to return
-  const float scale = fminf(width / (float)buf_wd, height / (float)buf_ht) * darktable.gui->ppd_thb ;
-  const int img_width = buf_wd * scale;
-  const int img_height = buf_ht * scale;
+  float scale = fminf(width / (float)buf_wd, height / (float)buf_ht) * darktable.gui->ppd_thb ;
+  const int img_width = roundf(buf_wd * scale);
+  const int img_height = roundf(buf_ht * scale);
+  scale = fmaxf(img_width / (float)buf_wd, img_height / (float)buf_ht);                                                                 
   *surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, img_width, img_height);
 
   // we transfer cached image on a cairo_surface (with colorspace transform if needed)
@@ -965,6 +963,7 @@ int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t 
       {
         pthread_rwlock_unlock(&darktable.color_profiles->xprofile_lock);
         have_lock = FALSE;
+
         if(buf.color_space == DT_COLORSPACE_NONE)
           fprintf(stderr, "oops, there seems to be a code path not setting the color space of thumbnails!\n");
         else if(buf.color_space != DT_COLORSPACE_DISPLAY && buf.color_space != DT_COLORSPACE_DISPLAY2)
@@ -972,33 +971,46 @@ int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t 
                   "oops, there seems to be a code path setting an unhandled color space of thumbnails (%s)!\n",
                   dt_colorspaces_get_name(buf.color_space, "from file"));
       }
-    }
 
+      if(have_lock)
+      {
+        fprintf(stderr, "in views.c L981, heading to OPENMP with transform, imgid = %d\n", imgid); /////////////
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static) default(none) shared(buf, rgbbuf, transform)
 #endif
-    for(int i = 0; i < buf.height; i++)
-    {
-      const uint8_t *in = buf.buf + i * buf.width * 4;
-      uint8_t *out = rgbbuf + i * buf.width * 4;
+        for(int i = 0; i < buf.height; i++)
+        {
+          const uint8_t *in = buf.buf + i * buf.width * 4;
+          uint8_t *out = rgbbuf + i * buf.width * 4;
+          cmsDoTransform(transform, in, out, buf.width);
+        }
 
-      if(transform)
-        cmsDoTransform(transform, in, out, buf.width);
-      else
+        pthread_rwlock_unlock(&darktable.color_profiles->xprofile_lock);
+      }
+    }
+    
+    if(!have_lock)
+    {
+      fprintf(stderr, "in views.c L1001, heading to OPENMP no transform, imgid = %d\n", imgid); /////////////
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) default(none) shared(buf, rgbbuf)
+#endif
+      for(int i = 0; i < buf.height; i++)
+      {
+        const uint8_t *in = buf.buf + i * buf.width * 4;
+        uint8_t *out = rgbbuf + i * buf.width * 4;
         for(int j = 0; j < buf.width; j++, in += 4, out += 4)
         {
           out[0] = in[2];
           out[1] = in[1];
           out[2] = in[0];
         }
+      }
     }
-    if(have_lock)
-      pthread_rwlock_unlock(&darktable.color_profiles->xprofile_lock);
 
     const int32_t stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24, buf_wd);
     tmp_surface = cairo_image_surface_create_for_data(rgbbuf, CAIRO_FORMAT_RGB24, buf_wd, buf_ht, stride);
   }
-
   // draw the image scaled:
   if(tmp_surface)
   {
@@ -1022,6 +1034,7 @@ int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t 
 
   dt_mipmap_cache_release(darktable.mipmap_cache, &buf);
   if(rgbbuf) free(rgbbuf);
+
   return 0;
 }
 
@@ -1539,17 +1552,15 @@ void dt_view_accels_refresh(dt_view_manager_t *vm)
     gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
     column = gtk_tree_view_column_new_with_attributes(_("Action"), renderer, "text", 1, NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(list), column);
-
     gtk_box_pack_start(GTK_BOX(box), list, FALSE, FALSE, 0);
 
     gtk_flow_box_insert(GTK_FLOW_BOX(vm->accels_window.flow_box), box, -1);
     g_free(bb->base);
     g_free(bb->title);
-
     bl = g_list_next(bl);
   }
-  g_list_free_full(blocs, free);
 
+  g_list_free_full(blocs, free);
   gtk_widget_show_all(vm->accels_window.flow_box);
 }
 

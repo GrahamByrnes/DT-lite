@@ -58,7 +58,6 @@ GtkWidget *dtgtk_expander_get_body_event_box(GtkDarktableExpander *expander)
 void dtgtk_expander_set_expanded(GtkDarktableExpander *expander, gboolean expanded)
 {
   g_return_if_fail(DTGTK_IS_EXPANDER(expander));
-
   expanded = expanded != FALSE;
 
   if(expander->expanded != expanded)

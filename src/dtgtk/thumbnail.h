@@ -24,6 +24,7 @@
 #include <gtk/gtk.h>
 
 #define MAX_STARS 5
+#define IMG_TO_FIT 0.0f
 
 typedef enum dt_thumbnail_border_t
 {
@@ -128,6 +129,7 @@ typedef struct
   float zoom_100; // max zoom value (image 100%)
 
   gboolean display_focus; // do we display rectangles to show focused part of the image
+  gboolean busy;
 } dt_thumbnail_t;
 
 dt_thumbnail_t *dt_thumbnail_new(int width, int height, int imgid, int rowid, dt_thumbnail_overlay_t over,

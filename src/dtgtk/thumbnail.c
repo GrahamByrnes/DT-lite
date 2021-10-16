@@ -21,7 +21,6 @@
 #include "bauhaus/bauhaus.h"
 #include "common/collection.h"
 #include "common/debug.h"
-#include "common/focus.h"
 #include "common/grouping.h"
 #include "common/image_cache.h"
 #include "common/ratings.h"
@@ -194,11 +193,9 @@ static gboolean _thumb_expose_again(gpointer user_data)
   dt_thumbnail_t *thumb = (dt_thumbnail_t *)user_data;
   gpointer w_image = thumb->w_image;
 
-  if(!thumb)
-    return FALSE;
+  if(!thumb) return FALSE;
 
-  if(!w_image || !GTK_IS_WIDGET(w_image))
-    return FALSE;
+  if(!w_image || !GTK_IS_WIDGET(w_image)) return FALSE;
 
   thumb->expose_again_timeout_id = 0;
   gtk_widget_queue_draw((GtkWidget *)w_image);
@@ -232,7 +229,6 @@ static void _thumb_retrieve_margins(dt_thumbnail_t *thumb)
   thumb->img_margin = gtk_border_new();
   GtkStyleContext *context = gtk_widget_get_style_context(thumb->w_image);
   gtk_style_context_get_margin(context, state, thumb->img_margin);
-
   // and we apply it to the thumb size
   int width, height;
   gtk_widget_get_size_request(thumb->w_main, &width, &height);
@@ -246,18 +242,14 @@ static void _thumb_write_extension(dt_thumbnail_t *thumb)
 {
   // fill the file extension label
   const char *ext = thumb->filename + strlen(thumb->filename);
-  gchar *ext2 = NULL;
 
-  while(ext > thumb->filename && *ext != '.')
-    ext--;
-
+  while(ext > thumb->filename && *ext != '.') ext--;
   ext++;
   gchar *uext = dt_view_extend_modes_str(ext, thumb->is_hdr);
-  ext2 = dt_util_dstrcat(ext2, "%s", uext);
-  gtk_label_set_text(GTK_LABEL(thumb->w_ext), ext2);
+  gtk_label_set_text(GTK_LABEL(thumb->w_ext), uext);
   g_free(uext);
-  g_free(ext2);
 }
+
 
 static gboolean _event_cursor_draw(GtkWidget *widget, cairo_t *cr, gpointer user_data)
 {
@@ -301,6 +293,7 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
   {
     if(thumb->img_surf && cairo_surface_get_reference_count(thumb->img_surf) > 0)
       cairo_surface_destroy(thumb->img_surf);
+
     thumb->img_surf = NULL;
     thumb->img_surf_dirty = TRUE;
   }
@@ -312,7 +305,8 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
   {
     // let's ensure we have the right margins
     _thumb_retrieve_margins(thumb);
-    int image_w, image_h;
+    int image_w = 0;
+    int image_h = 0;
 
     if(thumb->over == DT_THUMBNAIL_OVERLAYS_ALWAYS_NORMAL || thumb->over == DT_THUMBNAIL_OVERLAYS_ALWAYS_EXTENDED)
     {
@@ -322,6 +316,7 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
       gtk_widget_get_size_request(thumb->w_bottom_eb, &w, &h);
       image_h = thumb->height - h;
       gtk_widget_get_size_request(thumb->w_altered, &w, &h);
+
       if (!thumb->zoomable) 
         image_h -= h + gtk_widget_get_margin_top(thumb->w_altered);
       else
@@ -344,7 +339,6 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
     {
       image_w = thumb->width - thumb->img_margin->left - thumb->img_margin->right;
       image_h = thumb->height - thumb->img_margin->top - thumb->img_margin->bottom;
-      ;
     }
 
     if(v->view(v) == DT_VIEW_DARKROOM && dev->preview_pipe->output_imgid == thumb->imgid
@@ -354,8 +348,8 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
       // better use the preview buffer for surface, in order to stay in sync
       if(thumb->img_surf && cairo_surface_get_reference_count(thumb->img_surf) > 0)
         cairo_surface_destroy(thumb->img_surf);
-      thumb->img_surf = NULL;
 
+      thumb->img_surf = NULL;
       // get new surface with preview image
       const int buf_width = dev->preview_pipe->output_backbuf_width;
       const int buf_height = dev->preview_pipe->output_backbuf_height;
@@ -381,10 +375,8 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
         cairo_scale(cr2, scale, scale);
 
         cairo_set_source_surface(cr2, tmp_surface, 0, 0);
-        // set filter no nearest:
+        // set filter to nearest:
         // in skull mode, we want to see big pixels.
-        // in 1 iir mode for the right mip, we want to see exactly what the pipe gave us, 1:1 pixel for pixel.
-        // in between, filtering just makes stuff go unsharp.
         if((buf_width <= 8 && buf_height <= 8) || fabsf(scale - 1.0f) < 0.01f)
           cairo_pattern_set_filter(cairo_get_source(cr2), CAIRO_FILTER_NEAREST);
         else
@@ -414,7 +406,7 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
       {
         // if the image is missing, we reload it again
        if(!thumb->expose_again_timeout_id)
-          thumb->expose_again_timeout_id = g_timeout_add(250, _thumb_expose_again, thumb);
+          thumb->expose_again_timeout_id = g_timeout_add(dt_conf_get_int("expose_again_delay"), _thumb_expose_again, thumb);
         // we still draw the thumb to avoid flickering
         _thumb_draw_image(thumb, cr);
         return TRUE;
@@ -425,31 +417,6 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
 
       if(tmp_surf && cairo_surface_get_reference_count(tmp_surf) > 0)
         cairo_surface_destroy(tmp_surf);
-
-      if(thumb->display_focus)
-      {
-        uint8_t *full_res_thumb = NULL;
-        int32_t full_res_thumb_wd, full_res_thumb_ht;
-        dt_colorspaces_color_profile_type_t color_space;
-        char path[PATH_MAX] = { 0 };
-        gboolean from_cache = TRUE;
-        dt_image_full_path(thumb->imgid, path, sizeof(path), &from_cache);
-
-        if(!dt_imageio_large_thumbnail(path, &full_res_thumb, &full_res_thumb_wd, &full_res_thumb_ht, &color_space))
-        {
-          // we look for focus areas
-          dt_focus_cluster_t full_res_focus[49];
-          const int frows = 5, fcols = 5;
-          dt_focus_create_clusters(full_res_focus, frows, fcols, full_res_thumb, full_res_thumb_wd, full_res_thumb_ht);
-          // and we draw them on the image
-          cairo_t *cri = cairo_create(thumb->img_surf);
-          dt_focus_draw_clusters(cri, cairo_image_surface_get_width(thumb->img_surf),
-                                 cairo_image_surface_get_height(thumb->img_surf), thumb->imgid, full_res_thumb_wd,
-                                 full_res_thumb_ht, full_res_focus, frows, fcols, 1.0, 0, 0);
-          cairo_destroy(cri);
-        }
-        dt_free_align(full_res_thumb);
-      }
     }
 
     thumb->img_surf_dirty = FALSE;
@@ -529,7 +496,6 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
   }
 
   _thumb_draw_image(thumb, cr);
-
   return TRUE;
 }
 
