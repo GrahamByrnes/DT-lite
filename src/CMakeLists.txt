@@ -50,7 +50,6 @@ FILE(GLOB SOURCE_FILES
   "common/imageio_im.c"
   "common/imageio_gm.c"
   "common/imageio_rawspeed.cc"
-  "common/import_session.c"
   "common/interpolation.c"
   "common/l10n.c"
   "common/metadata.c"
