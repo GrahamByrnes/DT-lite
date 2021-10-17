@@ -200,7 +200,7 @@ static dt_thumbnail_t *_thumb_get_at_pos(dt_thumbtable_t *table, int x, int y)
 }
 
 // get the thumb which is currently under mouse cursor
-static dt_thumbnail_t *_thumb_get_under_mouse(dt_thumbtable_t *table)
+/*static dt_thumbnail_t *_thumb_get_under_mouse(dt_thumbtable_t *table)
 {
   if(!table->mouse_inside) return NULL;
 
@@ -211,7 +211,7 @@ static dt_thumbnail_t *_thumb_get_under_mouse(dt_thumbtable_t *table)
   y = table->last_y - y;
 
   return _thumb_get_at_pos(table, x, y);
-}
+}*/
 
 // get imgid from rowid
 static int _thumb_get_imgid(int rowid)
@@ -2080,139 +2080,6 @@ gboolean dt_thumbtable_check_imgid_visibility(dt_thumbtable_t *table, const int 
     return _filemanager_check_rowid_visibility(table, _thumb_get_rowid(imgid));
   else if(table->mode == DT_THUMBTABLE_MODE_ZOOM)
     return _zoomable_check_rowid_visibility(table, _thumb_get_rowid(imgid));
-
-  return FALSE;
-}
-
-static gboolean _filemanager_key_move(dt_thumbtable_t *table, dt_thumbtable_move_t move, const gboolean select)
-{
-  // base point
-  int baseid = dt_control_get_mouse_over_id();
-  // let's be sure that the current image is selected
-  if(baseid > 0 && select) dt_selection_select(darktable.selection, baseid);
-
-  int baserowid = 1;
-  if(baseid <= 0)
-  {
-    baserowid = table->offset;
-    baseid = table->offset_imgid;
-  }
-  else
-  {
-    baserowid = _thumb_get_rowid(baseid);
-  }
-
-  int newrowid = baserowid;
-  // last rowid of the current collection
-  int maxrowid = 1;
-  sqlite3_stmt *stmt;
-  DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "SELECT MAX(rowid) FROM memory.collected_images", -1,
-                              &stmt, NULL);
-  if(sqlite3_step(stmt) == SQLITE_ROW) maxrowid = sqlite3_column_int(stmt, 0);
-  sqlite3_finalize(stmt);
-
-  // classic keys
-  if(move == DT_THUMBTABLE_MOVE_LEFT && baserowid > 1)
-    newrowid = baserowid - 1;
-  else if(move == DT_THUMBTABLE_MOVE_RIGHT && baserowid < maxrowid)
-    newrowid = baserowid + 1;
-  else if(move == DT_THUMBTABLE_MOVE_UP && baserowid - table->thumbs_per_row >= 1)
-    newrowid = baserowid - table->thumbs_per_row;
-  else if(move == DT_THUMBTABLE_MOVE_DOWN && baserowid + table->thumbs_per_row <= maxrowid)
-    newrowid = baserowid + table->thumbs_per_row;
-  // page key
-  else if(move == DT_THUMBTABLE_MOVE_PAGEUP)
-  {
-    newrowid = baserowid - table->thumbs_per_row * (table->rows - 1);
-    while(newrowid < 2 - table->thumbs_per_row) newrowid += table->thumbs_per_row;
-  }
-  else if(move == DT_THUMBTABLE_MOVE_PAGEDOWN)
-  {
-    newrowid = baserowid + table->thumbs_per_row * (table->rows - 1);
-    while(newrowid > maxrowid) newrowid -= table->thumbs_per_row;
-  }
-  // direct start/end
-  else if(move == DT_THUMBTABLE_MOVE_START)
-    newrowid = 1;
-  else if(move == DT_THUMBTABLE_MOVE_END)
-    newrowid = maxrowid;
-
-  if(newrowid == baserowid) return FALSE;
-
-  // change image_over
-  const int imgid = _thumb_get_imgid(newrowid);
-
-  dt_control_set_mouse_over_id(imgid);
-
-  // ensure the image is visible by moving the view if needed
-  _filemanager_ensure_rowid_visibility(table, newrowid);
-
-  // if needed, we set the selection
-  if(select && imgid > 0) dt_selection_select_range(darktable.selection, imgid);
-  return TRUE;
-}
-static gboolean _zoomable_key_move(dt_thumbtable_t *table, dt_thumbtable_move_t move, const gboolean select)
-{
-  // let's be sure that the current image is selected
-  int baseid = dt_control_get_mouse_over_id();
-  if(baseid > 0 && select) dt_selection_select(darktable.selection, baseid);
-
-  // first, we move the view by 1 thumb_size
-  // move step
-  const int step = table->thumb_size;
-  gboolean moved = FALSE;
-
-  // classic keys
-  if(move == DT_THUMBTABLE_MOVE_LEFT)
-    moved = _move(table, step, 0, TRUE);
-  else if(move == DT_THUMBTABLE_MOVE_RIGHT)
-    moved = _move(table, -step, 0, TRUE);
-  else if(move == DT_THUMBTABLE_MOVE_UP)
-    moved = _move(table, 0, step, TRUE);
-  else if(move == DT_THUMBTABLE_MOVE_DOWN)
-    moved = _move(table, 0, -step, TRUE);
-  // page key
-  else if(move == DT_THUMBTABLE_MOVE_PAGEUP)
-    moved = _move(table, 0, step * (table->rows - 1), TRUE);
-  else if(move == DT_THUMBTABLE_MOVE_PAGEDOWN)
-    moved = _move(table, 0, -step * (table->rows - 1), TRUE);
-  // direct start/end
-  else if(move == DT_THUMBTABLE_MOVE_START)
-    moved = _zoomable_ensure_rowid_visibility(table, 1);
-  else if(move == DT_THUMBTABLE_MOVE_END)
-  {
-    int maxrowid = 1;
-    sqlite3_stmt *stmt;
-    DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "SELECT MAX(rowid) FROM memory.collected_images",
-                                -1, &stmt, NULL);
-    if(sqlite3_step(stmt) == SQLITE_ROW) maxrowid = sqlite3_column_int(stmt, 0);
-    sqlite3_finalize(stmt);
-    moved = _zoomable_ensure_rowid_visibility(table, maxrowid);
-  }
-  else if(move == DT_THUMBTABLE_MOVE_ALIGN)
-  {
-    const int newx
-        = (table->thumbs_area.x / table->thumb_size) * table->thumb_size; // this is NOT a noop due to rounding...
-    const int newy
-        = (table->thumbs_area.y / table->thumb_size) * table->thumb_size; // this is NOT a noop due to rounding...
-    moved = _move(table, newx - table->thumbs_area.x, newy - table->thumbs_area.y, TRUE);
-  }
-
-  // and we set mouseover if we can
-  dt_thumbnail_t *thumb = _thumb_get_under_mouse(table);
-  if(thumb) dt_control_set_mouse_over_id(thumb->imgid);
-  // if needed, we set the selection
-  if(thumb && select) dt_selection_select_range(darktable.selection, thumb->imgid);
-
-  return moved;
-}
-
-gboolean dt_thumbtable_key_move(dt_thumbtable_t *table, dt_thumbtable_move_t move, const gboolean select)
-{
-  if(table->mode == DT_THUMBTABLE_MODE_FILEMANAGER)
-    return _filemanager_key_move(table, move, select);
-  else if(table->mode == DT_THUMBTABLE_MODE_ZOOM)
-    return _zoomable_key_move(table, move, select);
 
   return FALSE;
 }

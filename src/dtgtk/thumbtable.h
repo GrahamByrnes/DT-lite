@@ -119,10 +119,6 @@ gboolean dt_thumbtable_ensure_imgid_visibility(dt_thumbtable_t *table, int imgid
 // check if the mentioned image is visible
 gboolean dt_thumbtable_check_imgid_visibility(dt_thumbtable_t *table, int imgid);
 
-// move by key actions.
-// this key accels are not managed here but inside view
-gboolean dt_thumbtable_key_move(dt_thumbtable_t *table, dt_thumbtable_move_t move, gboolean select);
-
 // ensure the first image in collection as no offset (is positionned on top-left)
 gboolean dt_thumbtable_reset_first_offset(dt_thumbtable_t *table);
 

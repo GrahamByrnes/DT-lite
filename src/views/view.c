@@ -787,7 +787,7 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
         l1 = g_slist_next(l1);
       }
     }
-
+    fprintf(stderr, "in views.c L788, leaving dt_view_get images to act on\n"); /////////////
     if(ok)
       return darktable.view_manager->act_on.images;
   }
@@ -923,6 +923,7 @@ int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t 
   // get mipmap cahe image
   dt_mipmap_cache_t *cache = darktable.mipmap_cache;
   dt_mipmap_size_t mip = dt_mipmap_cache_get_matching_size(cache, width * darktable.gui->ppd, height * darktable.gui->ppd);
+
   // if needed, we load the mimap buffer
   dt_mipmap_buffer_t buf;
   dt_mipmap_cache_get(cache, &buf, imgid, mip, DT_MIPMAP_BEST_EFFORT, 'r');
@@ -971,10 +972,8 @@ int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t 
     cairo_t *cr = cairo_create(*surface);
     cairo_scale(cr, scale, scale);
     cairo_set_source_surface(cr, tmp_surface, 0, 0);
-    // set filter no nearest:
-    // in skull mode, we want to see big pixels.
-    // in 1 iir mode for the right mip, we want to see exactly what the pipe gave us, 1:1 pixel for pixel.
-    // in between, filtering just makes stuff go unsharp.
+    // set filter to nearest:
+    // for the right mip, we want to see exactly what the pipe gave us, 1:1 pixel for pixel.
     if((buf_wd <= 8 && buf_ht <= 8) || fabsf(scale - 1.0f) < 0.01f)
       cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
     else
@@ -987,6 +986,7 @@ int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t 
   }
 
   dt_mipmap_cache_release(darktable.mipmap_cache, &buf);
+
   if(rgbbuf) free(rgbbuf);
 
   return 0;
@@ -1314,8 +1314,7 @@ void dt_view_accels_show(dt_view_manager_t *vm)
       = dtgtk_button_new(dtgtk_cairo_paint_multiinstance, CPF_STYLE_FLAT, NULL);
   g_object_set(G_OBJECT(vm->accels_window.sticky_btn), "tooltip-text",
                _("switch to a classic window which will stay open after key release."), (char *)NULL);
-  g_signal_connect(G_OBJECT(vm->accels_window.sticky_btn), "button-press-event", G_CALLBACK(_accels_window_sticky),
-                   vm);
+  g_signal_connect(G_OBJECT(vm->accels_window.sticky_btn), "button-press-event", G_CALLBACK(_accels_window_sticky), vm);
   context = gtk_widget_get_style_context(vm->accels_window.sticky_btn);
   gtk_style_context_add_class(context, "accels_window_stick");
   gtk_box_pack_start(GTK_BOX(vb), vm->accels_window.sticky_btn, FALSE, FALSE, 0);

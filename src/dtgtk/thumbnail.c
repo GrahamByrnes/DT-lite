@@ -433,13 +433,13 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
     thumb->zoomy = thumb->zoomy + (imgbox_h - hh) / 2.0;
     gtk_widget_set_size_request(thumb->w_image_box, imgbox_w, imgbox_h);
     // and we set the position of the image
-    int posx, posy;
+    int posx = 0, posy = 0;
 
     if(thumb->over == DT_THUMBNAIL_OVERLAYS_ALWAYS_NORMAL || thumb->over == DT_THUMBNAIL_OVERLAYS_ALWAYS_EXTENDED)
     {
       posx = thumb->img_margin->left + (image_w - imgbox_w) / 2;
-      int w = 0;
-      int h = 0;
+      int w = 0, h = 0;
+
       if(!thumb->zoomable)
       {
         gtk_widget_get_size_request(thumb->w_altered, &w, &h);
@@ -454,8 +454,7 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
     else if(thumb->over == DT_THUMBNAIL_OVERLAYS_MIXED)
     {
       posx = thumb->img_margin->left + (image_w - imgbox_w) / 2;
-      int w = 0;
-      int h = 0;
+      int w = 0, h = 0;
       gtk_widget_get_size_request(thumb->w_altered, &w, &h);
       posy = h + gtk_widget_get_margin_top(thumb->w_altered);
 
@@ -472,7 +471,6 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
     // for overlay block, we need to resize it
     if(thumb->over == DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK)
       _thumb_resize_overlays(thumb);
-
     // and we can also set the zooming level if needed
     if(thumb->zoomable && thumb->over == DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK)
     {
@@ -485,7 +483,6 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
         g_free(z);
       }
     }
-
     // let's sanitize and apply panning values as we are sure the zoomed image is loaded now
     thumb->zoomx = CLAMP(thumb->zoomx,
         (imgbox_w * darktable.gui->ppd_thb - thumb->img_width) / darktable.gui->ppd_thb, 0);
@@ -968,7 +965,7 @@ GtkWidget *dt_thumbnail_create_widget(dt_thumbnail_t *thumb)
   if(thumb->imgid > 0)
   {
     // this is only here to ensure that mouse-over value is updated correctly
-    // all dragging actions take place inside thumbatble.c
+    // all dragging actions take place inside thumbtable.c
     gtk_drag_dest_set(thumb->w_main, GTK_DEST_DEFAULT_MOTION, target_list_all, n_targets_all, GDK_ACTION_COPY);
     g_signal_connect(G_OBJECT(thumb->w_main), "drag-motion", G_CALLBACK(_event_main_drag_motion), thumb);
 
