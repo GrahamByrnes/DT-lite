@@ -787,7 +787,7 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
         l1 = g_slist_next(l1);
       }
     }
-    fprintf(stderr, "in views.c L788, leaving dt_view_get images to act on\n"); /////////////
+
     if(ok)
       return darktable.view_manager->act_on.images;
   }
