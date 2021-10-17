@@ -702,6 +702,30 @@ char *dt_util_format_exposure(const float exposuretime)
   return result;
 }
 
+char *dt_read_file(const char *const filename, size_t *filesize)
+{
+  if (filesize) *filesize = 0;
+  FILE *fd = g_fopen(filename, "rb");
+  if(!fd) return NULL;
+
+  fseek(fd, 0, SEEK_END);
+  const size_t end = ftell(fd);
+  rewind(fd);
+
+  char *content = (char *)malloc(sizeof(char) * end);
+  if(!content) return NULL;
+
+  const size_t count = fread(content, sizeof(char), end, fd);
+  fclose(fd);
+  if (count == end)
+  {
+    if (filesize) *filesize = end;
+    return content;
+  }
+  free(content);
+  return NULL;
+}
+
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
 // kate: tab-indents: off; indent-width 2; replace-tabs on; indent-mode cstyle; remove-trailing-spaces modified;
