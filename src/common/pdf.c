@@ -49,6 +49,7 @@
 #endif
 
 #include "pdf.h"
+#include "common/utility.h"
 
 #define CLAMP_FLT(A) ((A) > (0.0f) ? ((A) < (1.0f) ? (A) : (1.0f)) : (0.0f))
 
