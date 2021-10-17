@@ -41,7 +41,6 @@
 #include "develop/blend.h"
 #include "develop/develop.h"
 #include "develop/imageop.h"
-#include "develop/lightroom.h"
 #include "develop/masks.h"
 #include "gui/gtk.h"
 #include "gui/presets.h"
@@ -1606,9 +1605,6 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
     auto_apply_modules = _dev_get_module_nb_records() - default_modules;
     // now merge memory.history into main.history
     _dev_merge_history(dev, imgid);
-    //  first time we are loading the image, try to import lightroom .xmp if any
-    if(dev->image_loading && first_run)
-      dt_lightroom_import(dev->image_storage.id, dev, TRUE);
   }
 
   gboolean legacy_params = FALSE;

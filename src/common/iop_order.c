@@ -1702,15 +1702,6 @@ char *dt_ioppr_serialize_text_iop_order_list(GList *iop_order_list)
   return text;
 }
 
-/* this sanity check routine is used to correct wrong iop-list that
- * could have been stored while some bugs were present in
- * dartkable. There was a window around Sep 2019 where such issue
- * existed and some xmp may have been corrupt at this time making dt
- * crash while reimporting using the xmp.
- *
- * One common case seems that the list does not end with gamma.
-*/
-
 static gboolean _ioppr_sanity_check_iop_order(GList *list)
 {
   gboolean ok = TRUE;

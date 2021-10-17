@@ -37,7 +37,6 @@
 #include "control/conf.h"
 #include "control/control.h"
 #include "control/jobs.h"
-#include "develop/lightroom.h"
 #include "win/filepath.h"
 #include <assert.h>
 #include <math.h>
@@ -1236,17 +1235,8 @@ static uint32_t _image_import_internal(const int32_t film_id, const char *filena
   g_strlcpy(dtfilename, normalized_filename, sizeof(dtfilename));
   // dt_image_path_append_version(id, dtfilename, sizeof(dtfilename));
   g_strlcat(dtfilename, ".xmp", sizeof(dtfilename));
-  const int res = dt_exif_xmp_read(img, dtfilename, 0);
   // write through to db, but not to xmp.
   dt_image_cache_write_release(darktable.image_cache, img, DT_IMAGE_CACHE_RELAXED);
-
-  if(res != 0)
-  {
-    // Search for Lightroom sidecar file, import tags if found
-    dt_lightroom_import(id, NULL, TRUE);
-    // Make sure that lightroom xmp data (label in particular) are saved in dt xmp
-    dt_image_write_sidecar_file(id);
-  }
 
   // add a tag with the file extension
   guint tagid = 0;

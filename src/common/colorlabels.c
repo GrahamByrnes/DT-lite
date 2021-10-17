@@ -55,7 +55,6 @@ int dt_colorlabels_get_labels(const int imgid)
 static void _pop_undo_execute(const int imgid, const uint8_t before, const uint8_t after)
 {
   for(int color=0; color<5; color++)
-  {
     if(after & (1<<color))
     {
       if (!(before & (1<<color)))
@@ -63,7 +62,6 @@ static void _pop_undo_execute(const int imgid, const uint8_t before, const uint8
     }
     else if (before & (1<<color))
       dt_colorlabels_remove_label(imgid, color);
-  }
 }
 
 static void _pop_undo(gpointer user_data, dt_undo_type_t type, dt_undo_data_t data, dt_undo_action_t action, GList **imgs)
@@ -82,6 +80,7 @@ static void _pop_undo(gpointer user_data, dt_undo_type_t type, dt_undo_data_t da
       *imgs = g_list_prepend(*imgs, GINT_TO_POINTER(undocolorlabels->imgid));
       list = g_list_next(list);
     }
+    
     dt_collection_hint_message(darktable.collection);
   }
 }
@@ -95,8 +94,8 @@ static void _colorlabels_undo_data_free(gpointer data)
 void dt_colorlabels_remove_labels(const int imgid)
 {
   sqlite3_stmt *stmt;
-  DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "DELETE FROM main.color_labels WHERE imgid=?1", -1,
-                              &stmt, NULL);
+  DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
+                              "DELETE FROM main.color_labels WHERE imgid=?1", -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   sqlite3_step(stmt);
   sqlite3_finalize(stmt);
@@ -167,7 +166,6 @@ static void _colorlabels_execute(const GList *imgs, const int labels, GList **un
     }
 
     _pop_undo_execute(image_id, before, after);
-
     images = g_list_next(images);
   }
 }
@@ -179,16 +177,18 @@ void dt_colorlabels_set_labels(const GList *img, const int labels, const gboolea
   if(imgs)
   {
     GList *undo = NULL;
-    if(undo_on) dt_undo_start_group(darktable.undo, DT_UNDO_COLORLABELS);
+    if(undo_on)
+      dt_undo_start_group(darktable.undo, DT_UNDO_COLORLABELS);
 
     _colorlabels_execute(imgs, labels, &undo, undo_on, clear_on ? DT_CA_SET : DT_CA_ADD);
-
     g_list_free(imgs);
+
     if(undo_on)
     {
       dt_undo_record(darktable.undo, NULL, DT_UNDO_COLORLABELS, undo, _pop_undo, _colorlabels_undo_data_free);
       dt_undo_end_group(darktable.undo);
     }
+
     dt_collection_hint_message(darktable.collection);
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_MOUSE_OVER_IMAGE_CHANGE);
   }
@@ -198,17 +198,13 @@ void dt_colorlabels_toggle_label_on_list(const GList *list, const int color, con
 {
   const int label = 1<<color;
   GList *undo = NULL;
-  if(undo_on) dt_undo_start_group(darktable.undo, DT_UNDO_COLORLABELS);
+  if(undo_on)
+    dt_undo_start_group(darktable.undo, DT_UNDO_COLORLABELS);
 
   if(color == 5)
-  {
     _colorlabels_execute(list, 0, &undo, undo_on, DT_CA_SET);
-  }
   else
-  {
     _colorlabels_execute(list, label, &undo, undo_on, DT_CA_TOGGLE);
-  }
-
   // synchronise xmp files
   GList *l = (GList *)list;
   while(l)
@@ -222,12 +218,14 @@ void dt_colorlabels_toggle_label_on_list(const GList *list, const int color, con
     dt_undo_record(darktable.undo, NULL, DT_UNDO_COLORLABELS, undo, _pop_undo, _colorlabels_undo_data_free);
     dt_undo_end_group(darktable.undo);
   }
+
   dt_collection_hint_message(darktable.collection);
 }
 
 int dt_colorlabels_check_label(const int imgid, const int color)
 {
   if(imgid <= 0) return 0;
+
   sqlite3_stmt *stmt;
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "SELECT * FROM main.color_labels WHERE imgid=?1 AND color=?2 LIMIT 1",

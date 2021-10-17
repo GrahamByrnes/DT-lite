@@ -72,7 +72,6 @@ typedef enum dt_dimensions_type_t
   DT_DIMENSIONS_INCH   = 2  // set dimensions from physical size in inch
 } dt_dimensions_type_t;
 
-char *dt_lib_export_metadata_configuration_dialog(char *list, const gboolean ondisk);
 /** Updates the combo box and shows only the supported formats of current selected storage module */
 static void _update_formats_combobox(dt_lib_export_t *d);
 /** Sets the max dimensions based upon what storage and format supports */
@@ -751,13 +750,6 @@ static void _on_storage_list_changed(gpointer instance, dt_lib_module_t *self)
   dt_bauhaus_combobox_set(d->storage, dt_imageio_get_index_of_storage(storage));
 }
 
-static void _metadata_export_clicked(GtkComboBox *widget, dt_lib_export_t *d)
-{
-  const gchar *name = dt_bauhaus_combobox_get_text(d->storage);
-  const gboolean ondisk = name && !g_strcmp0(name, _("file on disk")); // FIXME: NO!!!!!one!
-  d->metadata_export = dt_lib_export_metadata_configuration_dialog(d->metadata_export, ondisk);
-}
-
 void gui_init(dt_lib_module_t *self)
 {
   dt_lib_export_t *d = (dt_lib_export_t *)malloc(sizeof(dt_lib_export_t));
@@ -962,7 +954,6 @@ void gui_init(dt_lib_module_t *self)
   g_signal_connect(G_OBJECT(d->print_width), "changed", G_CALLBACK(_print_width_changed), (gpointer)d);
   g_signal_connect(G_OBJECT(d->print_height), "changed", G_CALLBACK(_print_height_changed), (gpointer)d);
   g_signal_connect(G_OBJECT(d->print_dpi), "changed", G_CALLBACK(_print_dpi_changed), (gpointer)d);
-  g_signal_connect(G_OBJECT(d->metadata_button), "clicked", G_CALLBACK(_metadata_export_clicked), (gpointer)d);
 
   // this takes care of keeping hidden widgets hidden
   gtk_widget_show_all(self->widget);

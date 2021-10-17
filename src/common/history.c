@@ -505,7 +505,7 @@ static int _history_copy_and_paste_on_image_merge(int32_t imgid, int32_t dest_im
           if (DT_IOP_ORDER_INFO)
             fprintf(stderr,"\n  module %20s, multiprio %i",  hist->module->op, hist->module->multi_priority);
 
-          mod_list = g_list_append(mod_list, hist->module);
+          mod_list = g_list_prepend(mod_list, hist->module);
         }
     }
   }
@@ -598,7 +598,7 @@ static int _history_copy_and_paste_on_image_overwrite(const int32_t imgid, const
     }
 
     if(!skip_modules)
-      skip_modules = dt_util_dstrcat(skip_modules, "'@'");
+      skip_modules = g_strdup("'@'");
 
     gchar *query = g_strdup_printf
       ("INSERT INTO main.history "
@@ -693,8 +693,7 @@ int dt_history_copy_and_paste_on_image(const int32_t imgid, const int32_t dest_i
                                        const gboolean merge, GList *ops,
                                        const gboolean copy_iop_order, const gboolean copy_full)
 {
-  if(imgid == dest_imgid)
-    return 1;
+  if(imgid == dest_imgid) return 1;
 
   if(imgid == -1)
   {
@@ -812,12 +811,13 @@ GList *dt_history_get_items(const int32_t imgid, gboolean enabled)
 
       item->name = g_strdup(name);
       item->op = g_strdup((gchar *)sqlite3_column_text(stmt, 1));
-      result = g_list_append(result, item);
+      result = g_list_prepend(result, item);
       g_free(mname);
     }
   }
   sqlite3_finalize(stmt);
-  return result;
+  return g_list_reverse(result);
+  // list was built in reverse order, so un-reverse it
 }
 
 char *dt_history_get_items_as_string(const int32_t imgid)
@@ -841,11 +841,12 @@ char *dt_history_get_items_as_string(const int32_t imgid)
     name = g_strconcat(dt_iop_get_localized_name((char *)sqlite3_column_text(stmt, 0)),
                        multi_name ? multi_name : "", " (",
                        (sqlite3_column_int(stmt, 1) == 0) ? onoff[0] : onoff[1], ")", NULL);
-    items = g_list_append(items, name);
+    items = g_list_prepend(items, name);
     g_free(multi_name);
   }
 
   sqlite3_finalize(stmt);
+  items = g_list_reverse(items);
   char *result = dt_util_glist_to_str("\n", items);
   g_list_free_full(items, g_free);
   return result;
@@ -902,11 +903,11 @@ static int dt_history_end_attop(const int32_t imgid)
 */
 void dt_history_compress_on_image(const int32_t imgid)
 {
-  GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
+/*  GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
 
   if(iop_order_list)
     dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
-
+*/
   dt_lock_image(imgid);
   sqlite3_stmt *stmt;
   // get history_end for image
@@ -975,11 +976,11 @@ void dt_history_compress_on_image(const int32_t imgid)
   sqlite3_step(stmt);
   sqlite3_finalize(stmt);
   // this removes not enabled iops
-  DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
+/*  DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "DELETE FROM main.history  WHERE imgid=?1 AND enabled=0", -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, imgid);
   sqlite3_step(stmt);
-  sqlite3_finalize(stmt);
+  sqlite3_finalize(stmt);*/
   // if there are masks create a mask manager entry, so we need to count them
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
     "SELECT COUNT(*) FROM main.masks_history WHERE imgid = ?1", -1, &stmt, NULL);
@@ -1040,11 +1041,11 @@ void dt_history_compress_on_image(const int32_t imgid)
 */
 void dt_history_truncate_on_image(const int32_t imgid, const int32_t history_end)
 {
-  GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
+/*  GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
 
   if(iop_order_list)
     dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
-
+*/
   dt_lock_image(imgid);
   sqlite3_stmt *stmt;
 
@@ -1095,17 +1096,10 @@ void dt_history_truncate_on_image(const int32_t imgid, const int32_t history_end
 int dt_history_compress_on_list(const GList *imgs)
 {
   int uncompressed=0;
-  GList *l = g_list_first((GList *)imgs);
-
-  while(l)
+  for(const GList *l = imgs; l; l = g_list_next(l))
   {
     const int imgid = GPOINTER_TO_INT(l->data);
     dt_lock_image(imgid);
-    GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
-
-    if(iop_order_list)
-      dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
-
     const int test = dt_history_end_attop(imgid);
 
     if (test == 1) // we do a compression and we know for sure history_end is at the top!
@@ -1184,7 +1178,6 @@ int dt_history_compress_on_list(const GList *imgs)
 
     dt_unlock_image(imgid);
     dt_history_hash_write_from_history(imgid, DT_HISTORY_HASH_CURRENT);
-    l = g_list_next(l);
   }
 
   return uncompressed;
@@ -1213,8 +1206,7 @@ gboolean dt_history_check_module_exists(int32_t imgid, const char *operation)
 GList *dt_history_duplicate(GList *hist)
 {
   GList *result = NULL;
-  GList *h = g_list_first(hist);
-  while(h)
+  for(GList *h = hist; h; h = g_list_next(h))
   {
     const dt_dev_history_item_t *old = (dt_dev_history_item_t *)(h->data);
     dt_dev_history_item_t *new = (dt_dev_history_item_t *)malloc(sizeof(dt_dev_history_item_t));
@@ -1242,8 +1234,7 @@ GList *dt_history_duplicate(GList *hist)
     if(old->forms)
       new->forms = dt_masks_dup_forms_deep(old->forms, NULL);
 
-    result = g_list_append(result, new);
-    h = g_list_next(h);
+    result = g_list_prepend(result, new);
   }
 
   return result;
@@ -1369,7 +1360,7 @@ void dt_history_hash_write_from_history(const int32_t imgid, const dt_history_ha
 
     if(type & DT_HISTORY_HASH_BASIC)
     {
-      fields = dt_util_dstrcat(fields, "%s,", "basic_hash");
+      fields = g_strdup_printf("%s,", "basic_hash");
       values = g_strdup("?2,");
       conflict = g_strdup("basic_hash=?2,");
     }
@@ -1486,7 +1477,7 @@ void dt_history_hash_read(const int32_t imgid, dt_history_hash_values_t *hash)
   sqlite3_finalize(stmt);
 }
 
-const gboolean dt_history_hash_is_mipmap_synced(const int32_t imgid)
+gboolean dt_history_hash_is_mipmap_synced(const int32_t imgid)
 {
   gboolean status = FALSE;
   if(imgid == -1) return status;
@@ -1523,13 +1514,12 @@ void dt_history_hash_set_mipmap(const int32_t imgid)
   sqlite3_finalize(stmt);
 }
 
-const dt_history_hash_t dt_history_hash_get_status(const int32_t imgid)
+dt_history_hash_t dt_history_hash_get_status(const int32_t imgid)
 {
   dt_history_hash_t status = 0;
   if(imgid == -1) return status;
   sqlite3_stmt *stmt;
-  char *query = dt_util_dstrcat(NULL,
-                                "SELECT CASE"
+  char *query = g_strdup_printf("SELECT CASE"
                                 "  WHEN basic_hash == current_hash THEN %d"
                                 "  WHEN auto_hash == current_hash THEN %d"
                                 "  WHEN (basic_hash IS NULL OR current_hash != basic_hash) AND"
@@ -1604,8 +1594,7 @@ gboolean dt_history_paste_on_list(const GList *list, gboolean undo)
   if(undo)
     dt_undo_start_group(darktable.undo, DT_UNDO_LT_HISTORY);
 
-  GList *l = (GList *)list;
-  while(l)
+  for(GList *l = (GList *)list; l; l = g_list_next(l))
   {
     const int dest = GPOINTER_TO_INT(l->data);
     dt_history_copy_and_paste_on_image(darktable.view_manager->copy_paste.copied_imageid,
@@ -1613,7 +1602,6 @@ gboolean dt_history_paste_on_list(const GList *list, gboolean undo)
                                        darktable.view_manager->copy_paste.selops,
                                        darktable.view_manager->copy_paste.copy_iop_order,
                                        darktable.view_manager->copy_paste.full_copy);
-    l = g_list_next(l);
   }
 
   if(undo)
@@ -1627,7 +1615,7 @@ gboolean dt_history_paste_parts_on_list(const GList *list, gboolean undo)
   if(darktable.view_manager->copy_paste.copied_imageid <= 0)
     return FALSE;
 
-  if(g_list_length((GList *)list) < 1)
+  if(!list) // do we have any images to receive the pasted history?
     return FALSE;
 
   const int mode = dt_conf_get_int("plugins/lighttable/copy_history/pastemode");
@@ -1651,8 +1639,7 @@ gboolean dt_history_paste_parts_on_list(const GList *list, gboolean undo)
   if(undo)
     dt_undo_start_group(darktable.undo, DT_UNDO_LT_HISTORY);
     
-  GList *l = l_copy;
-  while(l)
+  for (const GList *l = l_copy; l; l = g_list_next(l))
   {
     const int dest = GPOINTER_TO_INT(l->data);
     dt_history_copy_and_paste_on_image(darktable.view_manager->copy_paste.copied_imageid,
@@ -1660,7 +1647,6 @@ gboolean dt_history_paste_parts_on_list(const GList *list, gboolean undo)
                                        darktable.view_manager->copy_paste.selops,
                                        darktable.view_manager->copy_paste.copy_iop_order,
                                        darktable.view_manager->copy_paste.full_copy);
-    l = g_list_next(l);
   }
 
   if(undo)
@@ -1678,8 +1664,7 @@ gboolean dt_history_delete_on_list(const GList *list, gboolean undo)
   if(undo)
     dt_undo_start_group(darktable.undo, DT_UNDO_LT_HISTORY);
 
-  GList *l = (GList *)list;
-  while(l)
+  for(GList *l = (GList *)list; l; l = g_list_next(l))
   {
     const int imgid = GPOINTER_TO_INT(l->data);
     dt_undo_lt_history_t *hist = dt_history_snapshot_item_init();
@@ -1693,8 +1678,6 @@ gboolean dt_history_delete_on_list(const GList *list, gboolean undo)
        recalculated when the mimpap will be recreated */
     if(darktable.collection->params.sort == DT_COLLECTION_SORT_ASPECT_RATIO)
       dt_image_set_aspect_ratio(imgid, FALSE);
-
-    l = g_list_next(l);
   }
 
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_TAG_CHANGED);
