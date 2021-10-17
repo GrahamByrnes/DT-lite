@@ -356,6 +356,7 @@ void dt_view_manager_module_toolbox_add(dt_view_manager_t *vm, GtkWidget *tool, 
 /** set scrollbar positions, gui method. */
 void dt_view_set_scrollbar(dt_view_t *view, float hpos, float hscroll_lower, float hsize, float hwinsize,
                            float vpos, float vscroll_lower, float vsize, float vwinsize);
+
 /** update the collection module */
 void dt_view_collection_update(const dt_view_manager_t *vm);
 
