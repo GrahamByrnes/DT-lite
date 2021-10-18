@@ -709,8 +709,8 @@ void dt_mipmap_cache_get_with_caller(
   else if(flags == DT_MIPMAP_PREFETCH)
   {
     // and opposite: prefetch without locking
-    if(mip > DT_MIPMAP_FULL || (int)mip < DT_MIPMAP_0)
-      return; // remove the (int) once we no longer have to support gcc < 4.8 :/
+    if(mip > DT_MIPMAP_FULL || mip < DT_MIPMAP_0)
+      return;
 
     dt_control_add_job(darktable.control, DT_JOB_QUEUE_SYSTEM_FG, dt_image_load_job_create(imgid, mip));
   }
@@ -719,8 +719,8 @@ void dt_mipmap_cache_get_with_caller(
     // only prefetch if the disk cache exists:
     if(!cache->cachedir[0]) return;
 
-    if(mip > DT_MIPMAP_FULL || (int)mip < DT_MIPMAP_0)
-      return; // remove the (int) once we no longer have to support gcc < 4.8 :/
+    if(mip > DT_MIPMAP_FULL || mip < DT_MIPMAP_0)
+      return;
 
     char filename[PATH_MAX] = {0};
     snprintf(filename, sizeof(filename), "%s.d/%d/%"PRIu32".jpg", cache->cachedir, (int)mip, key);
@@ -931,7 +931,7 @@ void dt_mipmap_cache_release_with_caller(dt_mipmap_cache_t *cache, dt_mipmap_buf
   if(buf->size == DT_MIPMAP_NONE) return;
 
   assert(buf->imgid > 0);
-  // assert(buf->size >= DT_MIPMAP_0); // breaks gcc-4.6/4.7 build
+  assert(buf->size >= DT_MIPMAP_0);
   assert(buf->size < DT_MIPMAP_NONE);
   assert(buf->cache_entry);
   dt_cache_release_with_caller(&_get_cache(cache, buf->size)->cache, buf->cache_entry, file, line);
