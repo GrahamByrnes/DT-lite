@@ -24,6 +24,7 @@
 
 typedef enum dt_thumbtable_mode_t
 {
+  DT_THUMBTABLE_MODE_NONE,
   DT_THUMBTABLE_MODE_FILEMANAGER,
   DT_THUMBTABLE_MODE_FILMSTRIP,
   DT_THUMBTABLE_MODE_ZOOM
@@ -67,7 +68,7 @@ typedef struct dt_thumbtable_t
   int thumbs_per_row; // number of image in a row (1 for filmstrip ; MAX_ZOOM for zoomable)
   int rows; // number of rows (the last one is not fully visible) for filmstrip it's the number of columns
   int thumb_size;              // demanded thumb size (real size can differ of 1 due to rounding)
-  int prefs_size;              // size value to dertermine overlays mode and css class
+  int prefs_size;              // size value to determine overlays mode and css class
   int view_width, view_height; // last main widget size
   GdkRectangle thumbs_area;    // coordinate of all the currently loaded thumbs area
 
@@ -98,6 +99,9 @@ typedef struct dt_thumbtable_t
 
   // in lighttable preview or culling, we can navigate inside selection or inside full collection
   gboolean navigate_inside_selection;
+
+  int pref_embedded;
+  int pref_hq;
 } dt_thumbtable_t;
 
 dt_thumbtable_t *dt_thumbtable_new();
@@ -123,7 +127,7 @@ gboolean dt_thumbtable_check_imgid_visibility(dt_thumbtable_t *table, int imgid)
 gboolean dt_thumbtable_reset_first_offset(dt_thumbtable_t *table);
 
 // scrollbar change
-void dt_thumbtable_scrollbar_changed(dt_thumbtable_t *table, int x, int y);
+void dt_thumbtable_scrollbar_changed(dt_thumbtable_t *table, float x, float y);
 
 // change the type of overlays that should be shown (over or under the image)
 void dt_thumbtable_set_overlays_mode(dt_thumbtable_t *table, dt_thumbnail_overlay_t over);

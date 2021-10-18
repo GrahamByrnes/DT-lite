@@ -778,6 +778,30 @@ static void _dt_collection_changed_callback(gpointer instance, dt_collection_cha
   }
 }
 
+void dt_thumbnail_update_selection(dt_thumbnail_t *thumb)
+{
+  if(!thumb) return;
+  
+  if(!gtk_widget_is_visible(thumb->w_main)) return;
+
+  gboolean selected = FALSE;
+  /* clear and reset statements */
+  DT_DEBUG_SQLITE3_CLEAR_BINDINGS(darktable.view_manager->statements.is_selected);
+  DT_DEBUG_SQLITE3_RESET(darktable.view_manager->statements.is_selected);
+  /* bind imgid to prepared statements */
+  DT_DEBUG_SQLITE3_BIND_INT(darktable.view_manager->statements.is_selected, 1, thumb->imgid);
+  /* lets check if imgid is selected */
+  if(sqlite3_step(darktable.view_manager->statements.is_selected) == SQLITE_ROW) selected = TRUE;
+
+  // if there's a change, update the thumb
+  if(selected != thumb->selected)
+  {
+    thumb->selected = selected;
+    _thumb_update_icons(thumb);
+    gtk_widget_queue_draw(thumb->w_main);
+  }
+}
+
 static void _dt_selection_changed_callback(gpointer instance, gpointer user_data)
 {
   if(!user_data)
