@@ -140,10 +140,6 @@ void dt_thumbnail_resize(dt_thumbnail_t *thumb, int width, int height, gboolean 
 void dt_thumbnail_set_group_border(dt_thumbnail_t *thumb, dt_thumbnail_border_t border);
 void dt_thumbnail_set_mouseover(dt_thumbnail_t *thumb, gboolean over);
 
-// set if the thumbnail should react (mouse_over) to drag and drop
-// note that it's just cosmetic as dropping occurs in thumbtable in any case
-void dt_thumbnail_set_drop(dt_thumbnail_t *thumb, gboolean accept_drop);
-
 // update the informations of the image and update icons accordingly
 void dt_thumbnail_update_infos(dt_thumbnail_t *thumb);
 
