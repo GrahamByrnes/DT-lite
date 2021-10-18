@@ -268,6 +268,7 @@ static void _pos_get_next(dt_thumbtable_t *table, int *x, int *y)
   else if(table->mode == DT_THUMBTABLE_MODE_FILMSTRIP)
     *x += table->thumb_size;
   else if(table->mode == DT_THUMBTABLE_MODE_ZOOM)
+  {
     *x += table->thumb_size;
 
     if(*x + table->thumb_size > table->thumbs_area.x + table->thumbs_per_row * table->thumb_size)
@@ -275,6 +276,7 @@ static void _pos_get_next(dt_thumbtable_t *table, int *x, int *y)
       *x = table->thumbs_area.x;
       *y += table->thumb_size;
     }
+  }
 }
 
 // get the position of the previous image after the one at (x,y)

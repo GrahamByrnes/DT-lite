@@ -159,10 +159,11 @@ dt_mipmap_size_t dt_mipmap_cache_get_matching_size(
 
 // returns the colorspace to use for created thumbnails, takes config into account
 dt_colorspaces_color_profile_type_t dt_mipmap_cache_get_colorspace();
-
 // copy over thumbnails. used by file operation that copies raw files, to speed up thumbnail generation.
 // only copies over the jpg backend on disk, doesn't directly affect the in-memory cache.
 void dt_mipmap_cache_copy_thumbnails(const dt_mipmap_cache_t *cache, const uint32_t dst_imgid, const uint32_t src_imgid);
+// return the mipmap corresponding to text value saved in prefs
+dt_mipmap_size_t dt_mipmap_cache_get_min_mip_from_pref(const char *value);
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
