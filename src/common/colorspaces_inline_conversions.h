@@ -167,54 +167,6 @@ static inline void dt_prophotorgb_to_Lab(const float *const rgb, float *const La
   dt_XYZ_to_Lab(XYZ, Lab);
 }
 
-static inline void dt_RGB_2_HSL(const float *const RGB, float *const HSL)
-{
-  float H, S, L;
-
-  float R = RGB[0];
-  float G = RGB[1];
-  float B = RGB[2];
-
-  float var_Min = fminf(R, fminf(G, B));
-  float var_Max = fmaxf(R, fmaxf(G, B));
-  float del_Max = var_Max - var_Min;
-
-  L = (var_Max + var_Min) / 2.0f;
-
-  if(del_Max == 0.0f)
-  {
-    H = 0.0f;
-    S = 0.0f;
-  }
-  else
-  {
-    if(L < 0.5f)
-      S = del_Max / (var_Max + var_Min);
-    else
-      S = del_Max / (2.0f - var_Max - var_Min);
-
-    float del_R = (((var_Max - R) / 6.0f) + (del_Max / 2.0f)) / del_Max;
-    float del_G = (((var_Max - G) / 6.0f) + (del_Max / 2.0f)) / del_Max;
-    float del_B = (((var_Max - B) / 6.0f) + (del_Max / 2.0f)) / del_Max;
-
-    if(R == var_Max)
-      H = del_B - del_G;
-    else if(G == var_Max)
-      H = (1.0f / 3.0f) + del_R - del_B;
-    else if(B == var_Max)
-      H = (2.0f / 3.0f) + del_G - del_R;
-    else
-      H = 0.0f; // make GCC happy
-
-    if(H < 0.0f) H += 1.0f;
-    if(H > 1.0f) H -= 1.0f;
-  }
-
-  HSL[0] = H;
-  HSL[1] = S;
-  HSL[2] = L;
-}
-
 static inline void dt_Lab_2_LCH(const float *const Lab, float *const LCH)
 {
   float var_H = atan2f(Lab[2], Lab[1]);

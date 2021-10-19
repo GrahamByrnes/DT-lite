@@ -115,15 +115,13 @@ typedef enum dt_dev_request_colorpick_flags_t
   DT_REQUEST_COLORPICK_MODULE = 1 // requested by module (should take precedence)
 } dt_dev_request_colorpick_flags_t;
 
-/** colorspace enums, must be in synch with dt_iop_colorspace_type_t in color_conversion.cl */
 typedef enum dt_iop_colorspace_type_t
 {
   iop_cs_NONE = -1,
   iop_cs_RAW = 0,
   iop_cs_Lab = 1,
   iop_cs_rgb = 2,
-  iop_cs_LCh = 3,
-  iop_cs_HSL = 4
+  iop_cs_LCh = 3
 } dt_iop_colorspace_type_t;
 
 /** part of the module which only contains the cached dlopen stuff. */
@@ -207,11 +205,11 @@ typedef struct dt_iop_module_so_t
                           int32_t pointerx, int32_t pointery);
   void (*gui_focus)(struct dt_iop_module_t *self, gboolean in);
   // Optional callback for keyboard accelerators 
-  void (*init_key_accels)(struct dt_iop_module_so_t *so);
+/*  void (*init_key_accels)(struct dt_iop_module_so_t *so);
   void (*original_init_key_accels)(struct dt_iop_module_so_t *so);
   void (*connect_key_accels)(struct dt_iop_module_t *self);
   void (*original_connect_key_accels)(struct dt_iop_module_t *self);
-  void (*disconnect_key_accels)(struct dt_iop_module_t *self);
+  void (*disconnect_key_accels)(struct dt_iop_module_t *self);*/
   GSList *(*mouse_actions)(struct dt_iop_module_t *self);
 
   int (*mouse_leave)(struct dt_iop_module_t *self);
@@ -518,9 +516,9 @@ typedef struct dt_iop_module_t
                        float *const out, const dt_iop_roi_t *const roi_in, const dt_iop_roi_t *const roi_out);
 
   /** Key accelerator registration callbacks */
-  void (*connect_key_accels)(struct dt_iop_module_t *self);
+/*  void (*connect_key_accels)(struct dt_iop_module_t *self);
   void (*original_connect_key_accels)(struct dt_iop_module_t *self);
-  void (*disconnect_key_accels)(struct dt_iop_module_t *self);
+  void (*disconnect_key_accels)(struct dt_iop_module_t *self);*/
   GSList *(*mouse_actions)(struct dt_iop_module_t *self);
 
   // introspection related data

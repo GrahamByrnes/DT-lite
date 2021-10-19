@@ -79,8 +79,6 @@ static char *_pipe_type_to_str(int pipe_type)
         r = "preview2";
       break;
     case DT_DEV_PIXELPIPE_FULL:
-      if(fast)
-      r = "full";
       r = "full";
       break;
     case DT_DEV_PIXELPIPE_THUMBNAIL:
@@ -362,6 +360,7 @@ void dt_dev_pixelpipe_synch_top(dt_dev_pixelpipe_t *pipe, dt_develop_t *dev)
     dt_dev_pixelpipe_synch(pipe, dev, history);
   dt_pthread_mutex_unlock(&pipe->busy_mutex);
 }
+
 void dt_dev_pixelpipe_change(dt_dev_pixelpipe_t *pipe, struct dt_develop_t *dev)
 {
   dt_pthread_mutex_lock(&dev->history_mutex);
@@ -384,15 +383,6 @@ void dt_dev_pixelpipe_change(dt_dev_pixelpipe_t *pipe, struct dt_develop_t *dev)
   dt_pthread_mutex_unlock(&dev->history_mutex);
   dt_dev_pixelpipe_get_dimensions(pipe, dev, pipe->iwidth, pipe->iheight,
                                   &pipe->processed_width, &pipe->processed_height);
-}
-
-// TODO:
-void dt_dev_pixelpipe_add_node(dt_dev_pixelpipe_t *pipe, dt_develop_t *dev, int n)
-{
-}
-// TODO:
-void dt_dev_pixelpipe_remove_node(dt_dev_pixelpipe_t *pipe, dt_develop_t *dev, int n)
-{
 }
 
 static void get_output_format(dt_iop_module_t *module, dt_dev_pixelpipe_t *pipe, dt_dev_pixelpipe_iop_t *piece,
@@ -1134,7 +1124,6 @@ post_process_collect_info:
     {
       if(input == NULL)
       {
-        fprintf(stderr, "pixelpipe_hb.c L 1153: input null\n");
         // input may not be available, so we use the output from gamma
         // this may lead to some rounding errors
         // FIXME: under what circumstances would input not be available? when this iop's result is pulled in from cache?
@@ -1223,6 +1212,7 @@ static int dt_dev_pixelpipe_process_rec_and_backcopy(dt_dev_pixelpipe_t *pipe, d
   dt_pthread_mutex_unlock(&pipe->busy_mutex);     
   return ret;
 }
+
 int dt_dev_pixelpipe_process(dt_dev_pixelpipe_t *pipe, dt_develop_t *dev, int x, int y, int width, int height,
                              float scale)
 {

@@ -120,9 +120,9 @@ void gui_post_expose(struct dt_iop_module_t *self, cairo_t *cr, int32_t width, i
 void gui_focus(struct dt_iop_module_t *self, gboolean in);
 
 /** Optional callback for keyboard accelerators */
-void original_init_key_accels(struct dt_iop_module_so_t *so);
+//void original_init_key_accels(struct dt_iop_module_so_t *so);
 /** Key accelerator registration callbacks */
-void original_connect_key_accels(struct dt_iop_module_t *self);
+//void original_connect_key_accels(struct dt_iop_module_t *self);
 GSList *mouse_actions(struct dt_iop_module_t *self);
 
 /** optional event callbacks */

@@ -346,10 +346,6 @@ int dt_iop_load_module_so(void *m, const char *libname, const char *op)
     module->gui_post_expose = NULL;
   if(!g_module_symbol(module->module, "gui_focus", (gpointer) & (module->gui_focus)))
     module->gui_focus = NULL;
-  if(!g_module_symbol(module->module, "connect_key_accels", (gpointer) & (module->connect_key_accels)))
-    module->connect_key_accels = NULL;
-  if(!g_module_symbol(module->module, "disconnect_key_accels", (gpointer) & (module->disconnect_key_accels)))
-    module->disconnect_key_accels = NULL;
   if(!g_module_symbol(module->module, "mouse_actions", (gpointer) & (module->mouse_actions)))
     module->mouse_actions = NULL;
   if(!g_module_symbol(module->module, "mouse_leave", (gpointer) & (module->mouse_leave)))
@@ -544,8 +540,6 @@ int dt_iop_load_module_by_so(dt_iop_module_t *module, dt_iop_module_so_t *so, dt
   module->legacy_params = so->legacy_params;
   // allow to select a shape inside an iop
   module->masks_selection_changed = so->masks_selection_changed;
-  module->connect_key_accels = so->connect_key_accels;
-  module->disconnect_key_accels = so->disconnect_key_accels;
   module->mouse_actions = so->mouse_actions;
 
   module->have_introspection = so->have_introspection;

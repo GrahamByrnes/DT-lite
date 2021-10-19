@@ -52,43 +52,6 @@ int default_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_p
   return iop_cs_rgb;
 }
 
-static inline float Hue_2_RGB(float v1, float v2, float vH)
-{
-  if(vH < 0.0f) vH += 1.0f;
-  if(vH > 1.0f) vH -= 1.0f;
-  if((6.0f * vH) < 1.0f) return (v1 + (v2 - v1) * 6.0f * vH);
-  if((2.0f * vH) < 1.0f) return (v2);
-  if((3.0f * vH) < 2.0f) return (v1 + (v2 - v1) * ((2.0f / 3.0f) - vH) * 6.0f);
-  return v1;
-}
-
-static inline void HSL_2_RGB(const float *HSL, float *RGB)
-{
-  float H = HSL[0];
-  float S = HSL[1];
-  float L = HSL[2];
-
-  float var_1, var_2;
-
-  if(S < 1e-6f)
-  {
-    RGB[0] = RGB[1] = RGB[2] = L;
-  }
-  else
-  {
-    if(L < 0.5f)
-      var_2 = L * (1.0f + S);
-    else
-      var_2 = (L + S) - (S * L);
-
-    var_1 = 2.0f * L - var_2;
-
-    RGB[0] = Hue_2_RGB(var_1, var_2, H + (1.0f / 3.0f));
-    RGB[1] = Hue_2_RGB(var_1, var_2, H);
-    RGB[2] = Hue_2_RGB(var_1, var_2, H - (1.0f / 3.0f));
-  }
-}
-
 static inline void LCH_2_Lab(const float *LCH, float *Lab)
 {
   Lab[0] = LCH[0];
@@ -158,24 +121,6 @@ static inline void false_color(float val, dt_dev_pixelpipe_display_mask_t channe
       in[1] = 0.25f * 128.0f * sqrtf(2.0f);
       in[2] = val;
       LCH_2_RGB(in, out);
-      break;
-    case DT_DEV_PIXELPIPE_DISPLAY_HSL_H:
-      in[0] = val;
-      in[1] = 1.0f;
-      in[2] = 0.5f;
-      HSL_2_RGB(in, out);
-      break;
-    case DT_DEV_PIXELPIPE_DISPLAY_HSL_S:
-      in[0] = 0.8333f;
-      in[1] = val;
-      in[2] = 0.5f;
-      HSL_2_RGB(in, out);
-      break;
-    case DT_DEV_PIXELPIPE_DISPLAY_HSL_l:
-      in[0] = 0.0f;
-      in[1] = 0.0f;
-      in[2] = val;
-      HSL_2_RGB(in, out);
       break;
     case DT_DEV_PIXELPIPE_DISPLAY_GRAY:
     default:

@@ -114,7 +114,7 @@ int output_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe,
 int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
                   void *new_params, const int new_version)
 {
-  return 0;
+  return 1;
 }
 
 static void intent_changed(GtkWidget *widget, gpointer user_data)

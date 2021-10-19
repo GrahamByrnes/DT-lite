@@ -85,7 +85,7 @@ typedef struct dt_iop_tonecurve_params_t
   int tonecurve_type[3]; // $DEFAULT: CUBIC_SPLINE
   dt_iop_tonecurve_autoscale_t tonecurve_autoscale_ab; //$DEFAULT: DT_S_SCALE_AUTOMATIC $DESCRIPTION: "color space"
   int tonecurve_preset; // $DEFAULT: 0
-  int tonecurve_unbound_ab; // GB changed default to 0
+  int tonecurve_unbound_ab;
   dt_iop_rgb_norms_t preserve_colors; // $DEFAULT: DT_RGB_NORM_LUMINANCE 
 } dt_iop_tonecurve_params_t;
 
@@ -119,7 +119,7 @@ typedef struct dt_iop_tonecurve_data_t
   int curve_type[3];             // curve style (e.g. CUBIC_SPLINE)
   float table[3][0x10000];       // precomputed look-up tables for tone curve
   float unbounded_coeffs_L[3];   // approximation for extrapolation of L
-  float unbounded_coeffs_ab[12]; // approximation for extrapolation of ab
+  float unbounded_coeffs_ab[12]; // approximation for extrapolation of ab  ?????
   int autoscale_ab;
   int unbound_ab;
   int preserve_colors;
@@ -153,7 +153,7 @@ int default_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_p
 int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
                   void *new_params, const int new_version)
 {
-  return 0;
+  return 1;
 }
 
 void run_auto_process(const void *const ivoid, void *const ovoid, const int ch,
@@ -332,6 +332,7 @@ void init_pipe(struct dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_pi
   const int bch = ch < 4 ? ch : ch - 1;
   d->autoscale_ab = DT_S_SCALE_AUTOMATIC;
   d->unbound_ab = 1;
+
   for(int c = 0; c < bch; c++)
   {
     d->curve[c] = dt_draw_curve_new(0.0, 1.0, default_params->tonecurve_type[c]);
@@ -341,6 +342,7 @@ void init_pipe(struct dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_pi
       (void)dt_draw_curve_add_point(d->curve[c], default_params->tonecurve[c][k].x,
                                     default_params->tonecurve[c][k].y);
   }
+
   for(int k = 0; k < 0x10000; k++)
   {
     d->table[ch_L][k] = 100.0f * k / 0x10000;          // identity for L
@@ -655,6 +657,7 @@ static gboolean dt_iop_tonecurve_key_press(GtkWidget *widget, GdkEventKey *event
 
   int handled = 0;
   float dx = 0.0f, dy = 0.0f;
+
   if(event->keyval == GDK_KEY_Up || event->keyval == GDK_KEY_KP_Up)
   {
     handled = 1;
@@ -675,6 +678,7 @@ static gboolean dt_iop_tonecurve_key_press(GtkWidget *widget, GdkEventKey *event
     handled = 1;
     dx = -TONECURVE_DEFAULT_STEP;
   }
+
   if(!handled)
     return TRUE;
 
@@ -767,6 +771,7 @@ void gui_init(struct dt_iop_module_t *self)
 
   c->sizegroup = GTK_SIZE_GROUP(gtk_size_group_new(GTK_SIZE_GROUP_HORIZONTAL));
   gtk_size_group_add_widget(c->sizegroup, GTK_WIDGET(c->area));
+
   if(c->autoscale_ab)
     gtk_size_group_add_widget(c->sizegroup, GTK_WIDGET(c->channel_tabs));
 }
@@ -778,11 +783,13 @@ void gui_cleanup(struct dt_iop_module_t *self)
   g_object_unref(c->sizegroup);
   const int ch = (int)self->histogram_stats.ch;
   dt_draw_curve_destroy(c->minmax_curve[ch_L]);
+
   if(ch > 1 || c->minmax_curve[ch_a] || c->minmax_curve[ch_b])
   {
     dt_draw_curve_destroy(c->minmax_curve[ch_a]);
     dt_draw_curve_destroy(c->minmax_curve[ch_b]);
   }
+
   dt_iop_cancel_history_update(self);
   free(self->gui_data);
   self->gui_data = NULL;
@@ -965,7 +972,6 @@ static gboolean dt_iop_tonecurve_draw(GtkWidget *widget, cairo_t *crf, gpointer 
   cairo_line_to(cr, width, 0);
   cairo_stroke(cr);
   cairo_translate(cr, 0, height);
-  //draw_histogram_helper(user_data, height, width, cst, cr);//////////////////////
   draw_picker_helper(user_data, height, width, cst, cr);
   // draw curve
   cairo_set_line_width(cr, DT_PIXEL_APPLY_DPI(3));
@@ -1189,7 +1195,6 @@ static gboolean dt_iop_tonecurve_button_press(GtkWidget *widget, GdkEventButton 
 
       const float mx = CLAMP(c->mouse_x, 0, width) / (float)width;
       const float linx = to_lin(mx, c->loglogscale, c->semilog, chan, 0);
-
       // don't add a node too close to others in x direction, it can crash dt
       int selected = -1;
       if(tonecurve[0].x > mx)

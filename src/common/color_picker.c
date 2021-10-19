@@ -34,11 +34,8 @@ static void color_picker_helper_4ch_seq(const dt_iop_buffer_dsc_t *dsc, const fl
                                         const dt_iop_colorspace_type_t cst_to)
 {
   const int width = roi->width;
-
   const size_t size = _box_size(box);
-
   const float w = 1.0f / (float)size;
-
   // code path for small region, especially for color picker point mode
   for(size_t j = box[1]; j < box[3]; j++)
   {
@@ -49,8 +46,6 @@ static void color_picker_helper_4ch_seq(const dt_iop_buffer_dsc_t *dsc, const fl
 
       if(cst_to == iop_cs_LCh)
         dt_Lab_2_LCH(pixel + k, Lab);
-      else if(cst_to == iop_cs_HSL)
-        dt_RGB_2_HSL(pixel + k, Lab);
 
       for(int m = 0; m < 3; m++)
       {
@@ -106,8 +101,6 @@ static void color_picker_helper_4ch_parallel(const dt_iop_buffer_dsc_t *dsc, con
         
         if(cst_to == iop_cs_LCh)
           dt_Lab_2_LCH(pixel + k, Lab);
-        else if(cst_to == iop_cs_HSL)
-          dt_RGB_2_HSL(pixel + k, Lab);
 
         for(int m = 0; m < 3; m++)
         {
@@ -412,8 +405,6 @@ void dt_color_picker_helper(const dt_iop_buffer_dsc_t *dsc, const float *const p
   if((dsc->channels == 4u) && ((image_cst == picker_cst) || (picker_cst == iop_cs_NONE)))
     color_picker_helper_4ch(dsc, pixel, roi, box, picked_color, picked_color_min, picked_color_max, picker_cst);
   else if(dsc->channels == 4u && image_cst == iop_cs_Lab && picker_cst == iop_cs_LCh)
-    color_picker_helper_4ch(dsc, pixel, roi, box, picked_color, picked_color_min, picked_color_max, picker_cst);
-  else if(dsc->channels == 4u && image_cst == iop_cs_rgb && picker_cst == iop_cs_HSL)
     color_picker_helper_4ch(dsc, pixel, roi, box, picked_color, picked_color_min, picked_color_max, picker_cst);
   else if(dsc->channels == 1u && dsc->filters != 0u && dsc->filters != 9u)
     color_picker_helper_bayer(dsc, pixel, roi, box, picked_color, picked_color_min, picked_color_max);
