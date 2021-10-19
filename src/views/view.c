@@ -26,7 +26,6 @@
 #include "common/module.h"
 #include "common/selection.h"
 #include "common/undo.h"
-#include "common/usermanual_url.h"
 #include "control/conf.h"
 #include "control/control.h"
 #include "develop/develop.h"
@@ -464,6 +463,7 @@ void dt_view_manager_expose(dt_view_manager_t *vm, cairo_t *cr, int32_t width, i
     cairo_paint(cr);
     return;
   }
+
   vm->current_view->width = width;
   vm->current_view->height = height;
 
@@ -763,8 +763,8 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
 
   // if possible, we return the cached list
   if(!force 
-      && darktable.view_manager->act_on.ok
-      && darktable.view_manager->act_on.image_over == mouseover
+     && darktable.view_manager->act_on.ok
+     && darktable.view_manager->act_on.image_over == mouseover
      && darktable.view_manager->act_on.inside_table == dt_ui_thumbtable(darktable.gui->ui)->mouse_inside
      && g_slist_length(darktable.view_manager->act_on.active_imgs)
             == g_slist_length(darktable.view_manager->active_images))
@@ -798,7 +798,7 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
     // collumn 1,2,3
     if(dt_ui_thumbtable(darktable.gui->ui)->mouse_inside)
     {
-      // collumn 1,2
+      // column 1,2
       sqlite3_stmt *stmt;
       gboolean inside_sel = FALSE;
       gchar *query = g_strdup_printf("SELECT imgid FROM main.selected_images WHERE imgid =%d", mouseover);
@@ -812,7 +812,7 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
 
       if(inside_sel)
       {
-        // collumn 1
+        // column 1
         DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                                     "SELECT m.imgid FROM memory.collected_images as m, main.selected_images as s "
                                     "WHERE m.imgid=s.imgid "
@@ -825,19 +825,19 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
           sqlite3_finalize(stmt);
       }
       else
-        // collumn 2
+        // column 2
         _images_to_act_on_insert_in_list(&l, mouseover, only_visible);
     }
     else
-      // collumn 3
+      // column 3
       _images_to_act_on_insert_in_list(&l, mouseover, only_visible);
   }
   else
   {
-    // collumn 4,5
+    // column 4,5
     if(g_slist_length(darktable.view_manager->active_images) > 0)
     {
-      // collumn 5
+      // column 5
       GSList *ll = darktable.view_manager->active_images;
       while(ll)
       {
@@ -848,7 +848,7 @@ const GList *dt_view_get_images_to_act_on(const gboolean only_visible, const gbo
     }
     else
     {
-      // collumn 4
+      // column 4
       sqlite3_stmt *stmt;
       DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                                   "SELECT m.imgid FROM memory.collected_images as m, main.selected_images as s "
@@ -915,7 +915,6 @@ int dt_view_get_image_to_act_on()
 
 int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t **surface, const gboolean quality)
 {
-  // if surface not null, clean it up
   if(*surface && cairo_surface_get_reference_count(*surface) > 0)
     cairo_surface_destroy(*surface);
 
@@ -923,7 +922,6 @@ int dt_view_image_get_surface(int imgid, int width, int height, cairo_surface_t 
   // get mipmap cahe image
   dt_mipmap_cache_t *cache = darktable.mipmap_cache;
   dt_mipmap_size_t mip = dt_mipmap_cache_get_matching_size(cache, width * darktable.gui->ppd, height * darktable.gui->ppd);
-
   // if needed, we load the mimap buffer
   dt_mipmap_buffer_t buf;
   dt_mipmap_cache_get(cache, &buf, imgid, mip, DT_MIPMAP_BEST_EFFORT, 'r');
@@ -1409,10 +1407,12 @@ void dt_view_accels_refresh(dt_view_manager_t *vm)
           {
             b = (_bloc_t *)calloc(1, sizeof(_bloc_t));
             b->base = dt_util_dstrcat(NULL, "%s", elems[1]);
+
             if(g_str_has_prefix(da->path, "<Darktable>/views/"))
               b->title = dt_util_dstrcat(NULL, "%s", cv->name(cv));
             else
               b->title = dt_util_dstrcat(NULL, "%s", elems[1]);
+
             b->list_store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
             blocs = g_list_prepend(blocs, b);
           }
