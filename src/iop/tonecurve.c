@@ -561,7 +561,7 @@ static void dt_iop_tonecurve_sanity_check(dt_iop_module_t *self, GtkWidget *widg
   dt_iop_tonecurve_node_t *tonecurve = p->tonecurve[chan];
   int autoscale_ab = p->tonecurve_autoscale_ab;
   // if autoscale_ab is on: do not modify a and b curves
-  if(autoscale_ab != DT_S_SCALE_MANUAL && chan != ch_L)
+  if((autoscale_ab != DT_S_SCALE_MANUAL) && chan != ch_L)
     return;
 
   if(nodes <= 2)
@@ -728,7 +728,8 @@ void gui_init(struct dt_iop_module_t *self)
   gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(c->channel_tabs), TRUE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), gtk_grid_new(), TRUE, TRUE, 0);
 
-  c->colorpicker = dt_color_picker_new(self, DT_COLOR_PICKER_POINT, hbox);
+  c->colorpicker = dt_color_picker_new(self, DT_COLOR_PICKER_POINT_AREA, hbox);
+  gtk_widget_set_tooltip_text(c->colorpicker, _("ctrl+click to select an area"));                                                                                 
   gtk_box_pack_start(GTK_BOX(self->widget), hbox, FALSE, FALSE, 0);
 
   c->area = GTK_DRAWING_AREA(dtgtk_drawing_area_new_with_aspect_ratio(1.0));
@@ -782,17 +783,15 @@ void gui_init(struct dt_iop_module_t *self)
 void gui_cleanup(struct dt_iop_module_t *self)
 {
   dt_iop_tonecurve_gui_data_t *c = (dt_iop_tonecurve_gui_data_t *)self->gui_data;
-  dt_iop_tonecurve_params_t *p = (dt_iop_tonecurve_params_t *)self->params;
+
   // this one we need to unref manually. not so the initially un-owned widgets.
   g_object_unref(c->sizegroup);
-  const int ch = (p->tonecurve_autoscale_ab == DT_S_SCALE_AUTOMATIC && c->channel == ch_L) ? 1 : 4;
   dt_draw_curve_destroy(c->minmax_curve[ch_L]);
 
-  if(ch > 1 || c->minmax_curve[ch_a] || c->minmax_curve[ch_b])
-  {
+  if(c->minmax_curve[ch_a])
     dt_draw_curve_destroy(c->minmax_curve[ch_a]);
+  if(c->minmax_curve[ch_b])
     dt_draw_curve_destroy(c->minmax_curve[ch_b]);
-  }
 
   dt_iop_cancel_history_update(self);
   free(self->gui_data);
