@@ -71,50 +71,7 @@ static gchar *_thumbs_get_overlays_class(dt_thumbnail_overlay_t over)
   }
 }
 
-// get the size category, depending on the thumb size
-static int _thumbs_get_prefs_size(dt_thumbtable_t *table)
-{
-  // we get the size delimitations to differentiate sizes categories
-  // one we set as many categories as we want (this can be useful if
-  // we want to finetune css very precisely)
-  const char *txt = dt_conf_get_string_const("plugins/lighttable/thumbnail_sizes");
-  gchar **ts = g_strsplit(txt, "|", -1);
-  int i = 0;
-  while(ts[i])
-  {
-    const int s = g_ascii_strtoll(ts[i], NULL, 10);
-    if(table->thumb_size < s) break;
-    i++;
-  }
 
-  g_strfreev(ts);
-  return i;
-}
-
-// update thumbtable class and overlays mode, depending on size category
-static void _thumbs_update_overlays_mode(dt_thumbtable_t *table)
-{
-  int ns = _thumbs_get_prefs_size(table);
-  // we change the class that indicate the thumb size
-  gchar *c0 = g_strdup_printf("dt_thumbnails_%d", table->prefs_size);
-  gchar *c1 = g_strdup_printf("dt_thumbnails_%d", ns);
-  GtkStyleContext *context = gtk_widget_get_style_context(table->widget);
-  gtk_style_context_remove_class(context, c0);
-  gtk_style_context_add_class(context, c1);
-  g_free(c0);
-  g_free(c1);
-  table->prefs_size = ns;
-
-  // we change the overlay mode
-  gchar *txt = g_strdup_printf("plugins/lighttable/overlays/%d/%d", table->mode, ns);
-  dt_thumbnail_overlay_t over = dt_conf_get_int(txt);
-  g_free(txt);
-  txt = g_strdup_printf("plugins/lighttable/tooltips/%d/%d", table->mode, ns);
-  table->show_tooltips = dt_conf_get_bool(txt);
-  g_free(txt);
-
-  dt_thumbtable_set_overlays_mode(table, over);
-}
 // change the type of overlays that should be shown
 void dt_thumbtable_set_overlays_mode(dt_thumbtable_t *table, dt_thumbnail_overlay_t over)
 {
@@ -373,9 +330,6 @@ static gboolean _compute_sizes(dt_thumbtable_t *table, gboolean force)
       ret = TRUE;
     }
   }
-  // if the thumb size has changed, we need to set overlays, etc... correctly
-  if(table->thumb_size != old_size)
-    _thumbs_update_overlays_mode(table);
 
   return ret;
 }
@@ -1586,11 +1540,6 @@ dt_thumbtable_t *dt_thumbtable_new()
 {
   dt_thumbtable_t *table = (dt_thumbtable_t *)calloc(1, sizeof(dt_thumbtable_t));
   table->widget = gtk_layout_new(NULL, NULL);
-  // get thumb generation pref for reference in case of change
-  const char *tx = dt_conf_get_string_const("plugins/lighttable/thumbnail_hq_min_level");
-  table->pref_hq = dt_mipmap_cache_get_min_mip_from_pref(tx);
-  tx = dt_conf_get_string_const("plugins/lighttable/thumbnail_raw_min_level");
-  table->pref_embedded = dt_mipmap_cache_get_min_mip_from_pref(tx);
 
   // set css name and class
   gtk_widget_set_name(table->widget, "thumbtable_filemanager");
@@ -1912,8 +1861,6 @@ void dt_thumbtable_set_parent(dt_thumbtable_t *table, GtkWidget *new_parent, dt_
     }
 
     table->mode = mode;
-    // we force overlays update as the size may not change in certain cases
-    _thumbs_update_overlays_mode(table);
   }
   // do we show scrollbars ?
   table->code_scrolling = TRUE;
