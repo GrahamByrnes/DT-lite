@@ -453,25 +453,11 @@ static void logbase_callback(GtkWidget *slider, dt_iop_module_t *self)
 {
   if(darktable.gui->reset)
     return;
+
   dt_iop_tonecurve_gui_data_t *g = (dt_iop_tonecurve_gui_data_t *)self->gui_data;
   g->loglogscale = eval_grey(dt_bauhaus_slider_get(g->logbase));
-  
   gtk_widget_set_visible(g->logbase, g->channel == ch_L);
   gtk_widget_queue_draw(GTK_WIDGET(g->area));
-}
-
-void gui_changed(dt_iop_module_t *self, GtkWidget *w, void *previous)
-{
-  dt_iop_tonecurve_gui_data_t *g = (dt_iop_tonecurve_gui_data_t *)self->gui_data;
-  dt_iop_tonecurve_params_t *p = (dt_iop_tonecurve_params_t *)self->params;
-  
-  if(w == g->autoscale_ab)
-  {
-    g->channel = (tonecurve_channel_t)ch_L;
-    gtk_notebook_set_current_page(GTK_NOTEBOOK(g->channel_tabs), ch_L);
-    gtk_notebook_set_show_tabs(g->channel_tabs, p->tonecurve_autoscale_ab == DT_S_SCALE_MANUAL);
-    gtk_widget_queue_draw(self->widget);
-  }
 }
 
 static void interpolator_callback(GtkWidget *widget, dt_iop_module_t *self)
@@ -496,6 +482,20 @@ static void interpolator_callback(GtkWidget *widget, dt_iop_module_t *self)
       
   dt_dev_add_history_item(darktable.develop, self, TRUE);
   gtk_widget_queue_draw(GTK_WIDGET(g->area));
+}
+
+void gui_changed(dt_iop_module_t *self, GtkWidget *w, void *previous)
+{
+  dt_iop_tonecurve_gui_data_t *g = (dt_iop_tonecurve_gui_data_t *)self->gui_data;
+  dt_iop_tonecurve_params_t *p = (dt_iop_tonecurve_params_t *)self->params;
+  
+  if(w == g->autoscale_ab)
+  {
+    g->channel = (tonecurve_channel_t)ch_L;
+    gtk_notebook_set_current_page(GTK_NOTEBOOK(g->channel_tabs), ch_L);
+    gtk_notebook_set_show_tabs(g->channel_tabs, p->tonecurve_autoscale_ab == DT_S_SCALE_MANUAL);
+    gtk_widget_queue_draw(self->widget);
+  }
 }
 
 static void tab_switch(GtkNotebook *notebook, GtkWidget *page, guint page_num, gpointer user_data)
@@ -614,7 +614,6 @@ static gboolean _move_point_internal(dt_iop_module_t *self, GtkWidget *widget, f
 }
 
 #define TONECURVE_DEFAULT_STEP (0.001f)
-
 static gboolean _scrolled(GtkWidget *widget, GdkEventScroll *event, gpointer user_data)
 {
   dt_iop_module_t *self = (dt_iop_module_t *)user_data;
@@ -687,7 +686,6 @@ static gboolean dt_iop_tonecurve_key_press(GtkWidget *widget, GdkEventKey *event
 
   return _move_point_internal(self, widget, dx, dy, event->state);
 }
-
 #undef TONECURVE_DEFAULT_STEP
 
 void gui_init(struct dt_iop_module_t *self)
@@ -695,9 +693,8 @@ void gui_init(struct dt_iop_module_t *self)
   self->gui_data = malloc(sizeof(dt_iop_tonecurve_gui_data_t));
   dt_iop_tonecurve_gui_data_t *c = (dt_iop_tonecurve_gui_data_t *)self->gui_data;
   dt_iop_tonecurve_params_t *p = (dt_iop_tonecurve_params_t *)self->params;
-  const int bch = (p->tonecurve_autoscale_ab == DT_S_SCALE_AUTOMATIC && c->channel == ch_L) ? 1 : 3;
 
-  for(int chan = 0; chan < bch; chan++)
+  for(int chan = 0; chan < 3; chan++)
   {
     c->minmax_curve[chan] = dt_draw_curve_new(0.0, 1.0, p->tonecurve_type[chan]);
     c->minmax_curve_nodes[chan] = p->tonecurve_nodes[chan];
@@ -728,8 +725,7 @@ void gui_init(struct dt_iop_module_t *self)
   gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(c->channel_tabs), TRUE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), gtk_grid_new(), TRUE, TRUE, 0);
 
-  c->colorpicker = dt_color_picker_new(self, DT_COLOR_PICKER_POINT_AREA, hbox);
-  gtk_widget_set_tooltip_text(c->colorpicker, _("ctrl+click to select an area"));                                                                                 
+  c->colorpicker = dt_color_picker_new(self, DT_COLOR_PICKER_POINT_AREA, hbox);                                                                                
   gtk_box_pack_start(GTK_BOX(self->widget), hbox, FALSE, FALSE, 0);
 
   c->area = GTK_DRAWING_AREA(dtgtk_drawing_area_new_with_aspect_ratio(1.0));
@@ -750,11 +746,6 @@ void gui_init(struct dt_iop_module_t *self)
   g_signal_connect(G_OBJECT(c->area), "scroll-event", G_CALLBACK(_scrolled), self);
   g_signal_connect(G_OBJECT(c->area), "key-press-event", G_CALLBACK(dt_iop_tonecurve_key_press), self);
 
-  /* From src/common/curve_tools.h :
-    #define CUBIC_SPLINE 0
-    #define CATMULL_ROM 1
-    #define MONOTONE_HERMITE 2
-  */
   c->interpolator = dt_bauhaus_combobox_new(self);
   dt_bauhaus_widget_set_label(c->interpolator, NULL, _("interpolation method"));
   dt_bauhaus_combobox_add(c->interpolator, _("cubic spline"));
@@ -775,16 +766,12 @@ void gui_init(struct dt_iop_module_t *self)
 
   c->sizegroup = GTK_SIZE_GROUP(gtk_size_group_new(GTK_SIZE_GROUP_HORIZONTAL));
   gtk_size_group_add_widget(c->sizegroup, GTK_WIDGET(c->area));
-
-  if(c->autoscale_ab)
-    gtk_size_group_add_widget(c->sizegroup, GTK_WIDGET(c->channel_tabs));
+  gtk_size_group_add_widget(c->sizegroup, GTK_WIDGET(c->channel_tabs));
 }
 
 void gui_cleanup(struct dt_iop_module_t *self)
 {
   dt_iop_tonecurve_gui_data_t *c = (dt_iop_tonecurve_gui_data_t *)self->gui_data;
-
-  // this one we need to unref manually. not so the initially un-owned widgets.
   g_object_unref(c->sizegroup);
   dt_draw_curve_destroy(c->minmax_curve[ch_L]);
 
@@ -814,8 +801,11 @@ static void picker_scale(const float *in, float *out, const int bch)
 {
   out[0] = CLAMP(in[0] / 100.0f, 0.0f, 1.0f);
   
-  for(int c = 1; c < bch; c++)
-    out[c] = CLAMP((in[c] + 128.0f) / 256.0f, 0.0f, 1.0f);
+  if(bch > 1)
+  {
+    out[1] = CLAMP((in[1] + 128.0f) / 256.0f, 0.0f, 1.0f);
+    out[2] = CLAMP((in[2] + 128.0f) / 256.0f, 0.0f, 1.0f);
+  }
 }
 
 static gboolean draw_picker_helper(gpointer user_data, double height, double width,
@@ -824,9 +814,10 @@ static gboolean draw_picker_helper(gpointer user_data, double height, double wid
   dt_iop_module_t *self = (dt_iop_module_t *)user_data;
   dt_iop_tonecurve_global_data_t *gd = (dt_iop_tonecurve_global_data_t *)self->global_data;
   dt_iop_tonecurve_gui_data_t *c = (dt_iop_tonecurve_gui_data_t *)self->gui_data;
+  dt_iop_tonecurve_params_t *p = (dt_iop_tonecurve_params_t *)self->params;
   
   int chan = c->channel;
-  const int bch = chan > 0 ? 3 : 1;
+  const int bch = (chan == 0 && p->tonecurve_autoscale_ab) ? 1 : 3;
   
   if(!self->enabled)
     return FALSE;

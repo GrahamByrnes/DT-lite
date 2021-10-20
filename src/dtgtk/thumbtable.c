@@ -71,6 +71,49 @@ static gchar *_thumbs_get_overlays_class(dt_thumbnail_overlay_t over)
   }
 }
 
+// get the size category, depending on the thumb size
+static int _thumbs_get_prefs_size(dt_thumbtable_t *table)
+{
+  // we get the size delimitations to differentiate sizes categories
+  // one we set as many categories as we want (this can be useful if
+  // we want to finetune css very precisely)
+  const char *txt = dt_conf_get_string_const("plugins/lighttable/thumbnail_sizes");
+  gchar **ts = g_strsplit(txt, "|", -1);
+  int i = 0;
+  while(ts[i])
+  {
+    const int s = g_ascii_strtoll(ts[i], NULL, 10);
+    if(table->thumb_size < s) break;
+    i++;
+  }
+  g_strfreev(ts);
+  return i;
+}
+
+static void _thumbs_update_overlays_mode(dt_thumbtable_t *table)
+{
+  int ns = _thumbs_get_prefs_size(table);
+
+  // we change the class that indicate the thumb size
+  gchar *c0 = g_strdup_printf("dt_thumbnails_%d", table->prefs_size);
+  gchar *c1 = g_strdup_printf("dt_thumbnails_%d", ns);
+  GtkStyleContext *context = gtk_widget_get_style_context(table->widget);
+  gtk_style_context_remove_class(context, c0);
+  gtk_style_context_add_class(context, c1);
+  g_free(c0);
+  g_free(c1);
+  table->prefs_size = ns;
+
+  // we change the overlay mode
+  gchar *txt = g_strdup_printf("plugins/lighttable/overlays/%d/%d", table->mode, ns);
+  dt_thumbnail_overlay_t over = dt_conf_get_int(txt);
+  g_free(txt);
+  txt = g_strdup_printf("plugins/lighttable/tooltips/%d/%d", table->mode, ns);
+  table->show_tooltips = dt_conf_get_bool(txt);
+  g_free(txt);
+
+  dt_thumbtable_set_overlays_mode(table, over);
+}
 
 // change the type of overlays that should be shown
 void dt_thumbtable_set_overlays_mode(dt_thumbtable_t *table, dt_thumbnail_overlay_t over)
@@ -330,6 +373,9 @@ static gboolean _compute_sizes(dt_thumbtable_t *table, gboolean force)
       ret = TRUE;
     }
   }
+
+  if(table->thumb_size != old_size)
+    _thumbs_update_overlays_mode(table);
 
   return ret;
 }
@@ -671,14 +717,11 @@ static gboolean _move(dt_thumbtable_t *table, const int x, const int y, gboolean
     table->offset = first->rowid;
     table->offset_imgid = first->imgid;
   }
-
   // and we store it
   dt_conf_set_int("plugins/lighttable/recentcollect/pos0", table->offset);
-  if(table->mode == DT_THUMBTABLE_MODE_ZOOM)
-  {
-    dt_conf_set_int("lighttable/zoomable/last_offset", table->offset);
-  }
 
+  if(table->mode == DT_THUMBTABLE_MODE_ZOOM)
+    dt_conf_set_int("lighttable/zoomable/last_offset", table->offset);
   // update scrollbars
   _thumbtable_update_scrollbars(table);
 
