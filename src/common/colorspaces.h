@@ -258,9 +258,6 @@ const dt_colorspaces_color_profile_t *dt_colorspaces_get_profile(dt_colorspaces_
  *  or just a base name */
 gboolean  dt_colorspaces_is_profile_equal(const char *fullname, const char *filename);
 
-/** try to infer profile type from CICP */
-dt_colorspaces_color_profile_type_t dt_colorspaces_cicp_to_type(const dt_colorspaces_cicp_t *cicp, const char *filename);
-
 /** update the display transforms of srgb and adobergb to the display profile.
  * make sure that darktable.color_profiles->xprofile_lock is held when calling this! */
 void dt_colorspaces_update_display_transforms();
