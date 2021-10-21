@@ -61,6 +61,7 @@ extern "C" {
 #include "common/imageio.h"
 #include "common/exif.h"
 #include "common/imageio_jpeg.h"
+#include "common/math.h"
 #include "common/metadata.h"
 #include "common/ratings.h"
 #include "common/tags.h"
@@ -143,20 +144,6 @@ static const char *_get_exiv2_type(const int type)
       return "LastType";
     default:
       return "Invalid";
-  }
-}
-
-static inline void mat3mul(float *const dest, const float *const m1, const float *const  m2)
-{
-  for(int k = 0; k < 3; k++)
-  {
-    for(int i = 0; i < 3; i++)
-    {
-      float x = 0.0f;
-      for(int j = 0; j < 3; j++)
-        x += m1[3 * k + j] * m2[3 * j + i];
-      dest[3 * k + i] = x;
-    }
   }
 }
 

@@ -22,6 +22,7 @@
 #include "bauhaus/bauhaus.h"
 #include "common/debug.h"
 #include "common/interpolation.h"
+#include "common/math.h"
 #include "control/conf.h"
 #include "control/control.h"
 #include "develop/develop.h"
@@ -37,7 +38,6 @@
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <inttypes.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -179,13 +179,6 @@ typedef struct dt_iop_clipping_global_data_t
 } dt_iop_clipping_global_data_t;
 
 static void commit_box(dt_iop_module_t *self, dt_iop_clipping_gui_data_t *g, dt_iop_clipping_params_t *p);
-
-
-static inline void mul_mat_vec_2(const float *m, const float *p, float *o)
-{
-  o[0] = p[0] * m[0] + p[1] * m[1];
-  o[1] = p[0] * m[2] + p[1] * m[3];
-}
 
 // helper to count corners in for loops:
 static inline void get_corner(const float *aabb, const int i, float *p)

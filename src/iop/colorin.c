@@ -24,6 +24,7 @@
 #include "common/colorspaces_inline_conversions.h"
 #include "common/file_location.h"
 #include "common/image_cache.h"
+#include "common/math.h"
 #include "control/control.h"
 #include "develop/develop.h"
 #include "gui/gtk.h"
@@ -42,7 +43,6 @@
 
 #include "external/adobe_coeff.c"
 #include <assert.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -623,17 +623,6 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
 
   if(piece->pipe->mask_display & DT_DEV_PIXELPIPE_DISPLAY_MASK) 
       dt_iop_alpha_copy(ivoid, ovoid, roi_out->width, roi_out->height);
-}
-
-static void mat3mul(float *dst, const float *const m1, const float *const m2)
-{
-  for(int k = 0; k < 3; k++)
-    for(int i = 0; i < 3; i++)
-    {
-      float x = 0.0f;
-      for(int j = 0; j < 3; j++) x += m1[3 * k + j] * m2[3 * j + i];
-      dst[3 * k + i] = x;
-    }
 }
 
 void commit_params(struct dt_iop_module_t *self, dt_iop_params_t *p1, dt_dev_pixelpipe_t *pipe, dt_dev_pixelpipe_iop_t *piece)
