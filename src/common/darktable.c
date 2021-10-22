@@ -111,7 +111,7 @@ static int usage(const char *argv0)
   printf("  --conf <key>=<value>\n");
   printf("  --configdir <user config directory>\n");
   printf("  -d {all,cache,control,dev,fswatch,input,lighttable, lua\n");
-  printf("      masks,memory,nan,opencl,perf,pwstorage,print,sql,ioporder,\n");
+  printf("      masks,memory,nan,perf,pwstorage,print,sql,ioporder,\n");
   printf("      imageio,undo,signal}\n");
   printf("  --d-signal <signal> \n");
   printf("  --d-signal-act <all,raise,connect,disconnect");
@@ -473,7 +473,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
 #else
                "  OpenMP support disabled\n"
 #endif
-               "  OpenCL support disabled\n"
                "  Lua support disabled\n"
 #ifdef USE_COLORDGTK
                "  Colord support enabled\n"
@@ -1230,6 +1229,18 @@ void dt_show_times_f(const dt_times_t *start, const char *prefix, const char *su
   }
 }
 
+int dt_worker_threads()
+{
+  const int atom_cores = dt_get_num_atom_cores();
+  const size_t threads = dt_get_num_threads();
+  const size_t mem = dt_get_total_memory();
+  if(mem >= (8lu << 20) && threads >= 4 && atom_cores == 0)
+    return 4;
+  else if(threads >= 2 && atom_cores == 0)
+    return 2;
+  return 1;
+}
+
 void dt_configure_performance()
 {
   const int atom_cores = dt_get_num_atom_cores();
@@ -1245,8 +1256,6 @@ void dt_configure_performance()
     // CONFIG 1: at least 8GB RAM, and more than 4 CPU cores, no atom
     // But respect if user has set higher values manually earlier
     fprintf(stderr, "[defaults] setting very high quality defaults\n");
-
-    dt_conf_set_int("worker_threads", MAX(8, dt_conf_get_int("worker_threads")));
     // if machine has at least 8GB RAM, use half of the total memory size
     dt_conf_set_int("host_memory_limit", MAX(mem >> 11, dt_conf_get_int("host_memory_limit")));
     dt_conf_set_int("singlebuffer_limit", MAX(16, dt_conf_get_int("singlebuffer_limit")));
@@ -1260,8 +1269,6 @@ void dt_configure_performance()
     // CONFIG 2: at least 2GB RAM, and at least 4 CPU cores, no atom
     // But respect if user has set higher values manually earlier
     fprintf(stderr, "[defaults] setting high quality defaults\n");
-
-    dt_conf_set_int("worker_threads", MAX(8, dt_conf_get_int("worker_threads")));
     dt_conf_set_int("host_memory_limit", MAX(1500, dt_conf_get_int("host_memory_limit")));
     dt_conf_set_int("singlebuffer_limit", MAX(16, dt_conf_get_int("singlebuffer_limit")));
     if(demosaic_quality == NULL ||!strcmp(demosaic_quality, "always bilinear (fast)"))
@@ -1274,7 +1281,6 @@ void dt_configure_performance()
     // CONFIG 3: For less than 1GB RAM or 2 or less cores, or for atom processors
     // use very low/conservative settings
     fprintf(stderr, "[defaults] setting very conservative defaults\n");
-    dt_conf_set_int("worker_threads", 1);
     dt_conf_set_int("host_memory_limit", 500);
     dt_conf_set_int("singlebuffer_limit", 8);
     dt_conf_set_string("plugins/darkroom/demosaic/quality", "always bilinear (fast)");
@@ -1285,8 +1291,6 @@ void dt_configure_performance()
   {
     // CONFIG 4: for everything else use explicit defaults
     fprintf(stderr, "[defaults] setting normal defaults\n");
-
-    dt_conf_set_int("worker_threads", 2);
     dt_conf_set_int("host_memory_limit", 1500);
     dt_conf_set_int("singlebuffer_limit", 16);
     dt_conf_set_string("plugins/darkroom/demosaic/quality", "always bilinear (fast)");

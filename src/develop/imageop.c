@@ -959,7 +959,6 @@ static void dt_iop_gui_multiinstance_callback(GtkButton *button, GdkEventButton 
   GtkWidget *item;
   item = gtk_menu_item_new_with_label(_("new instance"));
   g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(dt_iop_gui_copy_callback), module);
-  fprintf(stderr, "imageop.c, L967\n");  /////////////////////
   gtk_widget_set_sensitive(item, module->multi_show_new);
   gtk_menu_shell_append(menu, item);
   item = gtk_menu_item_new_with_label(_("duplicate instance"));

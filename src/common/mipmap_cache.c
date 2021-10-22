@@ -570,8 +570,7 @@ void dt_mipmap_cache_init(dt_mipmap_cache_t *cache)
   dt_cache_set_allocate_callback(&cache->mip_thumbs.cache, dt_mipmap_cache_allocate_dynamic, cache);
   dt_cache_set_cleanup_callback(&cache->mip_thumbs.cache, dt_mipmap_cache_deallocate_dynamic, cache);
 
-  const uint32_t parallel = CLAMP(dt_conf_get_int("worker_threads"), 1, 8);
-  const int full_entries = MAX(2, parallel); // even with one thread you want two buffers. one for dr one for thumbs.
+  const int full_entries = 2 * dt_worker_threads();
   const int32_t max_mem_bufs = nearest_power_of_two(full_entries);
 
   // for this buffer, because it can be very busy during import
@@ -930,7 +929,6 @@ void dt_mipmap_cache_release_with_caller(dt_mipmap_cache_t *cache, dt_mipmap_buf
 {
   if(buf->size == DT_MIPMAP_NONE) return;
 
-  assert(buf->imgid > 0);
   assert(buf->size >= DT_MIPMAP_0);
   assert(buf->size < DT_MIPMAP_NONE);
   assert(buf->cache_entry);
@@ -1152,7 +1150,6 @@ static void _init_8(uint8_t *buf, uint32_t *width, uint32_t *height, float *isca
   if(!altered && use_embedded && !incompatible)
   {
     const dt_image_orientation_t orientation = dt_image_get_orientation(imgid);
-
     // try to load the embedded thumbnail in raw
     from_cache = TRUE;
     memset(filename, 0, sizeof(filename));
@@ -1160,6 +1157,7 @@ static void _init_8(uint8_t *buf, uint32_t *width, uint32_t *height, float *isca
 
     const char *c = filename + strlen(filename);
     while(*c != '.' && c > filename) c--;
+
     if(!strcasecmp(c, ".jpg"))
     {
       // try to load jpg
@@ -1191,9 +1189,7 @@ static void _init_8(uint8_t *buf, uint32_t *width, uint32_t *height, float *isca
         const int imght = img2->height;
         dt_image_cache_read_release(darktable.image_cache, img2);
         if(thumb_width < wd && thumb_height < ht && thumb_width < imgwd - 4 && thumb_height < imght - 4)
-        {
           res = 1;
-        }
         else
         {
           // scale to fit
@@ -1241,6 +1237,7 @@ static void _init_8(uint8_t *buf, uint32_t *width, uint32_t *height, float *isca
     res = dt_imageio_export_with_flags(imgid, "unused", &format, (dt_imageio_module_data_t *)&dat, TRUE, FALSE, FALSE,
                                        FALSE, TRUE, NULL, FALSE, DT_COLORSPACE_NONE, NULL, DT_INTENT_LAST, NULL,
                                        NULL, 1, 1, NULL);
+
     if(!res)
     {
       dt_print(DT_DEBUG_CACHE, "[mipmap_cache] generate mip %d for image %d from scratch\n", size, imgid);
