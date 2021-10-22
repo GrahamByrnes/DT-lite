@@ -110,8 +110,8 @@ static int usage(const char *argv0)
   printf("  --cachedir <user cache directory>\n");
   printf("  --conf <key>=<value>\n");
   printf("  --configdir <user config directory>\n");
-  printf("  -d {all,cache,camctl,camsupport,control,dev,fswatch,input,lighttable,\n");
-  printf("      lua,masks,memory,nan,opencl,perf,pwstorage,print,sql,ioporder,\n");
+  printf("  -d {all,cache,control,dev,fswatch,input,lighttable, lua\n");
+  printf("      masks,memory,nan,opencl,perf,pwstorage,print,sql,ioporder,\n");
   printf("      imageio,undo,signal}\n");
   printf("  --d-signal <signal> \n");
   printf("  --d-signal-act <all,raise,connect,disconnect");
@@ -481,12 +481,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
                "  Colord support disabled\n"
 #endif
 
-#ifdef HAVE_GPHOTO2
-               "  gPhoto2 support enabled\n"
-#else
-               "  gPhoto2 support disabled\n"
-#endif
-
 #ifdef HAVE_GRAPHICSMAGICK
                "  GraphicsMagick support enabled\n"
 #else
@@ -570,8 +564,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
           darktable.unmuted |= DT_DEBUG_DEV; // develop module
         else if(!strcmp(argv[k + 1], "input"))
           darktable.unmuted |= DT_DEBUG_INPUT; // input devices
-        else if(!strcmp(argv[k + 1], "camctl"))
-          darktable.unmuted |= DT_DEBUG_CAMCTL; // camera control module
         else if(!strcmp(argv[k + 1], "perf"))
           darktable.unmuted |= DT_DEBUG_PERF; // performance measurements
         else if(!strcmp(argv[k + 1], "pwstorage"))
@@ -590,8 +582,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
           darktable.unmuted |= DT_DEBUG_LUA; // lua errors are reported on console
         else if(!strcmp(argv[k + 1], "print"))
           darktable.unmuted |= DT_DEBUG_PRINT; // print errors are reported on console
-        else if(!strcmp(argv[k + 1], "camsupport"))
-          darktable.unmuted |= DT_DEBUG_CAMERA_SUPPORT; // camera support warnings are reported on console
         else if(!strcmp(argv[k + 1], "ioporder"))
           darktable.unmuted |= DT_DEBUG_IOPORDER; // iop order information are reported on console
         else if(!strcmp(argv[k + 1], "imageio"))
@@ -672,7 +662,6 @@ int dt_init(int argc, char *argv[], const gboolean init_gui, const gboolean load
         CHKSIGDBG(DT_SIGNAL_IMAGE_EXPORT_TMPFILE);
         CHKSIGDBG(DT_SIGNAL_IMAGEIO_STORAGE_CHANGE);
         CHKSIGDBG(DT_SIGNAL_PREFERENCES_CHANGE);
-        CHKSIGDBG(DT_SIGNAL_CAMERA_DETECTED);
         CHKSIGDBG(DT_SIGNAL_CONTROL_NAVIGATION_REDRAW);
         CHKSIGDBG(DT_SIGNAL_CONTROL_LOG_REDRAW);
         CHKSIGDBG(DT_SIGNAL_CONTROL_TOAST_REDRAW);
@@ -1115,10 +1104,6 @@ void dt_cleanup()
   darktable.iop_order_list = NULL;
   g_list_free_full(darktable.iop_order_rules, free);
   darktable.iop_order_rules = NULL;
-#ifdef HAVE_GPHOTO2
-  dt_camctl_destroy((dt_camctl_t *)darktable.camctl);
-  darktable.camctl = NULL;
-#endif
   dt_pwstorage_destroy(darktable.pwstorage);
 
 #ifdef HAVE_GRAPHICSMAGICK

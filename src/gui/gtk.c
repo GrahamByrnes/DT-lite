@@ -17,9 +17,6 @@
     along with darktable.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "common/darktable.h"
-#ifdef HAVE_GPHOTO2
-#include "common/camera_control.h"
-#endif
 #include "common/collection.h"
 #include "common/colorspaces.h"
 #include "common/file_location.h"

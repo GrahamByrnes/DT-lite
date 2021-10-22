@@ -143,30 +143,18 @@ static dt_signal_description _signal_description[DT_SIGNAL_COUNT] = {
     TRUE }, // DT_SIGNAL_IMAGE_EXPORT_TMPFILE
   { "dt-imageio-storage-change", NULL, NULL, G_TYPE_NONE, g_cclosure_marshal_VOID__VOID, 0, NULL, NULL,
     FALSE }, // DT_SIGNAL_IMAGEIO_STORAGE_CHANGE
-
-
   { "dt-preferences-changed", NULL, NULL, G_TYPE_NONE, g_cclosure_marshal_VOID__VOID, 0, NULL, NULL,
     FALSE }, // DT_SIGNAL_PREFERENCES_CHANGE
-
-
-  { "dt-camera-detected", NULL, NULL, G_TYPE_NONE, g_cclosure_marshal_VOID__VOID, 0, NULL, NULL,
-    FALSE }, // DT_SIGNAL_CAMERA_DETECTED,
-
   { "dt-control-navigation-redraw", NULL, NULL, G_TYPE_NONE, g_cclosure_marshal_VOID__VOID, 0, NULL, NULL,
     FALSE }, // DT_SIGNAL_CONTROL_NAVIGATION_REDRAW
-
   { "dt-control-log-redraw", NULL, NULL, G_TYPE_NONE, g_cclosure_marshal_VOID__VOID, 0, NULL, NULL,
     FALSE }, // DT_SIGNAL_CONTROL_LOG_REDRAW
-
   { "dt-control-toast-redraw", NULL, NULL, G_TYPE_NONE, g_cclosure_marshal_VOID__VOID, 0, NULL, NULL,
     FALSE }, // DT_SIGNAL_CONTROL_TOAST_REDRAW
-
   { "dt-control-pickerdata-ready", NULL, NULL, G_TYPE_NONE, g_cclosure_marshal_generic, 2, pointer_2arg, NULL,
     FALSE }, // DT_SIGNAL_CONTROL_PICKERDATA_REAEDY
-
   { "dt-metadata-update", NULL, NULL, G_TYPE_NONE, g_cclosure_marshal_VOID__VOID, 0, NULL, NULL,
     FALSE }, // DT_SIGNAL_METADATA_UPDATE
-
 };
 
 static GType _signal_type;
