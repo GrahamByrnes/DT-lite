@@ -277,7 +277,7 @@ static int _check_deleted_instances(dt_develop_t *dev, GList **_iop_list, GList 
   GList *iop_list = *_iop_list;
   int deleted_module_found = 0;
   // we will check on dev->iop if there's a module that is not in history
-  GList *modules = g_list_first(iop_list);
+  GList *modules = iop_list; //g_list_first(iop_list);
 
   while(modules)
   {
@@ -362,7 +362,7 @@ static int _check_deleted_instances(dt_develop_t *dev, GList **_iop_list, GList 
       dev->alliop = g_list_append(dev->alliop, mod);
       --darktable.gui->reset;
       // and reset the list
-      modules = g_list_first(iop_list);
+      modules = iop_list; //g_list_first(iop_list);
       continue;
     }
 

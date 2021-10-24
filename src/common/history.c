@@ -524,12 +524,13 @@ static int _history_copy_and_paste_on_image_merge(int32_t imgid, int32_t dest_im
               && !dt_iop_is_hidden(mod_src)) // ^ it's not an enabled by default module with unmodified settings
          && !_is_module_to_skip(mod_src->flags()))
       {
-        mod_list = g_list_append(mod_list, mod_src);
+        mod_list = g_list_prepend(mod_list, mod_src);
       }
     }
   }
   if (DT_IOP_ORDER_INFO) fprintf(stderr,"\nvvvvv\n");
 
+  mod_list = g_list_reverse(mod_list);   // list was built in reverse order, so un-reverse it
   // update iop-order list to have entries for the new modules
   dt_ioppr_update_for_modules(dev_dest, mod_list, FALSE);
 
@@ -701,7 +702,7 @@ int dt_history_copy_and_paste_on_image(const int32_t imgid, const int32_t dest_i
     return 1;
   }
 
-  dt_lock_image_pair(imgid,dest_imgid);
+  dt_lock_image_pair(imgid, dest_imgid);
   // be sure the current history is written before pasting some other history data
   const dt_view_t *cv = dt_view_manager_get_current_view(darktable.view_manager);
 
@@ -903,11 +904,6 @@ static int dt_history_end_attop(const int32_t imgid)
 */
 void dt_history_compress_on_image(const int32_t imgid)
 {
-/*  GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
-
-  if(iop_order_list)
-    dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
-*/
   dt_lock_image(imgid);
   sqlite3_stmt *stmt;
   // get history_end for image
@@ -1041,11 +1037,6 @@ void dt_history_compress_on_image(const int32_t imgid)
 */
 void dt_history_truncate_on_image(const int32_t imgid, const int32_t history_end)
 {
-/*  GList *iop_order_list = dt_ioppr_get_iop_order_list_version(DT_IOP_ORDER_V30);
-
-  if(iop_order_list)
-    dt_ioppr_change_iop_order(darktable.develop, imgid, iop_order_list);
-*/
   dt_lock_image(imgid);
   sqlite3_stmt *stmt;
 
