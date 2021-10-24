@@ -407,12 +407,8 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
 
       if(res)
       {
-        if(thumb->expose_again_timeout_repeat <= dt_conf_get_int("expose_again_limit"))
-          if(!thumb->expose_again_timeout_id)
-          {
-            thumb->expose_again_timeout_id = g_timeout_add(dt_conf_get_int("expose_again_delay"), _thumb_expose_again, thumb);
-            thumb->expose_again_timeout_repeat++;
-          }
+        if(!thumb->expose_again_timeout_id)
+          thumb->expose_again_timeout_id = g_timeout_add(dt_conf_get_int("expose_again_delay"), _thumb_expose_again, thumb);
           // we still draw the thumb to avoid flickering
         _thumb_draw_image(thumb, cr);
         return TRUE;
@@ -1230,7 +1226,6 @@ dt_thumbnail_t *dt_thumbnail_new(int width, int height, int imgid, int rowid, dt
   thumb->overlay_timeout_duration = dt_conf_get_int("plugins/lighttable/overlay_timeout");
   thumb->tooltip = tooltip;
   thumb->expose_again_timeout_id = 0;
-  thumb->expose_again_timeout_repeat = 0;
   // we read and cache all the infos from dt_image_t that we need
   const dt_image_t *img = dt_image_cache_get(darktable.image_cache, thumb->imgid, 'r');
 

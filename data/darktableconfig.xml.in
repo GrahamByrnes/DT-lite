@@ -1506,19 +1506,12 @@
     <shortdescription>milliseconds delay before trying again to match to a cached mip</shortdescription>
     <longdescription/>
   </dtconfig>
-  <dtconfig prefs="processing">
-    <name>expose_again_limit</name>
-    <type>int</type>
-    <default>5</default>
-    <shortdescription>limit on number of retries to match to a cached mip</shortdescription>
-    <longdescription/>
-  </dtconfig>
   <dtconfig>
     <name>plugins/lighttable/export/high_quality_processing</name>
     <type>bool</type>
     <default>false</default>
     <shortdescription>do high quality resampling during export</shortdescription>
-    <longdescription>the image will first be processed in full resolution, and downscaled at the very end. this can result in better quality sometimes, but will always be slower.</longdescription>
+    <longdescription>first be processed in full resolution, and downscaled at the end. sometimes better quality, but always slower.</longdescription>
   </dtconfig>
   <dtconfig>
     <name>darkroom/ui/rawoverexposed/mode</name>
