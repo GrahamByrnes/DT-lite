@@ -120,9 +120,6 @@ static int usage(const char *argv0)
 #endif
   printf(">\n");
   printf("  --datadir <data directory>\n");
-#ifdef HAVE_OPENCL
-  printf("  --disable-opencl\n");
-#endif
   printf("  -h, --help");
 #ifdef _WIN32
   printf(", /?");
