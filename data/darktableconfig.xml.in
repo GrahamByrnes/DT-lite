@@ -1506,6 +1506,13 @@
     <shortdescription>milliseconds delay before trying again to match to a cached mip</shortdescription>
     <longdescription/>
   </dtconfig>
+  <dtconfig prefs="processing">
+    <name>expose_again_limit</name>
+    <type>int</type>
+    <default>5</default>
+    <shortdescription>limit on number of retries to match to a cached mip</shortdescription>
+    <longdescription/>
+  </dtconfig>
   <dtconfig>
     <name>plugins/lighttable/export/high_quality_processing</name>
     <type>bool</type>
