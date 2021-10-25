@@ -71,12 +71,6 @@ typedef struct dt_iop_basecurve_params_t
   int preserve_colors; /* $DEFAULT: DT_RGB_NORM_LUMINANCE $DESCRIPTION: "preserve colors" */
 } dt_iop_basecurve_params_t;
 
-int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
-                  void *new_params, const int new_version)
-{
-  return 1;
-}
-
 typedef struct dt_iop_basecurve_gui_data_t
 {
   dt_draw_curve_t *minmax_curve; // curve for gui to draw

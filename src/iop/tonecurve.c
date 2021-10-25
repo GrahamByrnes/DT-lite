@@ -150,12 +150,6 @@ int default_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_p
   return iop_cs_Lab;
 }
 
-int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
-                  void *new_params, const int new_version)
-{
-  return 1;
-}
-
 void run_auto_process(const void *const ivoid, void *const ovoid, const int ch,
                       const int npix, const float *unbounded_coeffs, const float *table_L)
 {

@@ -74,13 +74,6 @@ int default_colorspace(dt_iop_module_t *self, dt_dev_pixelpipe_t *pipe, dt_dev_p
   return iop_cs_rgb;
 }
 
-
-int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
-                  void *new_params, const int new_version)
-{
-  return 1;
-}
-
 // FIXME: this is pretty much a duplicate of dt_ioppr_get_histogram_profile_type() excepting that it doesn't check darktable.color_profiles->mode
 static void _get_histogram_profile_type(dt_colorspaces_color_profile_type_t *out_type, const gchar **out_filename)
 {
@@ -91,13 +84,9 @@ static void _get_histogram_profile_type(dt_colorspaces_color_profile_type_t *out
     *out_filename = darktable.color_profiles->softproof_filename;
   }
   else if(darktable.color_profiles->histogram_type == DT_COLORSPACE_WORK)
-  {
     dt_ioppr_get_work_profile_type(darktable.develop, out_type, out_filename);
-  }
   else if(darktable.color_profiles->histogram_type == DT_COLORSPACE_EXPORT)
-  {
     dt_ioppr_get_export_profile_type(darktable.develop, out_type, out_filename);
-  }
   else
   {
     *out_type = darktable.color_profiles->histogram_type;

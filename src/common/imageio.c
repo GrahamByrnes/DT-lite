@@ -959,16 +959,21 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
 /*
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
-  dt_omp_firstprivate(buf16, buff, K) \
-  schedule(static) \
-  collapse(2)
+  dt_omp_firstprivate(buf16, buff, K, bch) \
+  schedule(static)
 #endif*/
-// would like to understand why OMP doesn't work here... OMP doesn't like CLAMP?
+// would need to get rid of the overwriting of floats by ints
     for(size_t k = 0; k < (size_t)4 * K; k += 4)
     {
       // convert in place
-      for(int i = 0; i < 3; i++)
-        buf16[k + i] = CLAMP(buff[k + i] * 0x10000, 0, 0x10000);
+      if(bch == 3)
+        for(int i = 0; i < 3; i++)
+          buf16[k + i] = CLAMP(buff[k + i] * 0x10000, 0, 0x10000);
+      else
+      {
+        const uint16_t L = CLAMP(buff[k] * 0x10000, 0, 0x10000);
+        buf16[k] = buf16[k + 1] = buf16[k + 2] = L;
+      }
     }
   }
   // else output float, no further harm done to the pixels :)

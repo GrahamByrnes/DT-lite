@@ -212,8 +212,10 @@ float dt_dev_get_preview_downsampling()
 void dt_dev_process_image(dt_develop_t *dev)
 {
   if(!dev->gui_attached || dev->pipe->processing) return;
-  int err
-      = dt_control_add_job_res(darktable.control, dt_dev_process_image_job_create(dev), DT_CTL_WORKER_ZOOM_1);
+
+  int err = dt_control_add_job_res(darktable.control,
+                                   dt_dev_process_image_job_create(dev), DT_CTL_WORKER_ZOOM_1);
+
   if(err) fprintf(stderr, "[dev_process_image] job queue exceeded!\n");
 }
 

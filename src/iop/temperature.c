@@ -93,12 +93,6 @@ typedef struct dt_iop_temperature_global_data_t
   int kernel_whitebalance_1f_xtrans;
 } dt_iop_temperature_global_data_t;
 
-int legacy_params(dt_iop_module_t *self, const void *const old_params, const int old_version,
-                  void *new_params, const int new_version)
-{
-  return 1;
-}
-
 const char *name()
 {
   return C_("modulename", "white balance");
