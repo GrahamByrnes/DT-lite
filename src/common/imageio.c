@@ -888,9 +888,9 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
           // convert in place, this is unfortunately very serial..
           if(bch == 3)
           {
-            const uint8_t r = CLAMP(inbuf[k + 0] * 0xff, 0, 0xff);
+            const uint8_t r = CLAMP(inbuf[k + 2] * 0xff, 0, 0xff);
             const uint8_t g = CLAMP(inbuf[k + 1] * 0xff, 0, 0xff);
-            const uint8_t b = CLAMP(inbuf[k + 2] * 0xff, 0, 0xff);
+            const uint8_t b = CLAMP(inbuf[k + 0] * 0xff, 0, 0xff);
             outbuf[k + 0] = r;
             outbuf[k + 1] = g;
             outbuf[k + 2] = b;
@@ -968,7 +968,7 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     {
       // convert in place
       for(int i = 0; i < 3; i++)
-        buf16[k + i] = CLAMP(buff[k + i] * 0x10000, 0, 0xffff);
+        buf16[k + i] = CLAMP(buff[k + i] * 0x10000, 0, 0x10000);
     }
   }
   // else output float, no further harm done to the pixels :)
