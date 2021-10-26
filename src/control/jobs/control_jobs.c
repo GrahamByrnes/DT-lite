@@ -768,10 +768,11 @@ static int32_t dt_control_refresh_exif_run(dt_job_t *job)
   dt_control_image_enumerator_t *params = (dt_control_image_enumerator_t *)dt_control_job_get_params(job);
   GList *t = params->index;
   guint total = g_list_length(t);
-  double fraction = 0.0f;
+  double fraction = 0.0;
   char message[512] = { 0 };
   snprintf(message, sizeof(message), ngettext("refreshing info for %d image", "refreshing info for %d images", total), total);
   dt_control_job_set_progress_message(job, message);
+
   while(t)
   {
     const int imgid = GPOINTER_TO_INT(t->data);
@@ -780,8 +781,8 @@ static int32_t dt_control_refresh_exif_run(dt_job_t *job)
       gboolean from_cache = TRUE;
       char sourcefile[PATH_MAX];
       dt_image_full_path(imgid, sourcefile, sizeof(sourcefile), &from_cache);
-
       dt_image_t *img = dt_image_cache_get(darktable.image_cache, imgid, 'w');
+
       if(img)
       {
         dt_exif_read(img, sourcefile);
@@ -799,6 +800,7 @@ static int32_t dt_control_refresh_exif_run(dt_job_t *job)
     fraction += 1.0 / total;
     dt_control_job_set_progress(job, fraction);
   }
+
   dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD, g_list_copy(params->index));
   DT_DEBUG_CONTROL_SIGNAL_RAISE(darktable.signals, DT_SIGNAL_TAG_CHANGED);
   dt_control_queue_redraw_center();
