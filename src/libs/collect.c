@@ -17,6 +17,7 @@
 */
 
 #include "libs/collect.h"
+#include "bauhaus/bauhaus.h"
 #include "common/collection.h"
 #include "common/darktable.h"
 #include "common/debug.h"
@@ -32,6 +33,9 @@
 #include "libs/lib.h"
 #include "libs/lib_api.h"
 #include "views/view.h"
+#ifndef _WIN32
+#include <gio/gunixmounts.h>
+#endif
 #ifdef GDK_WINDOWING_QUARTZ
 #include "osx/osx.h"
 #endif
@@ -266,13 +270,10 @@ static void _lib_collect_update_params(dt_lib_collect_t *d)
 
     /* get string */
     snprintf(confname, sizeof(confname), "plugins/lighttable/collect/string%1d", i);
-    gchar *string = dt_conf_get_string(confname);
-    if(string != NULL)
-    {
-      g_strlcpy(p->rule[i].string, string, PARAM_STRING_SIZE);
-      g_free(string);
-    }
+    const char *string = dt_conf_get_string_const(confname);
 
+    if(string != NULL)
+      g_strlcpy(p->rule[i].string, string, PARAM_STRING_SIZE);
     // fprintf(stderr,"[%i] %d,%d,%s\n",i, p->rule[i].item, p->rule[i].mode,  p->rule[i].string);
   }
 
@@ -388,8 +389,7 @@ static void view_popup_menu_onSearchFilmroll(GtkWidget *menuitem, gpointer userd
     {
       gchar *old = NULL;
 
-      gchar *q_tree_path = NULL;
-      q_tree_path = dt_util_dstrcat(q_tree_path, "%s%%", tree_path);
+      gchar *q_tree_path = g_strdup_printf("%s%%", tree_path);
       query = "SELECT id, folder FROM main.film_rolls WHERE folder LIKE ?1";
       DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), query, -1, &stmt, NULL);
       DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, q_tree_path, -1, SQLITE_TRANSIENT);
@@ -401,10 +401,7 @@ static void view_popup_menu_onSearchFilmroll(GtkWidget *menuitem, gpointer userd
       {
         id = sqlite3_column_int(stmt, 0);
         old = (gchar *)sqlite3_column_text(stmt, 1);
-
-        query = NULL;
-        query = dt_util_dstrcat(query, "UPDATE main.film_rolls SET folder=?1 WHERE id=?2");
-
+        query = g_strdup("UPDATE main.film_rolls SET folder=?1 WHERE id=?2");
         gchar trailing[1024] = { 0 };
         gchar final[1024] = { 0 };
 
@@ -414,9 +411,7 @@ static void view_popup_menu_onSearchFilmroll(GtkWidget *menuitem, gpointer userd
           g_snprintf(final, sizeof(final), "%s/%s", new_path, trailing);
         }
         else
-        {
           g_strlcpy(final, new_path, sizeof(final));
-        }
 
         sqlite3_stmt *stmt2;
         DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), query, -1, &stmt2, NULL);
@@ -448,7 +443,6 @@ error:
   /* Something wrong happened */
   gtk_widget_destroy(filechooser);
   dt_control_log(_("problem selecting new path for the filmroll in %s"), tree_path);
-
   g_free(tree_path);
   g_free(new_path);
 }
@@ -460,22 +454,19 @@ static void view_popup_menu_onRemove(GtkWidget *menuitem, gpointer userdata)
   GtkTreeSelection *selection;
   GtkTreeIter iter, model_iter;
   GtkTreeModel *model;
-
-  gchar *filmroll_path = NULL;
-  gchar *fullq = NULL;
-
   /* Get info about the filmroll (or parent) selected */
   model = gtk_tree_view_get_model(treeview);
   selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
   if (gtk_tree_selection_get_selected(selection, &model, &iter))
   {
+    gchar *filmroll_path = NULL;
+    gchar *fullq = NULL;
     gtk_tree_model_get(model, &iter, DT_LIB_COLLECT_COL_PATH, &filmroll_path, -1);
 
     /* Clean selected images, and add to the table those which are going to be deleted */
     DT_DEBUG_SQLITE3_EXEC(dt_database_get(darktable.db), "DELETE FROM main.selected_images", NULL, NULL, NULL);
 
-    fullq = dt_util_dstrcat(fullq,
-                            "INSERT INTO main.selected_images"
+    fullq = g_strdup_printf("INSERT INTO main.selected_images"
                             " SELECT id"
                             " FROM main.images"
                             " WHERE film_id IN (SELECT id FROM main.film_rolls WHERE folder LIKE '%s%%')",
@@ -496,7 +487,6 @@ static void view_popup_menu_onRemove(GtkWidget *menuitem, gpointer userdata)
 static void view_popup_menu(GtkWidget *treeview, GdkEventButton *event, dt_lib_collect_t *d)
 {
   GtkWidget *menu, *menuitem;
-
   menu = gtk_menu_new();
 
   menuitem = gtk_menu_item_new_with_label(_("search filmroll..."));
@@ -615,7 +605,6 @@ static gboolean list_select(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter 
   gchar *str = NULL;
 
   gtk_tree_model_get(model, iter, DT_LIB_COLLECT_COL_PATH, &str, -1);
-
   gchar *haystack = g_utf8_strdown(str, -1);
   gchar *needle = g_utf8_strdown(gtk_entry_get_text(GTK_ENTRY(dr->text)), -1);
 
@@ -638,9 +627,9 @@ static gboolean range_select(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter
   gchar *str = NULL;
 
   gtk_tree_model_get(model, iter, DT_LIB_COLLECT_COL_PATH, &str, -1);
-
   gchar *haystack = g_utf8_strdown(str, -1);
   gchar *needle;
+
   if(range->path1)
     needle = g_utf8_strdown(range->stop, -1);
   else
@@ -660,7 +649,6 @@ static gboolean range_select(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter
   g_free(haystack);
   g_free(needle);
   g_free(str);
-
   return FALSE;
 }
 
@@ -687,12 +675,14 @@ const gboolean _combo_set_active_collection(GtkComboBox *combo, const int proper
     {
       int value;
       gtk_tree_model_get(model, &iter, 1, &value, -1);
+
       if(value == property)
       {
         active = iter;
         found = TRUE;
         break;
       }
+
       valid = gtk_tree_model_iter_next(model, &iter);
     }
   }
@@ -709,7 +699,6 @@ static gboolean tree_expand(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter 
   gboolean startwildcard = FALSE;
 
   gtk_tree_model_get(model, iter, DT_LIB_COLLECT_COL_PATH, &str, DT_LIB_COLLECT_COL_TEXT, &txt, -1);
-
   gchar *haystack = g_utf8_strdown(str, -1);
   gchar *needle = g_utf8_strdown(gtk_entry_get_text(GTK_ENTRY(dr->text)), -1);
   gchar *txt2 = g_utf8_strdown(txt, -1);
@@ -717,6 +706,7 @@ static gboolean tree_expand(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter 
   if(g_str_has_prefix(needle, "%")) startwildcard = TRUE;
   if(g_str_has_suffix(needle, "%")) needle[strlen(needle) - 1] = '\0';
   if(g_str_has_suffix(haystack, "%")) haystack[strlen(haystack) - 1] = '\0';
+
   if(_combo_get_active_collection(dr->combo) == DT_COLLECTION_PROP_TAG)
   {
     if(g_str_has_suffix(needle, "|")) needle[strlen(needle) - 1] = '\0';
@@ -730,6 +720,7 @@ static gboolean tree_expand(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter 
   else
   {
     const int temp = _combo_get_active_collection(dr->combo);
+
     if(DT_COLLECTION_PROP_DAY == temp || is_time_property(temp))
     {
       if(g_str_has_suffix(needle, ":")) needle[strlen(needle) - 1] = '\0';
@@ -737,9 +728,7 @@ static gboolean tree_expand(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter 
     }
   }
   if(dr->typing && g_strrstr(txt2, needle) != NULL)
-  {
     gtk_tree_view_expand_to_path(d->view, path);
-  }
 
   if(strlen(needle)==0)
   {
@@ -752,13 +741,9 @@ static gboolean tree_expand(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter 
     gtk_tree_view_scroll_to_cell(d->view, path, NULL, FALSE, 0.2, 0);
   }
   else if(startwildcard && g_strrstr(haystack, needle+1) != NULL)
-  {
     gtk_tree_view_expand_to_path(d->view, path);
-  }
   else if(g_str_has_prefix(haystack, needle))
-  {
     gtk_tree_view_expand_to_path(d->view, path);
-  }
 
   g_free(haystack);
   g_free(needle);
@@ -793,35 +778,24 @@ static gboolean list_match_string(GtkTreeModel *model, GtkTreePath *path, GtkTre
     {
       float nb1 = g_strtod(number, NULL);
       float nb2 = g_strtod(haystack, NULL);
+      
       if(operator&& strcmp(operator, ">") == 0)
-      {
         visible = (nb2 > nb1);
-      }
       else if(operator&& strcmp(operator, ">=") == 0)
-      {
         visible = (nb2 >= nb1);
-      }
       else if(operator&& strcmp(operator, "<") == 0)
-      {
         visible = (nb2 < nb1);
-      }
       else if(operator&& strcmp(operator, "<=") == 0)
-      {
         visible = (nb2 <= nb1);
-      }
       else if(operator&& strcmp(operator, "<>") == 0)
-      {
         visible = (nb1 != nb2);
-      }
       else if(operator&& number2 && strcmp(operator, "[]") == 0)
       {
         float nb3 = g_strtod(number2, NULL);
         visible = (nb2 >= nb1 && nb2 <= nb3);
       }
       else
-      {
         visible = (nb1 == nb2);
-      }
     }
     g_free(operator);
     g_free(number);
@@ -831,7 +805,7 @@ static gboolean list_match_string(GtkTreeModel *model, GtkTreePath *path, GtkTre
   {
     GList *list = dt_util_str_to_glist(",", needle);
 
-    for (GList *l = list; l != NULL; l = l->next)
+    for (const GList *l = list; l; l = g_list_next(l))
     {
       if(g_str_has_prefix((char *)l->data, "%"))
       {
@@ -842,9 +816,6 @@ static gboolean list_match_string(GtkTreeModel *model, GtkTreePath *path, GtkTre
         if((visible = (g_strrstr(haystack, (char *)l->data) != NULL))) break;
       }
     }
-
-    g_list_free(list);
-
   }
   else
   {
@@ -856,7 +827,6 @@ static gboolean list_match_string(GtkTreeModel *model, GtkTreePath *path, GtkTre
 
   g_free(haystack);
   g_free(needle);
-
   g_free(str);
 
   gtk_list_store_set(GTK_LIST_STORE(model), iter, DT_LIB_COLLECT_COL_VISIBLE, visible, -1);
@@ -868,13 +838,10 @@ static gboolean tree_match_string(GtkTreeModel *model, GtkTreePath *path, GtkTre
   dt_lib_collect_rule_t *dr = (dt_lib_collect_rule_t *)data;
   gchar *str = NULL;
   gboolean cur_state, visible;
-
   gtk_tree_model_get(model, iter, DT_LIB_COLLECT_COL_PATH, &str, DT_LIB_COLLECT_COL_VISIBLE, &cur_state, -1);
 
   if(dr->typing == FALSE && !cur_state)
-  {
     visible = TRUE;
-  }
   else
   {
     gchar *haystack = g_utf8_strdown(str, -1),
@@ -885,7 +852,6 @@ static gboolean tree_match_string(GtkTreeModel *model, GtkTreePath *path, GtkTre
   }
 
   g_free(str);
-
   gtk_tree_store_set(GTK_TREE_STORE(model), iter, DT_LIB_COLLECT_COL_VISIBLE, visible, -1);
   return FALSE;
 }
@@ -894,8 +860,8 @@ static gboolean tree_reveal_func(GtkTreeModel *model, GtkTreePath *path, GtkTree
 {
   gboolean state;
   GtkTreeIter parent, child = *iter;
-
   gtk_tree_model_get(model, iter, DT_LIB_COLLECT_COL_VISIBLE, &state, -1);
+
   if(!state) return FALSE;
 
   while(gtk_tree_model_iter_parent(model, &parent, &child))
@@ -911,15 +877,12 @@ static gboolean tree_reveal_func(GtkTreeModel *model, GtkTreePath *path, GtkTree
 static void tree_set_visibility(GtkTreeModel *model, gpointer data)
 {
   gtk_tree_model_foreach(model, (GtkTreeModelForeachFunc)tree_match_string, data);
-
   gtk_tree_model_foreach(model, (GtkTreeModelForeachFunc)tree_reveal_func, NULL);
 }
 
 static void _lib_folders_update_collection(const gchar *filmroll)
 {
-
   gchar *complete_query = NULL;
-
   // remove from selected images where not in this query.
   sqlite3_stmt *stmt = NULL;
   const gchar *cquery = dt_collection_get_query(darktable.collection);
@@ -1055,9 +1018,9 @@ static char **split_path(const char *path)
 #else
 
   // there are size + 1 elements in tokens -- the final NULL! we want to ignore it.
-  unsigned int size = g_strv_length(tokens);
+  constunsigned int size = g_strv_length(tokens);
 
-  result = malloc(size * sizeof(char *));
+  result = malloc(sizeof(char *) * size);
   for(unsigned int i = 0; i < size; i++)
     result[i] = tokens[i + 1];
 
@@ -1500,9 +1463,8 @@ static void list_view(dt_lib_collect_rule_t *dr)
     {
       case DT_COLLECTION_PROP_CAMERA:; // camera
         int index = 0;
-        gchar *makermodel_query = NULL;
-        makermodel_query = dt_util_dstrcat(makermodel_query, "SELECT maker, model, COUNT(*) AS count "
-                "FROM main.images AS mi WHERE %s GROUP BY maker, model", where_ext);
+        gchar *makermodel_query = g_strdup_printf("SELECT maker, model, COUNT(*) AS count "
+                                                  "FROM main.images AS mi WHERE %s GROUP BY maker, model", where_ext);
 
         DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                                 makermodel_query,
@@ -1545,19 +1507,6 @@ static void list_view(dt_lib_collect_rule_t *dr)
                    " GROUP BY altered"
                    " ORDER BY altered ASC",
                    _("basic"), _("auto applied"), _("altered"), _("basic"), where_ext);
-        break;
-
-      case DT_COLLECTION_PROP_GEOTAGGING: // Geotagging, 2 hardcoded alternatives
-        g_snprintf(query, sizeof(query),
-                   "SELECT CASE "
-                   "         WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN '%s'"
-                   "         ELSE '%s'"
-                   "       END as tagged, 1, COUNT(*) AS count"
-                   " FROM main.images AS mi "
-                   " WHERE %s"
-                   " GROUP BY tagged"
-                   " ORDER BY tagged ASC",
-                   _("tagged"),  _("not tagged"), where_ext);
         break;
 
       case DT_COLLECTION_PROP_LOCAL_COPY: // local copy, 2 hardcoded alternatives
@@ -1614,8 +1563,8 @@ static void list_view(dt_lib_collect_rule_t *dr)
                    "SELECT CAST(focal_length AS INTEGER) AS focal_length, 1, COUNT(*) AS count"
                    " FROM main.images AS mi"
                    " WHERE %s"
-                   " GROUP BY focal_length"
-                   " ORDER BY focal_length",
+                   " GROUP BY CAST(focal_length AS INTEGER)"
+                   " ORDER BY CAST(focal_length AS INTEGER)",
                    where_ext);
         break;
 
@@ -1715,7 +1664,7 @@ static void list_view(dt_lib_collect_rule_t *dr)
         {
           const int keyid = dt_metadata_get_keyid_by_display_order(property - DT_COLLECTION_PROP_METADATA);
           const char *name = (gchar *)dt_metadata_get_name(keyid);
-          char *setting = dt_util_dstrcat(NULL, "plugins/lighttable/metadata/%s_flag", name);
+          char *setting = g_strdup_printf("plugins/lighttable/metadata/%s_flag", name);
           const gboolean hidden = dt_conf_get_int(setting) & DT_METADATA_FLAG_HIDDEN;
           g_free(setting);
           if(!hidden)
@@ -1837,11 +1786,10 @@ static void list_view(dt_lib_collect_rule_t *dr)
     // test selection range [xxx;xxx]
     GRegex *regex;
     GMatchInfo *match_info;
-    int match_count;
 
     regex = g_regex_new("^\\s*\\[\\s*(.*)\\s*;\\s*(.*)\\s*\\]\\s*$", 0, 0, NULL);
     g_regex_match_full(regex, gtk_entry_get_text(GTK_ENTRY(dr->text)), -1, 0, 0, &match_info, NULL);
-    match_count = g_match_info_get_match_count(match_info);
+    const int match_count = g_match_info_get_match_count(match_info);
 
     if(match_count == 3)
     {
@@ -1935,7 +1883,7 @@ static void _lib_collect_gui_update(dt_lib_module_t *self)
     else if(i == active)
     {
       gtk_widget_set_tooltip_text(GTK_WIDGET(button), _("clear this rule or add new rules"));
-      gint flags = CPF_DIRECTION_DOWN | CPF_BG_TRANSPARENT | CPF_STYLE_FLAT;
+      const gint flags = CPF_DIRECTION_DOWN | CPF_BG_TRANSPARENT | CPF_STYLE_FLAT;
       dtgtk_button_set_paint(button, dtgtk_cairo_paint_solid_arrow, flags, NULL);
     }
     else
@@ -2147,7 +2095,6 @@ static void row_activated_with_event(GtkTreeView *view, GtkTreePath *path, GtkTr
      || item == DT_COLLECTION_PROP_DAY
      || is_time_property(item)
      || item == DT_COLLECTION_PROP_COLORLABEL
-     || item == DT_COLLECTION_PROP_GEOTAGGING
      || item == DT_COLLECTION_PROP_HISTORY
      || item == DT_COLLECTION_PROP_LOCAL_COPY
      || item == DT_COLLECTION_PROP_GROUPING
@@ -2531,9 +2478,8 @@ void gui_init(dt_lib_module_t *self)
   d->params = (dt_lib_collect_params_t *)malloc(sizeof(dt_lib_collect_params_t));
   view_set_click(NULL, self);
 
-  GtkBox *box;
-  GtkWidget *w;
-
+  GtkBox *box = NULL;
+  GtkWidget *w = NULL;
   for(int i = 0; i < MAX_RULES; i++)
   {
     d->rule[i].num = i;
