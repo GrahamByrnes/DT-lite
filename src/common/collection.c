@@ -1729,7 +1729,7 @@ static gchar *get_query_string(const dt_collection_properties_t property, const 
       if(strcmp(operator, "[]") == 0)
       {
         if(number1 && number2)
-          query = g_strdup_printf("((strftime('%%Y:%%m:%%d:%%H:%%M:%%S', %s, 'unixepoch', 'localtime') >= '%s')"
+          query = g_strdup_printf("((strftime('%%Y:%%m:%%d:%%H:%%M:%%S', %s, 'unixepoch', 'localtime') >= '%s') "
                                   "AND (strftime('%%Y:%%m:%%d:%%H:%%M:%%S', %s, 'unixepoch', 'localtime') <= '%s'))",
                                   colname, number1, colname, number2);
       }
@@ -1926,8 +1926,7 @@ void dt_collection_update_query(const dt_collection_t *collection, dt_collection
       // if next is still invalid, let's try to find the first untouched image before the list
       if(next < 0)
       {
-        query = g_strdup_printf("SELECT imgid"
-                                " FROM memory.collected_images"
+        query = g_strdup_printf("SELECT imgid FROM memory.collected_images "
                                 "WHERE imgid NOT IN (%s) AND "
                                 "rowid<(SELECT rowid FROM memory.collected_images WHERE imgid=%d) "
                                 "ORDER BY rowid DESC LIMIT 1",
