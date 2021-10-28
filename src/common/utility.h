@@ -20,6 +20,7 @@
 
 #include <gtk/gtk.h>
 #include <string.h>
+#include <librsvg/rsvg.h>
 
 /** dynamically allocate and concatenate string */
 gchar *dt_util_dstrcat(gchar *str, const gchar *format, ...) __attribute__((format(printf, 2, 3)));
@@ -46,15 +47,8 @@ gchar *dt_util_foo_to_utf8(const char *string);
 /** returns the number of occurence of character in a text. */
 guint dt_util_string_count_char(const char *text, const char needle);
 
-typedef enum dt_logo_season_t
-{
-  DT_LOGO_SEASON_NONE = 0,
-  DT_LOGO_SEASON_HALLOWEEN = 1,
-  DT_LOGO_SEASON_XMAS = 2,
-  DT_LOGO_SEASON_EASTER = 3
-} dt_logo_season_t;
-
 cairo_surface_t *dt_util_get_logo(const float size);
+cairo_surface_t *dt_util_get_logo_text(const float size);
 
 gchar *dt_util_latitude_str(float latitude);
 gchar *dt_util_longitude_str(float longitude);
@@ -64,6 +58,12 @@ gboolean dt_util_gps_rationale_to_number(const double r0_1, const double r0_2, c
                                          const double r1_2, const double r2_1, const double r2_2, char sign,
                                          double *result);
 gboolean dt_util_gps_elevation_to_number(const double r_1, const double r_2, char sign, double *result);
+
+// returns the RsvgDimensionData of a supplied RsvgHandle
+RsvgDimensionData dt_get_svg_dimension(RsvgHandle *svg);
+
+// renders svg data
+void dt_render_svg(RsvgHandle *svg, cairo_t *cr, double width, double height, double offset_x, double offset_y);
 
 // make paths absolute and try to normalize on Windows. also deal with character encoding on Windows.
 gchar *dt_util_normalize_path(const gchar *input);

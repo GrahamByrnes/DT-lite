@@ -183,9 +183,7 @@ GList *dt_util_glist_uniq(GList *items)
 gchar *dt_util_fix_path(const gchar *path)
 {
   if(path == NULL || *path == '\0')
-  {
     return NULL;
-  }
 
   gchar *rpath = NULL;
 
@@ -206,9 +204,7 @@ gchar *dt_util_fix_path(const gchar *path)
     if(len > 1 && path[1] != '/')
     {
       while(path[off] != '\0' && path[off] != '/')
-      {
         ++off;
-      }
 
       user = g_strndup(path + 1, off - 1);
     }
@@ -217,17 +213,13 @@ gchar *dt_util_fix_path(const gchar *path)
     g_free(user);
 
     if(home_path == NULL)
-    {
       return g_strdup(path);
-    }
 
     rpath = g_build_filename(home_path, path + off, NULL);
     g_free(home_path);
   }
   else
-  {
     rpath = g_strdup(path);
-  }
 
   return rpath;
 }
@@ -328,24 +320,22 @@ gchar *dt_util_foo_to_utf8(const char *string)
   return tag;
 }
 
-cairo_surface_t *dt_util_get_logo(const float size)
+static cairo_surface_t *_util_get_svg_img(gchar *logo, const float size)
 {
   GError *error = NULL;
   cairo_surface_t *surface = NULL;
   char datadir[PATH_MAX] = { 0 };
-  char *logo;
-  logo = g_strdup("idbutton.svg");
 
   dt_loc_get_datadir(datadir, sizeof(datadir));
   char *dtlogo = g_build_filename(datadir, "pixmaps", logo, NULL);
   RsvgHandle *svg = rsvg_handle_new_from_file(dtlogo, &error);
-
   if(svg)
   {
     RsvgDimensionData dimension;
-    rsvg_handle_get_dimensions(svg, &dimension);
+    dimension = dt_get_svg_dimension(svg);
 
     const float ppd = darktable.gui ? darktable.gui->ppd : 1.0;
+
     const float svg_size = MAX(dimension.width, dimension.height);
     const float factor = size > 0.0 ? size / svg_size : -1.0 * size;
     const float final_width = dimension.width * factor * ppd,
@@ -359,7 +349,6 @@ cairo_surface_t *dt_util_get_logo(const float size)
     else // during startup we don't know ppd yet and darktable.gui isn't initialized yet.
       surface = cairo_image_surface_create_for_data(image_buffer, CAIRO_FORMAT_ARGB32, final_width,
                                                        final_height, stride);
-
     if(cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS)
     {
       fprintf(stderr, "warning: can't load darktable logo from SVG file `%s'\n", dtlogo);
@@ -372,11 +361,10 @@ cairo_surface_t *dt_util_get_logo(const float size)
     {
       cairo_t *cr = cairo_create(surface);
       cairo_scale(cr, factor, factor);
-      rsvg_handle_render_cairo(svg, cr);
+      dt_render_svg(svg, cr, final_width, final_height, 0, 0);
       cairo_destroy(cr);
       cairo_surface_flush(surface);
     }
-
     g_object_unref(svg);
   }
   else
@@ -387,14 +375,27 @@ cairo_surface_t *dt_util_get_logo(const float size)
 
   g_free(logo);
   g_free(dtlogo);
-
   return surface;
+}
+
+cairo_surface_t *dt_util_get_logo(const float size)
+{
+  char *logo;
+  logo = g_strdup("idbutton.svg");
+  return _util_get_svg_img(logo, size);
+}
+
+cairo_surface_t *dt_util_get_logo_text(const float size)
+{
+  return _util_get_svg_img(g_strdup("dt_text.svg"), size);
 }
 
 // the following two functions (dt_util_latitude_str and dt_util_longitude_str) were taken from libosmgpsmap
 // Copyright (C) 2013 John Stowers <john.stowers@gmail.com>
 // these can be overwritten with versions that support
 //   localization 
+
+
 #define OSD_COORDINATES_CHR_N  "N"
 #define OSD_COORDINATES_CHR_S  "S"
 #define OSD_COORDINATES_CHR_E  "E"
@@ -531,6 +532,37 @@ gboolean dt_util_gps_elevation_to_number(const double r_1, const double r_2, cha
   return TRUE;
 }
 
+RsvgDimensionData dt_get_svg_dimension(RsvgHandle *svg)
+{
+  RsvgDimensionData dimension;
+  // rsvg_handle_get_dimensions has been deprecated in librsvg 2.52
+  #if LIBRSVG_CHECK_VERSION(2,52,0)
+    double width;
+    double height;
+    rsvg_handle_get_intrinsic_size_in_pixels(svg, &width, &height);
+    dimension.width = width;
+    dimension.height = height;
+  #else
+    rsvg_handle_get_dimensions(svg, &dimension);
+  #endif
+  return dimension;
+}
+
+void dt_render_svg(RsvgHandle *svg, cairo_t *cr, double width, double height, double offset_x, double offset_y)
+{
+  // rsvg_handle_render_cairo has been deprecated in librsvg 2.52
+  #if LIBRSVG_CHECK_VERSION(2,52,0)
+    RsvgRectangle viewport = {
+      .x = offset_x,
+      .y = offset_y,
+      .width = width,
+      .height = height,
+    };
+    rsvg_handle_render_document(svg, cr, &viewport, NULL);
+  #else
+    rsvg_handle_render_cairo(svg, cr);
+  #endif
+}
 
 // make paths absolute and try to normalize on Windows. also deal with character encoding on Windows.
 gchar *dt_util_normalize_path(const gchar *_input)

@@ -332,6 +332,7 @@ void expose(dt_view_t *self, cairo_t *cri, int32_t width, int32_t height,int32_t
       {
         dev->image_invalid_cnt = 0;
         dt_view_manager_switch(darktable.view_manager, "lighttable");
+        return;
       }
     }
     else
