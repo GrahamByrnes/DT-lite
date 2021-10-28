@@ -1910,8 +1910,7 @@ void dt_collection_update_query(const dt_collection_t *collection, dt_collection
 
         i++;
       }
-      gchar *query = g_strdup_printf("SELECT imgid"
-                                     " FROM memory.collected_images"
+      gchar *query = g_strdup_printf("SELECT imgid FROM memory.collected_images "
                                      "WHERE imgid NOT IN (%s) AND "
                                      "rowid>(SELECT rowid FROM memory.collected_images WHERE imgid=%d) "
                                      "ORDER BY rowid LIMIT 1",
@@ -1924,7 +1923,7 @@ void dt_collection_update_query(const dt_collection_t *collection, dt_collection
       }
       sqlite3_finalize(stmt2);
       g_free(query);
-      // if next is still unvalid, let's try to find the first untouched image before the list
+      // if next is still invalid, let's try to find the first untouched image before the list
       if(next < 0)
       {
         query = g_strdup_printf("SELECT imgid"
