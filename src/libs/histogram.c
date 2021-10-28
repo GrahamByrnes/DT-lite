@@ -118,6 +118,7 @@ static void _lib_histogram_process_histogram(dt_lib_histogram_t *d, const float 
   // Constraining the area if the colorpicker is active in area mode
   dt_develop_t *dev = darktable.develop;
   const dt_view_t *cv = dt_view_manager_get_current_view(darktable.view_manager);
+
   if(cv->view(cv) == DT_VIEW_DARKROOM &&
      dev->gui_module && !strcmp(dev->gui_module->op, "colorout")
      && dev->gui_module->request_color_pick != DT_REQUEST_COLORPICK_OFF
@@ -214,10 +215,12 @@ static void _draw_color_toggle(cairo_t *cr, float x, float y, float width, float
   const float border = MIN(width * .05, height * .05);
   cairo_rectangle(cr, x + border, y + border, width - 2.0 * border, height - 2.0 * border);
   cairo_fill_preserve(cr);
+
   if(state)
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.5);
   else
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
+
   cairo_set_line_width(cr, border);
   cairo_stroke(cr);
 }
@@ -238,6 +241,7 @@ static void _draw_histogram_scale_toggle(cairo_t *cr, float x, float y, float wi
 
   cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.5);
   cairo_move_to(cr, 2.0 * border, height - 2.0 * border);
+
   switch(mode)
   {
     case DT_LIB_HISTOGRAM_LINEAR:
@@ -303,6 +307,7 @@ static void _lib_histogram_draw_histogram(dt_lib_histogram_t *d, cairo_t *cr, in
       cairo_set_source_rgba(cr, k == 0 ? 1.0 : 0.0, k == 1 ? 1.0 : 0.0, k == 2 ? 1.0 : 0.0, 0.5);
       dt_draw_histogram_8(cr, d->histogram, 4, k, is_lin, pick_vals + 3 * k, hist_max);
     }
+
   cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 }
 
@@ -318,7 +323,6 @@ static gboolean _lib_histogram_draw_callback(GtkWidget *widget, cairo_t *crf, gp
 
   cairo_surface_t *cst = dt_cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
   cairo_t *cr = cairo_create(cst);
-
   gtk_render_background(gtk_widget_get_style_context(widget), cr, 0, 0, width, height);
   cairo_set_line_width(cr, DT_PIXEL_APPLY_DPI(.5)); // borders width
 
@@ -348,7 +352,6 @@ static gboolean _lib_histogram_draw_callback(GtkWidget *widget, cairo_t *crf, gp
   // draw grid
   set_color(cr, darktable.bauhaus->graph_grid);
   dt_draw_grid(cr, 4, 0, 0, width, height);
-
   // darkroom view: draw scope so long as preview pipe is finished
   dt_pthread_mutex_lock(&d->lock);
 
@@ -359,6 +362,7 @@ static gboolean _lib_histogram_draw_callback(GtkWidget *widget, cairo_t *crf, gp
     _lib_histogram_draw_histogram(d, cr, width, height, mask);
     cairo_restore(cr);
   }
+
   dt_pthread_mutex_unlock(&d->lock);
   // buttons to control the display of the histogram: linear/log, r, g, b
   if(d->highlight != DT_LIB_HISTOGRAM_HIGHLIGHT_OUTSIDE_WIDGET)
@@ -391,9 +395,9 @@ static gboolean _lib_histogram_motion_notify_callback(GtkWidget *widget, GdkEven
   const gboolean hooks_available = (cv->view(cv) == DT_VIEW_DARKROOM) && dt_dev_exposure_hooks_available(dev);
   // FIXME: as when dragging a bauhaus widget, delay processing the next event until the pixelpipe 
   // can update based on dev->preview_average_delay
-
   GtkAllocation allocation;
   gtk_widget_get_allocation(widget, &allocation);
+
   if(d->dragging)
   {
     const float diff = event->x - d->button_down_x;
@@ -497,9 +501,7 @@ static gboolean _lib_histogram_button_press_callback(GtkWidget *widget, GdkEvent
 
   if(event->type == GDK_2BUTTON_PRESS && hooks_available &&
      (d->highlight == DT_LIB_HISTOGRAM_HIGHLIGHT_BLACK_POINT || d->highlight == DT_LIB_HISTOGRAM_HIGHLIGHT_EXPOSURE))
-  {
     dt_dev_exposure_reset_defaults(dev);
-  }
    else
   {
     if(d->highlight == DT_LIB_HISTOGRAM_HIGHLIGHT_MODE)
@@ -528,10 +530,13 @@ static gboolean _lib_histogram_button_press_callback(GtkWidget *widget, GdkEvent
     else if(hooks_available)
     {
       d->dragging = 1;
+
       if(d->highlight == DT_LIB_HISTOGRAM_HIGHLIGHT_EXPOSURE)
         d->exposure = dt_dev_exposure_get_exposure(dev);
+
       if(d->highlight == DT_LIB_HISTOGRAM_HIGHLIGHT_BLUE)
         d->black = dt_dev_exposure_get_black(dev);
+
       d->button_down_x = event->x;
       d->button_down_y = event->y;
     }

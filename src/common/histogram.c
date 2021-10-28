@@ -31,7 +31,6 @@
 #define PU(V, params) (MIN((V), (params->bins_count - 1)))
 #define PS(V, params) (P(S(V, params), params))
 
-//------------------------------------------------------------------------------
 
 inline static void histogram_helper_cs_RAW(const dt_dev_histogram_collection_params_t *const histogram_params,
                                            const void *pixel, uint32_t *histogram, int j,
@@ -39,8 +38,8 @@ inline static void histogram_helper_cs_RAW(const dt_dev_histogram_collection_par
 {
   const dt_histogram_roi_t *roi = histogram_params->roi;
   const float *input = (float *)pixel + roi->width * j + roi->crop_x;
-  fprintf(stderr, "in common/histogram, L45, cs_RAW\n");
-  for(int i = 0; i < roi->width - roi->crop_width - roi->crop_x; i++, input++)
+
+ for(int i = 0; i < roi->width - roi->crop_width - roi->crop_x; i++, input++)
   {
     const uint32_t p = PS(*input, histogram_params);
     histogram[p]++;
@@ -53,15 +52,12 @@ inline void dt_histogram_helper_cs_RAW_uint16(const dt_dev_histogram_collection_
 {
   const dt_histogram_roi_t *roi = histogram_params->roi;
   uint16_t *in = (uint16_t *)pixel + roi->width * j + roi->crop_x;
-  fprintf(stderr, "in common/histogram, L58, cs_RAW_uint16\n");
   for(int i = 0; i < roi->width - roi->crop_width - roi->crop_x; i++, in++)
   {
     const uint16_t p = PU(*in, histogram_params);
     histogram[p]++;
   }
 }
-
-//------------------------------------------------------------------------------
 
 inline static void histogram_helper_cs_rgb_helper_process_pixel_float(
     const dt_dev_histogram_collection_params_t *const histogram_params, const float *pixel,
@@ -77,7 +73,7 @@ inline static void histogram_helper_cs_rgb_helper_process_pixel_float(
     histogram[4 * B + 2]++;
   }
   else
-    histogram[4 * R + 1] = histogram[4 * R + 2] = histogram[4 * R];///////////////////////////
+    histogram[4 * R + 2] = histogram[4 * R + 1] = histogram[4 * R];
 }
 
 inline static void histogram_helper_cs_rgb(const dt_dev_histogram_collection_params_t *const histogram_params,
@@ -90,8 +86,6 @@ inline static void histogram_helper_cs_rgb(const dt_dev_histogram_collection_par
   for(int i = 0; i < roi->width - roi->crop_width - roi->crop_x; i++, in += 4)
     histogram_helper_cs_rgb_helper_process_pixel_float(histogram_params, in, histogram, ch);
 }
-
-//------------------------------------------------------------------------------
 
 inline static void histogram_helper_cs_Lab_helper_process_pixel_float(
     const dt_dev_histogram_collection_params_t *const histogram_params, const float *pixel,
@@ -149,8 +143,6 @@ inline static void histogram_helper_cs_Lab_LCh(const dt_dev_histogram_collection
     histogram_helper_cs_Lab_LCh_helper_process_pixel_float(histogram_params, in, histogram, ch);
 }
 
-//==============================================================================
-
 void dt_histogram_worker(dt_dev_histogram_collection_params_t *const histogram_params,
                          dt_dev_histogram_stats_t *histogram_stats, const void *const pixel,
                          uint32_t **histogram, const dt_worker Worker,
@@ -204,8 +196,6 @@ void dt_histogram_worker(dt_dev_histogram_collection_params_t *const histogram_p
                             * (roi->height - roi->crop_height - roi->crop_y);
 }
 
-//------------------------------------------------------------------------------
-
 void dt_histogram_helper(dt_dev_histogram_collection_params_t *histogram_params,
     dt_dev_histogram_stats_t *histogram_stats, const dt_iop_colorspace_type_t cst,
     const dt_iop_colorspace_type_t cst_to, const void *pixel, uint32_t **histogram,
@@ -249,7 +239,7 @@ void dt_histogram_max_helper(const dt_dev_histogram_stats_t *const histogram_sta
   switch(cst)
   {
     case iop_cs_RAW:
-      for(int k = 0; k < histogram_stats->bins_count; k += 4)   // removed mult by 4 (replaced)
+      for(int k = 0; k < 4 * histogram_stats->bins_count; k += 4)   // removed mult by 4 (replaced)
         histogram_max[0] = histogram_max[0] > hist[k] ? histogram_max[0] : hist[k];
       break;
 
