@@ -222,34 +222,6 @@ static char *get_base_value(dt_variables_params_t *params, char **variable)
     result = g_strdup_printf("%d", (int)params->data->exif_focal_length);
   else if(has_prefix(variable, "EXIF_FOCUS_DISTANCE"))
     result = g_strdup_printf("%.2f", params->data->exif_focus_distance);
-  else if(has_prefix(variable, "LONGITUDE"))
-  {
-    if(dt_conf_get_bool("plugins/lighttable/metadata_view/pretty_location")
-       && g_strcmp0(params->jobcode, "infos") == 0)
-    {
-      result = dt_util_latitude_str(params->data->longitude);
-    }
-    else
-    {
-      gchar NS = params->data->longitude < 0 ? 'W' : 'E';
-      result = g_strdup_printf("%c%010.6f", NS, fabs(params->data->longitude));
-    }
-  }
-  else if(has_prefix(variable, "LATITUDE"))
-  {
-    if(dt_conf_get_bool("plugins/lighttable/metadata_view/pretty_location")
-       && g_strcmp0(params->jobcode, "infos") == 0)
-    {
-      result = dt_util_latitude_str(params->data->latitude);
-    }
-    else
-    {
-      gchar NS = params->data->latitude < 0 ? 'S' : 'N';
-      result = g_strdup_printf("%c%09.6f", NS, fabs(params->data->latitude));
-    }
-  }
-  else if(has_prefix(variable, "ELEVATION"))
-    result = g_strdup_printf("%.2f", params->data->elevation);
   else if(has_prefix(variable, "MAKER"))
     result = g_strdup(params->data->camera_maker);
   else if(has_prefix(variable, "MODEL"))

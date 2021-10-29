@@ -508,27 +508,7 @@ static bool _exif_decode_xmp_data(dt_image_t *img, Exiv2::XmpData &xmpData, int 
         _exif_import_tags(img, pos);
     }
 
-    /* read gps location */
-    if(FIND_XMP_TAG("Xmp.exif.GPSLatitude"))
-      img->geoloc.latitude = dt_util_gps_string_to_number(pos->toString().c_str());
-
-    if(FIND_XMP_TAG("Xmp.exif.GPSLongitude"))
-      img->geoloc.longitude = dt_util_gps_string_to_number(pos->toString().c_str());
-
-    if(FIND_XMP_TAG("Xmp.exif.GPSAltitude"))
-    {
-      Exiv2::XmpData::const_iterator ref = xmpData.findKey(Exiv2::XmpKey("Xmp.exif.GPSAltitudeRef"));
-      if(ref != xmpData.end() && ref->size())
-      {
-        std::string sign_str = ref->toString();
-        const char *sign = sign_str.c_str();
-        double elevation = 0.0;
-        if(dt_util_gps_elevation_to_number(pos->toRational(0).first, pos->toRational(0).second, sign[0], &elevation))
-          img->geoloc.elevation = elevation;
-      }
-    }
-
-    /* read lens type from Xmp.exifEX.LensModel */
+    // read lens type from Xmp.exifEX.LensModel
     if(FIND_XMP_TAG("Xmp.exifEX.LensModel"))
     {
       // lens model
@@ -702,9 +682,7 @@ static void _find_datetime_taken(Exiv2::ExifData &exifData, Exiv2::ExifData::con
     _sanitize_datetime(exif_datetime_taken);
   }
   else
-  {
     *exif_datetime_taken = '\0';
-  }
 }
 
 static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
@@ -893,50 +871,6 @@ static bool _exif_decode_exif_data(dt_image_t *img, Exiv2::ExifData &exifData)
       img->orientation = dt_image_orientation_to_flip_bits(pos->toLong());
     else if(FIND_EXIF_TAG("Exif.PanasonicRaw.Orientation"))
       img->orientation = dt_image_orientation_to_flip_bits(pos->toLong());
-
-    /* read gps location */
-    if(FIND_EXIF_TAG("Exif.GPSInfo.GPSLatitude"))
-    {
-      Exiv2::ExifData::const_iterator ref = exifData.findKey(Exiv2::ExifKey("Exif.GPSInfo.GPSLatitudeRef"));
-      if(ref != exifData.end() && ref->size() && pos->count() == 3)
-      {
-        std::string sign_str = ref->toString();
-        const char *sign = sign_str.c_str();
-        double latitude = 0.0;
-        if(dt_util_gps_rationale_to_number(pos->toRational(0).first, pos->toRational(0).second,
-                                           pos->toRational(1).first, pos->toRational(1).second,
-                                           pos->toRational(2).first, pos->toRational(2).second, sign[0], &latitude))
-          img->geoloc.latitude = latitude;
-      }
-    }
-
-    if(FIND_EXIF_TAG("Exif.GPSInfo.GPSLongitude"))
-    {
-      Exiv2::ExifData::const_iterator ref = exifData.findKey(Exiv2::ExifKey("Exif.GPSInfo.GPSLongitudeRef"));
-      if(ref != exifData.end() && ref->size() && pos->count() == 3)
-      {
-        std::string sign_str = ref->toString();
-        const char *sign = sign_str.c_str();
-        double longitude = 0.0;
-        if(dt_util_gps_rationale_to_number(pos->toRational(0).first, pos->toRational(0).second,
-                                           pos->toRational(1).first, pos->toRational(1).second,
-                                           pos->toRational(2).first, pos->toRational(2).second, sign[0], &longitude))
-          img->geoloc.longitude = longitude;
-      }
-    }
-
-    if(FIND_EXIF_TAG("Exif.GPSInfo.GPSAltitude"))
-    {
-      Exiv2::ExifData::const_iterator ref = exifData.findKey(Exiv2::ExifKey("Exif.GPSInfo.GPSAltitudeRef"));
-      if(ref != exifData.end() && ref->size())
-      {
-        std::string sign_str = ref->toString();
-        const char *sign = sign_str.c_str();
-        double elevation = 0.0;
-        if(dt_util_gps_elevation_to_number(pos->toRational(0).first, pos->toRational(0).second, sign[0], &elevation))
-          img->geoloc.elevation = elevation;
-      }
-    }
 
     /* Read lens name */
     if((FIND_EXIF_TAG("Exif.CanonCs.LensType")
