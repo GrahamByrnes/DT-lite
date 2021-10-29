@@ -46,6 +46,7 @@ typedef struct dt_lib_t
       float *picked_color_lab_mean;
       float *picked_color_lab_min;
       float *picked_color_lab_max;
+      struct dt_iop_color_picker_t *picker_proxy;
       GSList *live_samples;
       struct dt_colorpicker_sample_t *selected_sample;
       int size;

@@ -23,21 +23,6 @@
 #include "gui/gtk.h"
 #include "develop/blend.h"
 
-typedef struct dt_iop_color_picker_t
-{
-  dt_iop_module_t *module;
-  dt_iop_color_picker_kind_t kind;
-  /** requested colorspace for the color picker, valid options are:
-   * iop_cs_NONE: module colorspace
-   * iop_cs_LCh: for Lab modules
-   * iop_cs_rgb: for RGB modules*/
-  dt_iop_colorspace_type_t picker_cst;
-  // used to avoid recursion when a parameter is modified in the apply()
-  GtkWidget *colorpick;
-  float pick_pos[2]; // last picker positions (max 9 picker per module)
-  float pick_box[4]; // last picker areas (max 9 picker per module)
-} dt_iop_color_picker_t;
-
 static gboolean _iop_record_point_area(dt_iop_color_picker_t *self)
 {
   gboolean selection_changed = FALSE;
@@ -204,6 +189,7 @@ static gboolean _iop_color_picker_callback_button_press(GtkWidget *button, GdkEv
 static void _iop_color_picker_callback(GtkWidget *button, dt_iop_color_picker_t *self)
 {
   _iop_color_picker_callback_button_press(button, NULL, self);
+  fprintf(stderr, "colorpicker proxy button callback ... L207\n");
 }
 
 void dt_iop_color_picker_set_cst(dt_iop_module_t *module, const dt_iop_colorspace_type_t picker_cst)
