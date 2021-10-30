@@ -660,8 +660,8 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
       dt_selection_select_single(darktable.selection, imgid);
   }
   // disable color picker when changing image
-  if(dev->gui_module)
-    dev->gui_module->request_color_pick = DT_REQUEST_COLORPICK_OFF;
+  if(darktable.lib->proxy.colorpicker.picker_proxy)
+    dt_iop_color_picker_reset(darktable.lib->proxy.colorpicker.picker_proxy->module, FALSE);
   // update aspect ratio
   if(dev->preview_pipe->backbuf && dev->preview_status == DT_DEV_PIXELPIPE_VALID)
   {
@@ -2150,6 +2150,11 @@ void enter(dt_view_t *self)
 
 void leave(dt_view_t *self)
 {
+  dt_iop_color_picker_cleanup();
+
+  if(darktable.lib->proxy.colorpicker.picker_proxy)
+    dt_iop_color_picker_reset(darktable.lib->proxy.colorpicker.picker_proxy->module, FALSE);
+
   /* disconnect from filmstrip image activate */
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_view_darkroom_filmstrip_activate_callback),
                                (gpointer)self);
@@ -2465,7 +2470,7 @@ int button_pressed(dt_view_t *self, double x, double y, double pressure, int whi
 
   if(dev->gui_module && dev->gui_module->request_color_pick != DT_REQUEST_COLORPICK_OFF && which == 1)
   {
-    float zoom_x, zoom_y;
+    float zoom_x = 0.0f, zoom_y = 0.0f;
     dt_dev_get_pointer_zoom_pos(dev, x + offx, y + offy, &zoom_x, &zoom_y);
 
     if(mouse_in_imagearea(self, x, y))

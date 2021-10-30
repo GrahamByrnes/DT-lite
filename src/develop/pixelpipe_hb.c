@@ -765,8 +765,8 @@ static void _pixelpipe_pick_primary_colorpicker(dt_develop_t *dev, const float *
 // returns 1 if blend process need the module default colorspace
 static gboolean _transform_for_blend(const dt_iop_module_t *const self, const dt_dev_pixelpipe_iop_t *const piece)
 {
- 
   const dt_develop_blend_params_t *const d = (const dt_develop_blend_params_t *)piece->blendop_data;
+
   if(d) // check only if blend is active
     if((self->flags() & IOP_FLAGS_SUPPORTS_BLENDING) && (d->mask_mode != DEVELOP_MASK_DISABLED))
       return TRUE;
