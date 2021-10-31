@@ -174,6 +174,7 @@ dt_iop_order_entry_t *dt_ioppr_get_iop_order_entry(GList *iop_order_list, const 
 GList *dt_ioppr_get_iop_order_link(GList *iop_order_list, const char *op_name, const int multi_priority);
 /** For a non custom order, returns TRUE if iop_order_list has multiple instances grouped together */
 gboolean dt_ioppr_has_multiple_instances(GList *iop_order_list);
+int dt_ioppr_check_iop_order(struct dt_develop_t *dev, const int imgid, const char *msg);
 
 /** returns the iop_order from iop_order_list list with operation = op_name */
 int dt_ioppr_get_iop_order(GList *iop_order_list, const char *op_name, const int multi_priority);
@@ -197,23 +198,11 @@ void dt_ioppr_insert_module_instance(struct dt_develop_t *dev, struct dt_iop_mod
 void dt_ioppr_resync_modules_order(struct dt_develop_t *dev);
 void dt_ioppr_resync_iop_list(struct dt_develop_t *dev);
 
-/** update target_iop_order_list to ensure that modules in iop_order_list are in target_iop_order_list
-    note that iop_order_list contains a set of dt_iop_order_entry_t where order is the multi-priority */
-void dt_ioppr_update_for_entries(struct dt_develop_t *dev, GList *entry_list, gboolean append);
-void dt_ioppr_update_for_style_items(struct dt_develop_t *dev, GList *st_items, gboolean append);
-void dt_ioppr_update_for_modules(struct dt_develop_t *dev, GList *modules, gboolean append);
-
 /** check if there's duplicate iop_order entries in iop_list */
 void dt_ioppr_check_duplicate_iop_order(GList **_iop_list, GList *history_list);
 
 /** sets the default iop_order to iop_list */
 void dt_ioppr_set_default_iop_order(struct dt_develop_t *dev, const int32_t imgid);
-void dt_ioppr_migrate_iop_order(struct dt_develop_t *dev, const int32_t imgid);
-void dt_ioppr_change_iop_order(struct dt_develop_t *dev, const int32_t imgid, GList *new_iop_list);
-/** extract all modules with multi-instances */
-GList *dt_ioppr_extract_multi_instances_list(GList *iop_order_list);
-/** merge all modules with multi-instances as extracted with routine above into a canonical iop-order list */
-GList *dt_ioppr_merge_multi_instance_iop_order_list(GList *iop_order_list, GList *multi_instance_list);
 
 /** returns 1 if there's a module_so without a iop_order defined */
 int dt_ioppr_check_so_iop_order(GList *iop_list, GList *iop_order_list);
@@ -227,20 +216,4 @@ GList *dt_ioppr_iop_order_copy_deep(GList *iop_order_list);
 /** sort two modules by iop_order */
 gint dt_sort_iop_by_order(gconstpointer a, gconstpointer b);
 gint dt_sort_iop_list_by_order_f(gconstpointer a, gconstpointer b);
-
-/** returns the iop_order before module_next if module can be moved */
-gboolean dt_ioppr_check_can_move_before_iop(GList *iop_list, struct dt_iop_module_t *module, struct dt_iop_module_t *module_next);
-/** returns the iop_order after module_prev if module can be moved */
-gboolean dt_ioppr_check_can_move_after_iop(GList *iop_list, struct dt_iop_module_t *module, struct dt_iop_module_t *module_prev);
-
-/** moves module before/after module_next/previous on pipe */
-gboolean dt_ioppr_move_iop_before(struct dt_develop_t *dev, struct dt_iop_module_t *module, struct dt_iop_module_t *module_next);
-gboolean dt_ioppr_move_iop_after(struct dt_develop_t *dev, struct dt_iop_module_t *module, struct dt_iop_module_t *module_prev);
-
-// for debug only
-int dt_ioppr_check_iop_order(struct dt_develop_t *dev, const int imgid, const char *msg);
-void dt_ioppr_print_module_iop_order(GList *iop_list, const char *msg);
-void dt_ioppr_print_history_iop_order(GList *history_list, const char *msg);
-void dt_ioppr_print_iop_order(GList *iop_order_list, const char *msg);
-
 #endif

@@ -2132,52 +2132,7 @@ dt_iop_module_t *dt_dev_module_duplicate(dt_develop_t *dev, dt_iop_module_t *bas
 
     modules = g_list_next(modules);
   }
-  // create a unique multi-priority
-  pmax += 1;
-  dt_iop_update_multi_priority(module, pmax);
-  // add this new module position into the iop-order-list
-  dt_ioppr_insert_module_instance(dev, module);
-  // since we do not rename the module we need to check that an old module does not have the same name. Indeed
-  // the multi_priority
-  // are always rebased to start from 0, to it may be the case that the same multi_name be generated when
-  // duplicating a module.
-  int pname = module->multi_priority;
-  char mname[128];
 
-  do
-  {
-    snprintf(mname, sizeof(mname), "%d", pname);
-    gboolean dup = FALSE;
-
-    modules = g_list_first(base->dev->iop);
-    while(modules)
-    {
-      dt_iop_module_t *mod = (dt_iop_module_t *)modules->data;
-      if(mod->instance == base->instance)
-      {
-        if(strcmp(mname, mod->multi_name) == 0)
-        {
-          dup = TRUE;
-          break;
-        }
-      }
-      modules = g_list_next(modules);
-    }
-
-    if(dup)
-      pname++;
-    else
-      break;
-
-  } while(1);
-  // the multi instance name
-  g_strlcpy(module->multi_name, mname, sizeof(module->multi_name));
-  // we insert this module into dev->iop
-  base->dev->iop = g_list_insert_sorted(base->dev->iop, module, dt_sort_iop_by_order);
-  // always place the new instance after the base one
-  if(!dt_ioppr_move_iop_after(base->dev, module, base))
-    fprintf(stderr, "[dt_dev_module_duplicate] can't move new instance after the base one\n");
-  // that's all. rest of insertion is gui work !
   return module;
 }
 
@@ -2252,48 +2207,28 @@ void _dev_module_update_multishow(dt_develop_t *dev, struct dt_iop_module_t *mod
 {
   // We count the number of other instances
   int nb_instances = 0;
-  GList *modules = g_list_first(dev->iop);
-  while(modules)
+  for(GList *modules = dev->iop; modules; modules = g_list_next(modules))
   {
     dt_iop_module_t *mod = (dt_iop_module_t *)modules->data;
 
     if(mod->instance == module->instance)
       nb_instances++;
-
-    modules = g_list_next(modules);
   }
 
-  dt_iop_module_t *mod_prev = dt_iop_gui_get_previous_visible_module(module);
-  dt_iop_module_t *mod_next = dt_iop_gui_get_next_visible_module(module);
-
-  const gboolean move_next = (mod_next && mod_next->iop_order != INT_MAX) ? dt_ioppr_check_can_move_after_iop(dev->iop, module, mod_next) : -1.0;
-  const gboolean move_prev = (mod_prev && mod_prev->iop_order != INT_MAX) ? dt_ioppr_check_can_move_before_iop(dev->iop, module, mod_prev) : -1.0;
-
-  module->multi_show_new = !(module->flags() & IOP_FLAGS_ONE_INSTANCE);
-  module->multi_show_close = (nb_instances > 1);
-  if(mod_next)
-    module->multi_show_up = move_next;
-  else
-    module->multi_show_up = 0;
-  if(mod_prev)
-    module->multi_show_down = move_prev;
-  else
-    module->multi_show_down = 0;
+  module->multi_show_up = 0;
+  module->multi_show_down = 0;
 }
 
 void dt_dev_modules_update_multishow(dt_develop_t *dev)
 {
   dt_ioppr_check_iop_order(dev, 0, "dt_dev_modules_update_multishow");
-  GList *modules = g_list_first(dev->iop);
-  while(modules)
+  for(GList *modules = dev->iop; modules; modules = g_list_next(modules))
   {
     dt_iop_module_t *mod = (dt_iop_module_t *)modules->data;
     // only for visible modules
     GtkWidget *expander = mod->expander;
     if(expander && gtk_widget_is_visible(expander))
       _dev_module_update_multishow(dev, mod);
-
-    modules = g_list_next(modules);
   }
 }
 

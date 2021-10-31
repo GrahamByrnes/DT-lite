@@ -531,16 +531,6 @@ static int _history_copy_and_paste_on_image_merge(int32_t imgid, int32_t dest_im
   if (DT_IOP_ORDER_INFO) fprintf(stderr,"\nvvvvv\n");
 
   mod_list = g_list_reverse(mod_list);   // list was built in reverse order, so un-reverse it
-  // update iop-order list to have entries for the new modules
-  dt_ioppr_update_for_modules(dev_dest, mod_list, FALSE);
-
-  for(GList *l = mod_list; l; l = g_list_next(l))
-  {
-    dt_iop_module_t *mod = (dt_iop_module_t *)l->data;
-    dt_history_merge_module_into_history(dev_dest, dev_src, mod, &modules_used, FALSE);
-  }
-  // update iop-order list to have entries for the new modules
-  dt_ioppr_update_for_modules(dev_dest, mod_list, FALSE);
   dt_ioppr_check_iop_order(dev_dest, dest_imgid, "_history_copy_and_paste_on_image_merge 2");
   // write history and forms to db
   dt_dev_write_history_ext(dev_dest, dest_imgid);

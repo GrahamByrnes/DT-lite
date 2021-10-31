@@ -802,8 +802,6 @@ void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const 
     }
     sqlite3_finalize(stmt);
 
-    dt_ioppr_update_for_style_items(dev_dest, si_list, FALSE);
-
     GList *l = si_list;
     while(l)
     {
