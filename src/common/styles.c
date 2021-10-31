@@ -101,71 +101,6 @@ gboolean dt_styles_exists(const char *name)
   return (dt_styles_get_id_by_name(name)) != 0 ? TRUE : FALSE;
 }
 
-static void _dt_style_cleanup_multi_instance(int id)
-{
-  sqlite3_stmt *stmt;
-  GList *list = NULL;
-  struct _data
-  {
-    int rowid;
-    int mi;
-  };
-  char last_operation[128] = { 0 };
-  int last_mi = 0;
-
-  /* let's clean-up the style multi-instance. What we want to do is have a unique multi_priority value for
-     each iop.
-     Furthermore this value must start to 0 and increment one by one for each multi-instance of the same
-     module. On
-     SQLite there is no notion of ROW_NUMBER, so we use rather resource consuming SQL statement, but as a
-     style has
-     never a huge number of items that's not a real issue. */
-
-  /* 1. read all data for the style and record multi_instance value. */
-
-  DT_DEBUG_SQLITE3_PREPARE_V2(
-      dt_database_get(darktable.db),
-      "SELECT rowid,operation FROM data.style_items WHERE styleid=?1 ORDER BY operation, multi_priority ASC", -1,
-      &stmt, NULL);
-  DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, id);
-
-  while(sqlite3_step(stmt) == SQLITE_ROW)
-  {
-    struct _data *d = malloc(sizeof(struct _data));
-    const char *operation = (const char *)sqlite3_column_text(stmt, 1);
-
-    if(strncmp(last_operation, operation, 128) != 0)
-    {
-      last_mi = 0;
-      g_strlcpy(last_operation, operation, sizeof(last_operation));
-    }
-    else
-      last_mi++;
-
-    d->rowid = sqlite3_column_int(stmt, 0);
-    d->mi = last_mi;
-    list = g_list_prepend(list, d);
-  }
-  sqlite3_finalize(stmt);
-  list = g_list_reverse(list);   // list was built in reverse order, so un-reverse it
-
-  /* 2. now update all multi_instance values previously recorded */
-
-  for(GList *list_iter = list; list_iter; list_iter = g_list_next(list_iter))
-  {
-    struct _data *d = (struct _data *)list->data;
-
-    DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
-                                "UPDATE data.style_items SET multi_priority=?1 WHERE rowid=?2", -1, &stmt, NULL);
-    DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, d->mi);
-    DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, d->rowid);
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
-  }
-
-  g_list_free_full(list, free);
-}
-
 gboolean dt_styles_has_module_order(const char *name)
 {
   sqlite3_stmt *stmt;
@@ -212,8 +147,7 @@ static gboolean dt_styles_create_style_header(const char *name, const char *desc
   }
 
   char *iop_list_txt = NULL;
-
-  /* first create the style header */
+  // first create the style header
   DT_DEBUG_SQLITE3_PREPARE_V2(
       dt_database_get(darktable.db),
       "INSERT INTO data.styles (name, description, id, iop_list)"
@@ -294,12 +228,10 @@ static void  _dt_style_update_iop_order(const gchar *name, const int id, const i
                                         const gboolean copy_iop_order, const gboolean update_iop_order)
 {
   sqlite3_stmt *stmt;
-
   GList *iop_list = dt_styles_module_order_list(name);
 
   // if we update or if the style does not contains an order then the
   // copy must be done using the imgid iop-order.
-
   if(update_iop_order || iop_list == NULL)
     iop_list = dt_ioppr_get_iop_order_list(imgid, FALSE);
 
@@ -322,7 +254,6 @@ static void  _dt_style_update_iop_order(const gchar *name, const int id, const i
 
   g_list_free_full(iop_list, free);
   g_free(iop_list_txt);
-
   sqlite3_step(stmt);
   sqlite3_finalize(stmt);
 }
@@ -332,8 +263,8 @@ void dt_styles_update(const char *name, const char *newname, const char *newdesc
                       const gboolean copy_iop_order, const gboolean update_iop_order)
 {
   sqlite3_stmt *stmt;
-
   const int id = dt_styles_get_id_by_name(name);
+
   if(id == 0) return;
 
   gchar *desc = dt_styles_get_description(name);
@@ -354,12 +285,14 @@ void dt_styles_update(const char *name, const char *newname, const char *newdesc
     char tmp[64];
     char include[2048] = { 0 };
     g_strlcat(include, "num NOT IN (", sizeof(include));
+
     for(GList *list = filter; list; list = g_list_next(list))
     {
       if(list != filter) g_strlcat(include, ",", sizeof(include));
       snprintf(tmp, sizeof(tmp), "%d", GPOINTER_TO_INT(list->data));
       g_strlcat(include, tmp, sizeof(include));
     }
+
     g_strlcat(include, ")", sizeof(include));
 
     char query[4096] = { 0 };
@@ -372,7 +305,6 @@ void dt_styles_update(const char *name, const char *newname, const char *newdesc
 
   _dt_style_update_from_image(id, imgid, filter, update);
   _dt_style_update_iop_order(name, id, imgid, copy_iop_order, update_iop_order);
-  _dt_style_cleanup_multi_instance(id);
   /* backup style to disk */
   char stylesdir[PATH_MAX] = { 0 };
   dt_loc_get_user_config_dir(stylesdir, sizeof(stylesdir));
@@ -440,13 +372,9 @@ void dt_styles_create_from_style(const char *name, const char *newname, const ch
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
-    /* insert items from imgid if defined */
-
+    // insert items from imgid if defined
     _dt_style_update_from_image(id, imgid, filter, update);
-
     _dt_style_update_iop_order(name, id, imgid, copy_iop_order, update_iop_order);
-
-    _dt_style_cleanup_multi_instance(id);
 
     /* backup style to disk */
     char stylesdir[PATH_MAX] = { 0 };
@@ -464,8 +392,8 @@ gboolean dt_styles_create_from_image(const char *name, const char *description,
 {
   int id = 0;
   sqlite3_stmt *stmt;
-
   GList *iop_list = NULL;
+
   if(copy_iop_order)
     iop_list = dt_ioppr_get_iop_order_list(imgid, FALSE);
   /* first create the style header */
@@ -476,7 +404,7 @@ gboolean dt_styles_create_from_image(const char *name, const char *description,
 
   if((id = dt_styles_get_id_by_name(name)) != 0)
   {
-    /* create the style_items from source image history stack */
+    // create the style_items from source image history stack
     if(filter)
     {
       char tmp[64];
@@ -517,8 +445,6 @@ gboolean dt_styles_create_from_image(const char *name, const char *description,
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
-    _dt_style_cleanup_multi_instance(id);
-
     /* backup style to disk */
     char stylesdir[PATH_MAX] = { 0 };
     dt_loc_get_user_config_dir(stylesdir, sizeof(stylesdir));
@@ -542,7 +468,7 @@ void dt_styles_apply_to_list(const char *name, const GList *list, gboolean dupli
   if(cv->view((dt_view_t *)cv) == DT_VIEW_DARKROOM)
     dt_dev_write_history(darktable.develop);
 
-  /* for each selected image apply style */
+  // for each selected image apply style
   dt_undo_start_group(darktable.undo, DT_UNDO_LT_HISTORY);
   for(const GList *l = list; l; l = g_list_next(l))
   {
