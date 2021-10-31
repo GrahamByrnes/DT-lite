@@ -675,6 +675,7 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   dt_undo_clear(darktable.undo, DT_UNDO_DEVELOP);
   // prevent accels_window to refresh
   darktable.view_manager->accels_window.prevent_refresh = TRUE;
+
   // make sure we can destroy and re-setup the pixel pipes.
   // we acquire the pipe locks, which will block the processing threads
   // in darkroom mode before they touch the pipes (init buffers etc).
@@ -2150,15 +2151,13 @@ void enter(dt_view_t *self)
 
 void leave(dt_view_t *self)
 {
-  dt_iop_color_picker_cleanup();
-
   if(darktable.lib->proxy.colorpicker.picker_proxy)
     dt_iop_color_picker_reset(darktable.lib->proxy.colorpicker.picker_proxy->module, FALSE);
 
-  /* disconnect from filmstrip image activate */
+  // disconnect from filmstrip image activate
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_view_darkroom_filmstrip_activate_callback),
                                (gpointer)self);
-  /* disconnect from pipe finish signal */
+  // disconnect from pipe finish signal
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_darkroom_ui_pipe_finish_signal_callback),
                                (gpointer)self);
   dt_control_signal_disconnect(darktable.signals, G_CALLBACK(_darkroom_ui_preview2_pipe_finish_signal_callback),
