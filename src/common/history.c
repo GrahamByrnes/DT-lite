@@ -210,7 +210,7 @@ static dt_dev_history_item_t *_search_history_by_module(dt_develop_t *dev, dt_io
 }
 
 // returns the first history item with corresponding module->op
-static dt_dev_history_item_t *_search_history_by_op(dt_develop_t *dev, dt_iop_module_t *module)
+ static dt_dev_history_item_t *_search_history_by_op(dt_develop_t *dev, dt_iop_module_t *module)
 {
   dt_dev_history_item_t *hist_mod = NULL;
   for(GList *history = dev->history; history; history = g_list_next(history))
@@ -381,11 +381,11 @@ int dt_history_merge_module_into_history(dt_develop_t *dev_dest, dt_develop_t *d
       if(mod->iop_order == mod_src->iop_order && mod != module)
         module_duplicate = mod;
     }
-
+/*
     // do some checking...
     if(mod_src->iop_order <= 0.0 || mod_src->iop_order == INT_MAX)
       fprintf(stderr, "[dt_history_merge_module_into_history] invalid source module %s %s(%d)(%i)\n",
-          mod_src->op, mod_src->multi_name, mod_src->iop_order, mod_src->multi_priority);
+          mod_src->op, mod_src->multi_name, mod_src->iop_order, mod_src->multi_priority);  /////////////////////////
 
     if(module_duplicate && (module_duplicate->iop_order <= 0.0 || module_duplicate->iop_order == INT_MAX))
       fprintf(stderr, "[dt_history_merge_module_into_history] invalid duplicate module module %s %s(%d)(%i)\n",
@@ -395,6 +395,7 @@ int dt_history_merge_module_into_history(dt_develop_t *dev_dest, dt_develop_t *d
     if(module->iop_order <= 0.0 || module->iop_order == INT_MAX)
       fprintf(stderr, "[dt_history_merge_module_into_history] invalid iop_order for module %s %s(%d)(%i)\n",
           module->op, module->multi_name, module->iop_order, module->multi_priority);
+*/
     // if this is a new module just add it to the list
     if(mod_replace == NULL)
       dev_dest->iop = g_list_insert_sorted(dev_dest->iop, module, dt_sort_iop_by_order);
@@ -530,7 +531,14 @@ static int _history_copy_and_paste_on_image_merge(int32_t imgid, int32_t dest_im
   }
   if (DT_IOP_ORDER_INFO) fprintf(stderr,"\nvvvvv\n");
 
-  mod_list = g_list_reverse(mod_list);   // list was built in reverse order, so un-reverse it
+  mod_list = g_list_reverse(mod_list);
+
+  for(GList *l = mod_list; l; l = g_list_next(l))
+  {
+    dt_iop_module_t *mod = (dt_iop_module_t *)l->data;
+    dt_history_merge_module_into_history(dev_dest, dev_src, mod, &modules_used, FALSE);
+  }
+
   dt_ioppr_check_iop_order(dev_dest, dest_imgid, "_history_copy_and_paste_on_image_merge 2");
   // write history and forms to db
   dt_dev_write_history_ext(dev_dest, dest_imgid);
@@ -888,10 +896,6 @@ static int dt_history_end_attop(const int32_t imgid)
   return 0;
 }
 
-/* Please note: dt_history_compress_on_image
-  - is used in lighttable and darkroom mode
-  - It compresses history *exclusively* in the database and does *not* touch anything on the history stack
-*/
 void dt_history_compress_on_image(const int32_t imgid)
 {
   dt_lock_image(imgid);
@@ -1021,10 +1025,6 @@ void dt_history_compress_on_image(const int32_t imgid)
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_MIPMAP_UPDATED, imgs);
 }
 
-/* Please note: dt_history_truncate_on_image
-  - can be used in lighttable and darkroom mode
-  - It truncates history *exclusively* in the database and does *not* touch anything on the history stack
-*/
 void dt_history_truncate_on_image(const int32_t imgid, const int32_t history_end)
 {
   dt_lock_image(imgid);

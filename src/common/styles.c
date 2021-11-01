@@ -531,7 +531,7 @@ void dt_multiple_styles_apply_to_list(GList *styles, const GList *list, gboolean
 void dt_styles_create_from_list(const GList *list)
 {
   gboolean selected = FALSE;
-  /* for each image create style */
+  // for each image create style
   for(const GList *l = list; l; l = g_list_next(l))
   {
     const int imgid = GPOINTER_TO_INT(l->data);
@@ -560,12 +560,9 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
     }
     else
     {
-      gboolean do_merge = TRUE;
-
       module->instance = mod_src->instance;
       module->multi_priority = style_item->multi_priority;
       module->iop_order = style_item->iop_order;
-
       module->enabled = style_item->enabled;
       g_strlcpy(module->multi_name, style_item->multi_name, sizeof(module->multi_name));
 
@@ -589,35 +586,6 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
       if(module->version() != style_item->module_version || module->params_size != style_item->params_size
          || strcmp(style_item->operation, module->op))
       {
-        if(!module->legacy_params
-           || module->legacy_params(module, style_item->params, labs(style_item->module_version),
-                                          module->params, labs(module->version())))
-        {
-          fprintf(stderr, "[dt_styles_apply_style_item] module `%s' version mismatch: history is %d, dt %d.\n",
-                  module->op, style_item->module_version, module->version());
-          dt_control_log(_("module `%s' version mismatch: %d != %d"), module->op,
-                         module->version(), style_item->module_version);
-
-          do_merge = FALSE;
-        }
-        else
-        {
-          if(!strcmp(module->op, "spots") && style_item->module_version == 1)
-          {
-            // FIXME: not sure how to handle this here...
-            // quick and dirty hack to handle spot removal legacy_params
-            /* memcpy(module->blend_params, module->blend_params, sizeof(dt_develop_blend_params_t));
-            memcpy(module->blend_params, module->default_blendop_params,
-                   sizeof(dt_develop_blend_params_t)); */
-          }
-        }
-
-        /*
-         * Fix for flip iop: previously it was not always needed, but it might be
-         * in history stack as "orientation (off)", but now we always want it
-         * by default, so if it is disabled, enable it, and replace params with
-         * default_params. if user want to, he can disable it.
-         */
         if(!strcmp(module->op, "flip") && module->enabled == 0 && labs(style_item->module_version) == 1)
         {
           memcpy(module->params, module->default_params, module->params_size);
@@ -625,12 +593,9 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
         }
       }
       else
-      {
         memcpy(module->params, style_item->params, module->params_size);
-      }
 
-      if(do_merge)
-        dt_history_merge_module_into_history(dev, NULL, module, modules_used, append);
+      dt_history_merge_module_into_history(dev, NULL, module, modules_used, append);
     }
 
     if(module)
@@ -1220,7 +1185,7 @@ static void dt_style_save(StyleData *style)
   int id = 0;
   if(style == NULL) return;
 
-  /* first create the style header */
+  // first create the style header
   if(!dt_styles_create_style_header(style->info->name->str, style->info->description->str, style->info->iop_list)) return;
 
   if((id = dt_styles_get_id_by_name(style->info->name->str)) != 0)
@@ -1283,7 +1248,6 @@ void dt_styles_import_from_file(const char *style_path)
   g_markup_parse_context_free(parser);
   // save data
   dt_style_save(style);
-  //
   dt_styles_style_data_free(style, TRUE);
   fclose(style_file);
 
