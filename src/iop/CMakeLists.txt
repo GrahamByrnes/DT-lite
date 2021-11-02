@@ -90,9 +90,10 @@ add_iop(finalscale "finalscale.c")
 add_iop(overexposed "overexposed.c")
 add_iop(borders "borders.c")
 add_iop(gamma "gamma.c")
+#add_iop(mlens "mlens.c")
 
 if(LensFun_FOUND)
-  add_iop(lens "lens.cc" DEFAULT_VISIBLE)
+  add_iop(lens "lens.cc")
 endif(LensFun_FOUND)
 
 # fix for Mac when OpenMP is only available in C compiler

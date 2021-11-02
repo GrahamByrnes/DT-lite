@@ -594,7 +594,7 @@ void reset(dt_view_t *self)
 
 int try_enter(dt_view_t *self)
 {
-  int imgid = dt_view_get_image_to_act_on();
+  int32_t imgid = dt_view_get_image_to_act_on();
 
   if(imgid < 0)
   {
@@ -747,12 +747,11 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   {
     dt_iop_module_t *module = (dt_iop_module_t *)(g_list_nth_data(dev->iop, i));
     // the base module is the one with the lowest multi_priority
-    const guint clen = g_list_length(dev->iop);
     int base_multi_priority = 0;
 
-    for(int k = 0; k < clen; k++)
+    for(const GList *l = dev->iop; l; l = g_list_next(l))
     {
-      dt_iop_module_t *mod = (dt_iop_module_t *)(g_list_nth_data(dev->iop, k));
+      dt_iop_module_t *mod = (dt_iop_module_t *)l->data;
       if(strcmp(module->op, mod->op) == 0) base_multi_priority = MIN(base_multi_priority, mod->multi_priority);
     }
 
@@ -768,8 +767,8 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
     {
       if(!dt_iop_is_hidden(module))
       {
-        gtk_widget_destroy(module->expander);
         dt_iop_gui_cleanup_module(module);
+        gtk_widget_destroy(module->expander);
       }
 
       // we remove the module from the list
@@ -804,9 +803,8 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
 
   dt_dev_read_history(dev);
   // we have to init all module instances other than "base" instance
-  GList *modules = g_list_last(dev->iop);
 
-  while(modules)
+  for(const GList *modules = g_list_last(dev->iop); modules; modules = g_list_previous(modules))
   {
     dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
 
@@ -832,8 +830,6 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
           
         dt_iop_gui_update_header(module);
       }
-
-    modules = g_list_previous(modules);
   }
 
   dt_dev_pop_history_items(dev, dev->history_end);
@@ -850,9 +846,7 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   if(active_plugin)
   {
     gboolean valid = FALSE;
-    modules = dev->iop;
-
-    while(modules)
+    for(const GList *modules = dev->iop; modules; modules = g_list_next(modules))
     {
       dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
 
@@ -862,8 +856,6 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
         dt_conf_set_string("plugins/darkroom/active", active_plugin);
         dt_iop_request_focus(module);
       }
-
-      modules = g_list_next(modules);
     }
 
     if(!valid)
@@ -954,9 +946,9 @@ static void _darkroom_ui_apply_style_popupmenu(GtkWidget *w, gpointer user_data)
   {
     menu = GTK_MENU_SHELL(gtk_menu_new());
 
-    do
+    for(const GList *st_iter = styles; st_iter; st_iter = g_list_next(st_iter))
     {
-      dt_style_t *style = (dt_style_t *)styles->data;
+      dt_style_t *style = (dt_style_t *)st_iter->data;
       char *items_string = dt_styles_get_item_list_as_string(style->name);
       gchar *tooltip = NULL;
 
@@ -983,19 +975,18 @@ static void _darkroom_ui_apply_style_popupmenu(GtkWidget *w, gpointer user_data)
       g_free(mi_name);
       // check if we already have a sub-menu with this name
       GtkMenu *sm = NULL;
-      GList *childs = gtk_container_get_children(GTK_CONTAINER(menu));
+      GList *children = gtk_container_get_children(GTK_CONTAINER(menu));
 
-      while(childs)
+      for(const GList *child = children; child; child = g_list_next(child))
       {
-        GtkMenuItem *smi = (GtkMenuItem *)childs->data;
+        GtkMenuItem *smi = (GtkMenuItem *)child->data;
         if(!g_strcmp0(split[0],gtk_menu_item_get_label(smi)))
         {
           sm = (GtkMenu *)gtk_menu_item_get_submenu(smi);
-          g_list_free(childs);
           break;
         }
-        childs = g_list_next(childs);
       }
+      g_list_free(children);
 
       GtkMenuItem *smi = NULL;
       // no sub-menu, but we need one
@@ -1024,7 +1015,7 @@ static void _darkroom_ui_apply_style_popupmenu(GtkWidget *w, gpointer user_data)
       g_free(items_string);
       g_free(tooltip);
       g_strfreev(split);
-    } while((styles = g_list_next(styles)) != NULL);
+    }
 
     g_list_free_full(styles, dt_style_free);
   }
@@ -2851,7 +2842,8 @@ GSList *mouse_actions(const dt_view_t *self)
   while(l)
   {
     a = (dt_mouse_action_t *)l->data;
-    if(a) lm = g_slist_append(lm, a);
+    if(a)
+      lm = g_slist_append(lm, a);
     l = g_slist_next(l);
   }
 

@@ -147,7 +147,8 @@ static gboolean dt_styles_create_style_header(const char *name, const char *desc
   }
 
   char *iop_list_txt = NULL;
-  // first create the style header
+
+  /* first create the style header */
   DT_DEBUG_SQLITE3_PREPARE_V2(
       dt_database_get(darktable.db),
       "INSERT INTO data.styles (name, description, id, iop_list)"
@@ -192,11 +193,11 @@ static void _dt_style_update_from_image(int id, int imgid, GList *filter, GList 
         {
           if(k != 0) g_strlcat(query, ",", sizeof(query));
           snprintf(tmp, sizeof(tmp), "%s=(SELECT %s FROM main.history WHERE imgid=%d AND num=%d)", fields[k],
-                   fields[k], imgid, GPOINTER_TO_INT(upd->data));
+                   fields[k], imgid, GPOINTER_TO_INT(list->data));
           g_strlcat(query, tmp, sizeof(query));
         }
         snprintf(tmp, sizeof(tmp), " WHERE styleid=%d AND data.style_items.num=%d", id,
-                 GPOINTER_TO_INT(list->data));
+                 GPOINTER_TO_INT(upd->data));
         g_strlcat(query, tmp, sizeof(query));
       }
       // update only, so we want to insert the new style item
@@ -228,10 +229,12 @@ static void  _dt_style_update_iop_order(const gchar *name, const int id, const i
                                         const gboolean copy_iop_order, const gboolean update_iop_order)
 {
   sqlite3_stmt *stmt;
+
   GList *iop_list = dt_styles_module_order_list(name);
 
   // if we update or if the style does not contains an order then the
   // copy must be done using the imgid iop-order.
+
   if(update_iop_order || iop_list == NULL)
     iop_list = dt_ioppr_get_iop_order_list(imgid, FALSE);
 
@@ -292,7 +295,6 @@ void dt_styles_update(const char *name, const char *newname, const char *newdesc
       snprintf(tmp, sizeof(tmp), "%d", GPOINTER_TO_INT(list->data));
       g_strlcat(include, tmp, sizeof(include));
     }
-
     g_strlcat(include, ")", sizeof(include));
 
     char query[4096] = { 0 };
@@ -343,7 +345,7 @@ void dt_styles_create_from_style(const char *name, const char *newname, const ch
         snprintf(tmp, sizeof(tmp), "%d", GPOINTER_TO_INT(list->data));
         g_strlcat(include, tmp, sizeof(include));
       }
-       g_strlcat(include, ")", sizeof(include));
+      g_strlcat(include, ")", sizeof(include));
       char query[4096] = { 0 };
 
       snprintf(query, sizeof(query),
@@ -371,12 +373,13 @@ void dt_styles_create_from_style(const char *name, const char *newname, const ch
     DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, oldid);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
-
     // insert items from imgid if defined
+
     _dt_style_update_from_image(id, imgid, filter, update);
+
     _dt_style_update_iop_order(name, id, imgid, copy_iop_order, update_iop_order);
 
-    /* backup style to disk */
+    // backup style to disk
     char stylesdir[PATH_MAX] = { 0 };
     dt_loc_get_user_config_dir(stylesdir, sizeof(stylesdir));
     g_strlcat(stylesdir, "/styles", sizeof(stylesdir));
@@ -396,7 +399,7 @@ gboolean dt_styles_create_from_image(const char *name, const char *description,
 
   if(copy_iop_order)
     iop_list = dt_ioppr_get_iop_order_list(imgid, FALSE);
-  /* first create the style header */
+  // first create the style header
   if(!dt_styles_create_style_header(name, description, iop_list))
     return FALSE;
 
@@ -410,6 +413,7 @@ gboolean dt_styles_create_from_image(const char *name, const char *description,
       char tmp[64];
       char include[2048] = { 0 };
       g_strlcat(include, "num IN (", sizeof(include));
+
       for(GList *list = filter; list; list = g_list_next(list))
       {
         if(list != filter) g_strlcat(include, ",", sizeof(include));
@@ -445,7 +449,7 @@ gboolean dt_styles_create_from_image(const char *name, const char *description,
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 
-    /* backup style to disk */
+    // backup style to disk
     char stylesdir[PATH_MAX] = { 0 };
     dt_loc_get_user_config_dir(stylesdir, sizeof(stylesdir));
     g_strlcat(stylesdir, "/styles", sizeof(stylesdir));
@@ -468,15 +472,19 @@ void dt_styles_apply_to_list(const char *name, const GList *list, gboolean dupli
   if(cv->view((dt_view_t *)cv) == DT_VIEW_DARKROOM)
     dt_dev_write_history(darktable.develop);
 
-  // for each selected image apply style
+  const int mode = dt_conf_get_int("plugins/lighttable/style/applymode");////////////
+  /* for each selected image apply style */
   dt_undo_start_group(darktable.undo, DT_UNDO_LT_HISTORY);
   for(const GList *l = list; l; l = g_list_next(l))
+          
   {
     const int32_t imgid = GPOINTER_TO_INT(l->data);
-    if(!duplicate) 
+    //if(!duplicate) 
+    if(mode == DT_STYLE_HISTORY_OVERWRITE)
       dt_history_delete_on_image_ext(imgid, FALSE);
     dt_styles_apply_to_image(name, duplicate, imgid);
     selected = TRUE;
+                       
   }
   dt_undo_end_group(darktable.undo);
 
@@ -511,17 +519,21 @@ void dt_multiple_styles_apply_to_list(GList *styles, const GList *list, gboolean
   }
 
   const int mode = dt_conf_get_int("plugins/lighttable/style/applymode");
+  const gboolean is_overwrite = (mode == DT_STYLE_HISTORY_OVERWRITE);
   /* for each selected image apply style */
   dt_undo_start_group(darktable.undo, DT_UNDO_LT_HISTORY);
+
   for(const GList *l = list; l; l = g_list_next(l))
   {
     const int32_t imgid = GPOINTER_TO_INT(l->data);
 
-    if(mode == DT_STYLE_HISTORY_OVERWRITE)
+    if(is_overwrite && !duplicate)
       dt_history_delete_on_image_ext(imgid, FALSE);
+ 
     for (GList *style = styles; style; style = g_list_next(style))
       dt_styles_apply_to_image((char*)style->data, duplicate, imgid);
   }
+
   dt_undo_end_group(darktable.undo);
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_TAG_CHANGED);
   const guint styles_cnt = g_list_length(styles);
@@ -539,7 +551,8 @@ void dt_styles_create_from_list(const GList *list)
     selected = TRUE;
   }
 
-  if(!selected) dt_control_log(_("no image selected!"));
+  if(!selected)
+    dt_control_log(_("no image selected!"));
 }
 
 void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, GList **modules_used, const gboolean append)
@@ -550,7 +563,6 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
   if(mod_src)
   {
     dt_iop_module_t *module = (dt_iop_module_t *)calloc(1, sizeof(dt_iop_module_t));
-    module->dev = dev;
 
     if(dt_iop_load_module(module, mod_src->so, dev))
     {
@@ -560,6 +572,7 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
     }
     else
     {
+      gboolean do_merge = TRUE;                 
       module->instance = mod_src->instance;
       module->multi_priority = style_item->multi_priority;
       module->iop_order = style_item->iop_order;
@@ -586,6 +599,35 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
       if(module->version() != style_item->module_version || module->params_size != style_item->params_size
          || strcmp(style_item->operation, module->op))
       {
+        if(!module->legacy_params
+           || module->legacy_params(module, style_item->params, labs(style_item->module_version),
+                                          module->params, labs(module->version())))
+        {
+          fprintf(stderr, "[dt_styles_apply_style_item] module `%s' version mismatch: history is %d, dt %d.\n",
+                  module->op, style_item->module_version, module->version());
+          dt_control_log(_("module `%s' version mismatch: %d != %d"), module->op,
+                         module->version(), style_item->module_version);
+
+          do_merge = FALSE;
+        }
+        else
+        {
+          if(!strcmp(module->op, "spots") && style_item->module_version == 1)
+          {
+            // FIXME: not sure how to handle this here...
+            // quick and dirty hack to handle spot removal legacy_params
+            /* memcpy(module->blend_params, module->blend_params, sizeof(dt_develop_blend_params_t));
+            memcpy(module->blend_params, module->default_blendop_params,
+                   sizeof(dt_develop_blend_params_t)); */
+          }
+        }
+
+        /*
+         * Fix for flip iop: previously it was not always needed, but it might be
+         * in history stack as "orientation (off)", but now we always want it
+         * by default, so if it is disabled, enable it, and replace params with
+         * default_params. if user want to, he can disable it.
+         */
         if(!strcmp(module->op, "flip") && module->enabled == 0 && labs(style_item->module_version) == 1)
         {
           memcpy(module->params, module->default_params, module->params_size);
@@ -593,9 +635,12 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
         }
       }
       else
+      {
         memcpy(module->params, style_item->params, module->params_size);
+      }
 
-      dt_history_merge_module_into_history(dev, NULL, module, modules_used, append);
+      if(do_merge)
+        dt_history_merge_module_into_history(dev, NULL, module, modules_used, append);
     }
 
     if(module)
@@ -618,7 +663,6 @@ void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const 
     if(duplicate)
     {
       newimgid = dt_image_duplicate(imgid);
-
       if(newimgid != -1)
         dt_history_copy_and_paste_on_image(imgid, newimgid, FALSE, NULL, TRUE, TRUE);
     }
@@ -631,7 +675,7 @@ void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const 
     dt_develop_t *dev_dest = &_dev_dest;
     dt_dev_init(dev_dest, FALSE);
     dev_dest->iop = dt_iop_load_modules_ext(dev_dest, TRUE);
-    dev_dest->image_storage.id = imgid;
+
     GList *iop_list = dt_styles_module_order_list(name);
     if(iop_list)
     {
@@ -899,15 +943,18 @@ GList *dt_styles_get_item_list(const char *name, gboolean params, int imgid)
 char *dt_styles_get_item_list_as_string(const char *name)
 {
   GList *items = dt_styles_get_item_list(name, FALSE, -1);
+
   if(items == NULL) return NULL;
 
   GList *names = NULL;
   for(GList *items_iter = items; items_iter; items_iter = g_list_next(items_iter))
   {
-    dt_style_item_t *item = (dt_style_item_t *)items->data;
+    dt_style_item_t *item = (dt_style_item_t *)items_iter->data;
     names = g_list_prepend(names, g_strdup(item->name));
   }
-  names = g_list_reverse(names);  // list was built in reverse order, so un-reverse it
+
+  names = g_list_reverse(names);
+  
   char *result = dt_util_glist_to_str("\n", names);
   g_list_free_full(names, g_free);
   g_list_free_full(items, dt_style_item_free);
@@ -950,7 +997,6 @@ void dt_styles_save_to_file(const char *style_name, const char *filedir, gboolea
   int rc = 0;
   char stylename[520];
   sqlite3_stmt *stmt;
-
   // generate filename based on name of style
   // convert all characters to underscore which are not allowed in filenames
   char *filename = g_strdup(style_name);
@@ -1071,7 +1117,6 @@ static void dt_styles_start_tag_handler(GMarkupParseContext *context, const gcha
 {
   StyleData *style = user_data;
   const gchar *elt = g_markup_parse_context_get_element(context);
-
   // We need to append the contents of any subtags to the content field
   // for this we need to know when we are inside the note-content tag
   if(g_ascii_strcasecmp(elt, "plugin") == 0)
@@ -1110,6 +1155,7 @@ static void dt_styles_style_text_handler(GMarkupParseContext *context, const gch
   else if(style->in_plugin)
   {
     StylePluginData *plug = style->plugins->data;
+
     if(g_ascii_strcasecmp(elt, "operation") == 0)
       g_string_append_len(plug->operation, text, text_len);
     else if(g_ascii_strcasecmp(elt, "op_params") == 0)
@@ -1155,16 +1201,15 @@ static void dt_style_plugin_save(StylePluginData *plugin, gpointer styleId)
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, plugin->num);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 3, plugin->module);
   DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 4, plugin->operation->str, plugin->operation->len, SQLITE_TRANSIENT);
-  //
+
   const char *param_c = plugin->op_params->str;
   const int param_c_len = strlen(param_c);
   int params_len = 0;
   unsigned char *params = dt_exif_xmp_decode(param_c, param_c_len, &params_len);
   DT_DEBUG_SQLITE3_BIND_BLOB(stmt, 5, params, params_len, SQLITE_TRANSIENT);
-  //
-  DT_DEBUG_SQLITE3_BIND_INT(stmt, 6, plugin->enabled);
 
-  /* decode and store blendop params */
+  DT_DEBUG_SQLITE3_BIND_INT(stmt, 6, plugin->enabled);
+  // decode and store blendop params
   int blendop_params_len = 0;
   unsigned char *blendop_params = dt_exif_xmp_decode(
       plugin->blendop_params->str, strlen(plugin->blendop_params->str), &blendop_params_len);
@@ -1248,6 +1293,7 @@ void dt_styles_import_from_file(const char *style_path)
   g_markup_parse_context_free(parser);
   // save data
   dt_style_save(style);
+  //
   dt_styles_style_data_free(style, TRUE);
   fclose(style_file);
 
