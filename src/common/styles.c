@@ -98,7 +98,10 @@ static int32_t dt_styles_get_id_by_name(const char *name);
 
 gboolean dt_styles_exists(const char *name)
 {
-  return (dt_styles_get_id_by_name(name)) != 0 ? TRUE : FALSE;
+  if(name)
+    return (dt_styles_get_id_by_name(name)) != 0 ? TRUE : FALSE;
+
+  return FALSE;
 }
 
 gboolean dt_styles_has_module_order(const char *name)
@@ -127,11 +130,13 @@ GList *dt_styles_module_order_list(const char *name)
                               -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, name, -1, SQLITE_TRANSIENT);
   sqlite3_step(stmt);
+
   if(sqlite3_column_type(stmt, 0) != SQLITE_NULL)
   {
     const char *iop_list_txt = (char *)sqlite3_column_text(stmt, 0);
     iop_list = dt_ioppr_deserialize_text_iop_order_list(iop_list_txt);
   }
+
   sqlite3_finalize(stmt);
   return iop_list;
 }
@@ -147,7 +152,6 @@ static gboolean dt_styles_create_style_header(const char *name, const char *desc
   }
 
   char *iop_list_txt = NULL;
-
   /* first create the style header */
   DT_DEBUG_SQLITE3_PREPARE_V2(
       dt_database_get(darktable.db),
@@ -155,6 +159,7 @@ static gboolean dt_styles_create_style_header(const char *name, const char *desc
       " VALUES (?1, ?2, (SELECT COALESCE(MAX(id),0)+1 FROM data.styles), ?3)", -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, name, -1, SQLITE_STATIC);
   DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 2, description, -1, SQLITE_STATIC);
+
   if(iop_list)
   {
     iop_list_txt = dt_ioppr_serialize_text_iop_order_list(iop_list);
@@ -165,7 +170,6 @@ static gboolean dt_styles_create_style_header(const char *name, const char *desc
 
   sqlite3_step(stmt);
   sqlite3_finalize(stmt);
-
   g_free(iop_list_txt);
   return TRUE;
 }
@@ -229,12 +233,9 @@ static void  _dt_style_update_iop_order(const gchar *name, const int id, const i
                                         const gboolean copy_iop_order, const gboolean update_iop_order)
 {
   sqlite3_stmt *stmt;
-
   GList *iop_list = dt_styles_module_order_list(name);
-
   // if we update or if the style does not contains an order then the
   // copy must be done using the imgid iop-order.
-
   if(update_iop_order || iop_list == NULL)
     iop_list = dt_ioppr_get_iop_order_list(imgid, FALSE);
 
@@ -295,6 +296,7 @@ void dt_styles_update(const char *name, const char *newname, const char *newdesc
       snprintf(tmp, sizeof(tmp), "%d", GPOINTER_TO_INT(list->data));
       g_strlcat(include, tmp, sizeof(include));
     }
+
     g_strlcat(include, ")", sizeof(include));
 
     char query[4096] = { 0 };
@@ -315,7 +317,6 @@ void dt_styles_update(const char *name, const char *newname, const char *newdesc
 
   dt_styles_save_to_file(newname, stylesdir, TRUE);
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_STYLE_CHANGED);
-
   g_free(desc);
 }
 
@@ -326,6 +327,7 @@ void dt_styles_create_from_style(const char *name, const char *newname, const ch
   sqlite3_stmt *stmt;
   int id = 0;
   const int oldid = dt_styles_get_id_by_name(name);
+
   if(oldid == 0)
     return;
   /* create the style header */
@@ -458,39 +460,40 @@ gboolean dt_styles_create_from_image(const char *name, const char *description,
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_STYLE_CHANGED);
     return TRUE;
   }
+
   return FALSE;
 }
 
 void dt_styles_apply_to_list(const char *name, const GList *list, gboolean duplicate)
 {
   gboolean selected = FALSE;
-
   /* write current history changes so nothing gets lost,
      do that only in the darkroom as there is nothing to be saved
      when in the lighttable (and it would write over current history stack) */
   const dt_view_t *cv = dt_view_manager_get_current_view(darktable.view_manager);
+
   if(cv->view((dt_view_t *)cv) == DT_VIEW_DARKROOM)
     dt_dev_write_history(darktable.develop);
 
-  const int mode = dt_conf_get_int("plugins/lighttable/style/applymode");////////////
   /* for each selected image apply style */
   dt_undo_start_group(darktable.undo, DT_UNDO_LT_HISTORY);
+
   for(const GList *l = list; l; l = g_list_next(l))
-          
   {
     const int32_t imgid = GPOINTER_TO_INT(l->data);
-    //if(!duplicate) 
-    if(mode == DT_STYLE_HISTORY_OVERWRITE)
+    if(!duplicate)
       dt_history_delete_on_image_ext(imgid, FALSE);
+
     dt_styles_apply_to_image(name, duplicate, imgid);
     selected = TRUE;
-                       
   }
-  dt_undo_end_group(darktable.undo);
 
+  dt_undo_end_group(darktable.undo);
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_TAG_CHANGED);
 
-  if(!selected) dt_control_log(_("no image selected!"));
+  if(!selected)
+    dt_control_log(_("no image selected!"));
+
   dt_control_log(_("style %s successfully applied!"), name);
 }
 
@@ -500,7 +503,9 @@ void dt_multiple_styles_apply_to_list(GList *styles, const GList *list, gboolean
      do that only in the darkroom as there is nothing to be saved
      when in the lighttable (and it would write over current history stack) */
   const dt_view_t *cv = dt_view_manager_get_current_view(darktable.view_manager);
-  if(cv->view((dt_view_t *)cv) == DT_VIEW_DARKROOM) dt_dev_write_history(darktable.develop);
+
+  if(cv->view((dt_view_t *)cv) == DT_VIEW_DARKROOM)
+    dt_dev_write_history(darktable.develop);
 
   if(!styles && !list)
   {
@@ -563,6 +568,7 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
   if(mod_src)
   {
     dt_iop_module_t *module = (dt_iop_module_t *)calloc(1, sizeof(dt_iop_module_t));
+    module->dev = dev;
 
     if(dt_iop_load_module(module, mod_src->so, dev))
     {
@@ -571,8 +577,7 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
               style_item->multi_name);
     }
     else
-    {
-      gboolean do_merge = TRUE;                 
+    {                
       module->instance = mod_src->instance;
       module->multi_priority = style_item->multi_priority;
       module->iop_order = style_item->iop_order;
@@ -599,35 +604,6 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
       if(module->version() != style_item->module_version || module->params_size != style_item->params_size
          || strcmp(style_item->operation, module->op))
       {
-        if(!module->legacy_params
-           || module->legacy_params(module, style_item->params, labs(style_item->module_version),
-                                          module->params, labs(module->version())))
-        {
-          fprintf(stderr, "[dt_styles_apply_style_item] module `%s' version mismatch: history is %d, dt %d.\n",
-                  module->op, style_item->module_version, module->version());
-          dt_control_log(_("module `%s' version mismatch: %d != %d"), module->op,
-                         module->version(), style_item->module_version);
-
-          do_merge = FALSE;
-        }
-        else
-        {
-          if(!strcmp(module->op, "spots") && style_item->module_version == 1)
-          {
-            // FIXME: not sure how to handle this here...
-            // quick and dirty hack to handle spot removal legacy_params
-            /* memcpy(module->blend_params, module->blend_params, sizeof(dt_develop_blend_params_t));
-            memcpy(module->blend_params, module->default_blendop_params,
-                   sizeof(dt_develop_blend_params_t)); */
-          }
-        }
-
-        /*
-         * Fix for flip iop: previously it was not always needed, but it might be
-         * in history stack as "orientation (off)", but now we always want it
-         * by default, so if it is disabled, enable it, and replace params with
-         * default_params. if user want to, he can disable it.
-         */
         if(!strcmp(module->op, "flip") && module->enabled == 0 && labs(style_item->module_version) == 1)
         {
           memcpy(module->params, module->default_params, module->params_size);
@@ -635,12 +611,9 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
         }
       }
       else
-      {
         memcpy(module->params, style_item->params, module->params_size);
-      }
 
-      if(do_merge)
-        dt_history_merge_module_into_history(dev, NULL, module, modules_used, append);
+      dt_history_merge_module_into_history(dev, NULL, module, modules_used, append);
     }
 
     if(module)
@@ -663,6 +636,7 @@ void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const 
     if(duplicate)
     {
       newimgid = dt_image_duplicate(imgid);
+
       if(newimgid != -1)
         dt_history_copy_and_paste_on_image(imgid, newimgid, FALSE, NULL, TRUE, TRUE);
     }
@@ -675,6 +649,7 @@ void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const 
     dt_develop_t *dev_dest = &_dev_dest;
     dt_dev_init(dev_dest, FALSE);
     dev_dest->iop = dt_iop_load_modules_ext(dev_dest, TRUE);
+    dev_dest->image_storage.id = imgid;
 
     GList *iop_list = dt_styles_module_order_list(name);
     if(iop_list)
@@ -1293,7 +1268,6 @@ void dt_styles_import_from_file(const char *style_path)
   g_markup_parse_context_free(parser);
   // save data
   dt_style_save(style);
-  //
   dt_styles_style_data_free(style, TRUE);
   fclose(style_file);
 
