@@ -343,6 +343,14 @@ static inline void dt_unlock_image_pair(int32_t imgid1, int32_t imgid2)
   dt_pthread_mutex_unlock(&(darktable.db_image[imgid2 & (DT_IMAGE_DBLOCKS-1)]));
 }
 
+extern GdkModifierType dt_modifier_shortcuts;
+
+static inline gboolean dt_modifier_is(const GdkModifierType state, const GdkModifierType desired_modifier_mask)
+{
+  const GdkModifierType modifiers = gtk_accelerator_get_default_mod_mask();
+  return ((state | dt_modifier_shortcuts) & modifiers) == desired_modifier_mask;
+}
+
 static inline gboolean dt_is_aligned(const void *pointer, size_t byte_count)
 {
     return (uintptr_t)pointer % byte_count == 0;
