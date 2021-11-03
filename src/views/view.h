@@ -359,6 +359,12 @@ void dt_view_set_scrollbar(dt_view_t *view, float hpos, float hscroll_lower, flo
 
 /** update the collection module */
 void dt_view_collection_update(const dt_view_manager_t *vm);
+/** add mouse action record to list of mouse actions */
+
+GSList *dt_mouse_action_create_simple(GSList *actions, dt_mouse_action_type_t type, GdkModifierType accel,
+                                      const char *const description);
+GSList *dt_mouse_action_create_format(GSList *actions, dt_mouse_action_type_t type, GdkModifierType accel,
+                                      const char *const format_string, const char *const replacement);
 
 /*
  * Filter dropdown proxy
