@@ -43,7 +43,7 @@
 #include "iop/iop_api.h"
 
 #define exposure2white(x) exp2f(-(x))
-#define white2exposure(x) -dt_log2f(fmaxf(1e-20f, x))
+#define white2exposure(x) -logf(fmaxf(1e-20f, x))/logf(2.0f)
 
 DT_MODULE_INTROSPECTION(6, dt_iop_exposure_params_t)
 
