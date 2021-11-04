@@ -302,6 +302,12 @@ static inline float *dt_alloc_align_float(size_t pixels)
 }
 size_t dt_round_size(const size_t size, const size_t alignment);
 size_t dt_round_size_sse(const size_t size);
+static inline float *dt_calloc_align_float(size_t pixels)
+{
+  float *const buf = (float*)dt_alloc_align(64, pixels * sizeof(float));
+  if(buf) memset(buf, 0, pixels * sizeof(float));
+  return (float*)__builtin_assume_aligned(buf, 64);
+}
 
 #ifdef _WIN32
 void dt_free_align(void *mem);
@@ -655,6 +661,39 @@ static inline size_t dt_get_total_memory()
   return 2097152;
 #endif
 }
+
+// a few macros and helper functions to speed up certain frequently-used GLib operations
+#define g_list_is_singleton(list) ((list) && (!(list)->next))
+static inline gboolean g_list_shorter_than(const GList *list, unsigned len)
+{
+  // instead of scanning the full list to compute its length and then comparing against the limit,
+  // bail out as soon as the limit is reached.  Usage: g_list_shorter_than(l,4) instead of g_list_length(l)<4
+  while (len-- > 0)
+  {
+    if (!list) return TRUE;
+    list = g_list_next(list);
+  }
+  return FALSE;
+}
+
+// advance the list by one position, unless already at the final node
+static inline GList *g_list_next_bounded(GList *list)
+{
+  return g_list_next(list) ? g_list_next(list) : list;
+}
+
+static inline const GList *g_list_next_wraparound(const GList *list, const GList *head)
+{
+  return g_list_next(list) ? g_list_next(list) : head;
+}
+
+static inline const GList *g_list_prev_wraparound(const GList *list)
+{
+  // return the prior element of the list, unless already on the first element; in that case, return the last
+  // element of the list.
+  return g_list_previous(list) ? g_list_previous(list) : g_list_last((GList*)list);
+}
+
 
 void dt_configure_performance();
 

@@ -91,7 +91,13 @@ FILE(GLOB SOURCE_FILES
   "develop/blend.c"
   "develop/blend_gui.c"
   "develop/tiling.c"
+  "develop/masks/brush.c"
+  "develop/masks/circle.c"
+  "develop/masks/group.c"
+  "develop/masks/ellipse.c"
+  "develop/masks/gradient.c"
   "develop/masks/masks.c"
+  "develop/masks/path.c"
   "develop/format.c"
   "dtgtk/button.c"
   "dtgtk/culling.c"
@@ -258,8 +264,8 @@ endif()
 # Find all other required libraries for building
 #
 # GTK3 does pull glib, but this allows us to check for the version
-find_package(Glib 2.40 REQUIRED)
-add_definitions("-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_40")
+find_package(Glib 2.56 REQUIRED)
+add_definitions("-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_56")
 add_definitions("-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_MIN_REQUIRED")
 include_directories(SYSTEM ${Glib_INCLUDE_DIRS})
 list(APPEND LIBS ${Glib_LIBRARIES})
@@ -297,7 +303,7 @@ if(USE_WEBP)
 endif(USE_WEBP)
 
 if (USE_AVIF)
-    find_package(libavif 0.7.2 CONFIG)
+    find_package(libavif 0.8.2 CONFIG)
     if (TARGET avif)
         list(APPEND LIBS avif)
         add_definitions(-DHAVE_LIBAVIF=1)
@@ -494,12 +500,6 @@ if(NOT CUSTOM_CFLAGS)
   #endif()
 
   #-g MUST be set for ALL builds, or there will be no support for them when bugs happen
-
-  # TODO: check if these flags bring some good :
-  # -ftree-loop-distribution -fivopts -fipa-matrix-reorg -ftracer -fvect-cost-model -fvariable-expansion-in-unroller
-  # -fprefetch-loop-arrays -ftree-vect-loop-version -freorder-blocks-and-partition -fmodulo-sched-allow-regmoves
-  # -ftree-loop-im -ftree-loop-ivcanon -fsplit-ivs-in-unroller -funroll-loops
-  # also, in IOPs, in-loops branches could be forced to be compiled as different loops variants
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MARCH} ${DT_REQ_INSTRUCTIONS} -g")
   set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -O2")
   set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
