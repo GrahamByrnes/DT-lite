@@ -173,6 +173,7 @@ static gboolean _iop_color_picker_callback_button_press(GtkWidget *button, GdkEv
 
     module->dev->preview_status = DT_DEV_PIXELPIPE_DIRTY;
     dt_iop_request_focus(module);
+    dt_iop_color_picker_init();
   }
   else
   {
@@ -189,7 +190,6 @@ static gboolean _iop_color_picker_callback_button_press(GtkWidget *button, GdkEv
 static void _iop_color_picker_callback(GtkWidget *button, dt_iop_color_picker_t *self)
 {
   _iop_color_picker_callback_button_press(button, NULL, self);
-  fprintf(stderr, "colorpicker proxy button callback ... L207\n");
 }
 
 void dt_iop_color_picker_set_cst(dt_iop_module_t *module, const dt_iop_colorspace_type_t picker_cst)
