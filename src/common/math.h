@@ -87,6 +87,22 @@ static inline void mul_mat_vec_2(const float *m, const float *p, float *o)
   o[1] = p[0] * m[2] + p[1] * m[3];
 }
 
+#ifdef _OPENMP
+#pragma omp declare simd
+#endif
+static inline float sqf(const float x)
+{
+  return x * x;
+}
+
+#ifdef _OPENMP
+#pragma omp declare simd
+#endif
+static inline float CLIP(const float x)
+{
+  return x <= 1.0f ? x : 1.0f;
+}
+
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
 // kate: tab-indents: off; indent-width 2; replace-tabs on; indent-mode cstyle; remove-trailing-spaces modified;
