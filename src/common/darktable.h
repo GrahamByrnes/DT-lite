@@ -92,6 +92,30 @@ typedef unsigned int u_int;
 #  define dt_omp_firstprivate(...)
 # endif/* HAVE_OMP_FIRSTPRIVATE_WITH_CONST */
 
+#ifndef dt_omp_sharedconst
+#ifdef _OPENMP
+#if defined(__clang__) || __GNUC__ > 8
+# define dt_omp_sharedconst(...) shared(__VA_ARGS__)
+#else
+  // GCC 8.4 throws string of errors "'x' is predetermined 'shared' for 'shared'" if we explicitly declare
+  //  'const' variables as shared
+# define dt_omp_sharedconst(var, ...)
+#endif
+#endif /* _OPENMP */
+#endif /* dt_omp_sharedconst */
+
+#ifndef dt_omp_nontemporal
+// Clang 10+ supports the nontemporal() OpenMP directive
+// GCC 9 recognizes it as valid, but does not do anything with it
+// GCC 10+ ???
+#if (__clang__+0 >= 10 || __GNUC__ >= 9)
+#  define dt_omp_nontemporal(...) nontemporal(__VA_ARGS__)
+#else
+// GCC7/8 only support OpenMP 4.5, which does not have the nontemporal() directive.
+#  define dt_omp_nontemporal(var, ...)
+#endif
+#endif /* dt_omp_nontemporal */
+
 #else /* _OPENMP */
 
 # define omp_get_max_threads() 1
@@ -219,6 +243,9 @@ typedef enum dt_debug_thread_t
   DT_DEBUG_IMAGEIO        = 1 << 18,
   DT_DEBUG_UNDO           = 1 << 19,
   DT_DEBUG_SIGNAL         = 1 << 20,
+  DT_DEBUG_PARAMS         = 1 << 21,
+  DT_DEBUG_DEMOSAIC       = 1 << 22,
+  DT_DEBUG_TILING         = 1 << 23,
 } dt_debug_thread_t;
 
 typedef struct dt_codepath_t
@@ -349,12 +376,17 @@ static inline void dt_unlock_image_pair(int32_t imgid1, int32_t imgid2)
   dt_pthread_mutex_unlock(&(darktable.db_image[imgid2 & (DT_IMAGE_DBLOCKS-1)]));
 }
 
-extern GdkModifierType dt_modifier_shortcuts;
-
 static inline gboolean dt_modifier_is(const GdkModifierType state, const GdkModifierType desired_modifier_mask)
 {
   const GdkModifierType modifiers = gtk_accelerator_get_default_mod_mask();
-  return ((state | dt_modifier_shortcuts) & modifiers) == desired_modifier_mask;
+  return (state & modifiers) == desired_modifier_mask;
+}
+
+// check whether the given modifier state includes AT LEAST the specified mask of modifier keys
+static inline gboolean dt_modifiers_include(const GdkModifierType state, const GdkModifierType desired_modifier_mask)
+{
+  const GdkModifierType modifiers = gtk_accelerator_get_default_mod_mask();
+  return (state & (modifiers & desired_modifier_mask)) == desired_modifier_mask;
 }
 
 static inline gboolean dt_is_aligned(const void *pointer, size_t byte_count)
@@ -403,10 +435,10 @@ void dt_show_times_f(const dt_times_t *start, const char *prefix, const char *su
 /** \brief check if file is a supported image */
 gboolean dt_supported_image(const gchar *filename);
 
-static inline int dt_get_num_threads()
+static inline size_t dt_get_num_threads()
 {
 #ifdef _OPENMP
-  return omp_get_num_procs();
+  return (size_t)omp_get_num_procs();
 #else
   return 1;
 #endif
@@ -421,45 +453,25 @@ static inline int dt_get_thread_num()
 #endif
 }
 
-static inline float dt_log2f(const float f)
+// Allocate a buffer for 'n' objects each of size 'objsize' bytes for each of the program's threads.
+// Ensures that there is no false sharing among threads by aligning and rounding up the allocation to
+// a multiple of the cache line size.  Returns a pointer to the allocated pool and the adjusted number
+// of objects in each thread's buffer.  Use dt_get_perthread or dt_get_bythread (see below) to access
+// a specific thread's buffer.
+static inline void *dt_alloc_perthread(const size_t n, const size_t objsize, size_t* padded_size)
 {
-#ifdef __GLIBC__
-  return log2f(f);
-#else
-  return logf(f) / logf(2.0f);
-#endif
+  const size_t alloc_size = n * objsize;
+  const size_t cache_lines = (alloc_size+63)/64;
+  *padded_size = 64 * cache_lines / objsize;
+  return __builtin_assume_aligned(dt_alloc_align(64, 64 * cache_lines * dt_get_num_threads()), 64);
+      
 }
-
-static inline float dt_fast_expf(const float x)
+static inline void *dt_calloc_perthread(const size_t n, const size_t objsize, size_t* padded_size)
+                                               
 {
-  // meant for the range [-100.0f, 0.0f]. largest error ~ -0.06 at 0.0f.
-  // will get _a_lot_ worse for x > 0.0f (9000 at 10.0f)..
-  const int i1 = 0x3f800000u;
-  // e^x, the comment would be 2^x
-  const int i2 = 0x402DF854u; // 0x40000000u;
-  // const int k = CLAMPS(i1 + x * (i2 - i1), 0x0u, 0x7fffffffu);
-  // without max clamping (doesn't work for large x, but is faster):
-  const int k0 = i1 + x * (i2 - i1);
-  union {
-      float f;
-      int k;
-  } u;
-  u.k = k0 > 0 ? k0 : 0;
-  return u.f;
-}
-
-// fast approximation of 2^-x for 0<x<126
-static inline float dt_fast_mexp2f(const float x)
-{
-  const int i1 = 0x3f800000; // bit representation of 2^0
-  const int i2 = 0x3f000000; // bit representation of 2^-1
-  const int k0 = i1 + (int)(x * (i2 - i1));
-  union {
-    float f;
-    int i;
-  } k;
-  k.i = k0 >= 0x800000 ? k0 : 0;
-  return k.f;
+  void *const buf = (float*)dt_alloc_perthread(n, objsize, padded_size);
+  memset(buf, 0, *padded_size * dt_get_num_threads() * objsize);
+  return buf;
 }
 
 static inline void dt_print_mem_usage()

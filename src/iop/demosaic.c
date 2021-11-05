@@ -27,6 +27,7 @@
 #include "develop/imageop.h"
 #include "develop/imageop_math.h"
 #include "develop/imageop_gui.h"
+#include "develop/masks.h"
 #include "develop/tiling.h"
 #include "gui/gtk.h"
 #include "iop/iop_api.h"

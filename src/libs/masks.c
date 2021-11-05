@@ -44,6 +44,7 @@ typedef struct dt_lib_masks_t
   GtkWidget *hbox;
   GtkWidget *bt_circle, *bt_path, *bt_gradient, *bt_ellipse, *bt_brush;
   GtkWidget *treeview;
+  GtkWidget *scroll_window;
 
   GdkPixbuf *ic_inverse, *ic_union, *ic_intersection, *ic_difference, *ic_exclusion, *ic_used;
   int gui_reset;
@@ -822,14 +823,15 @@ static void _tree_cell_edited(GtkCellRendererText *cell, gchar *path_string, gch
   dt_lib_masks_t *lm = (dt_lib_masks_t *)self->data;
   GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(lm->treeview));
   GtkTreeIter iter;
+
   if(!gtk_tree_model_get_iter_from_string(model, &iter, path_string)) return;
-  GValue gv3 = {
-    0,
-  };
+
+  GValue gv3 = { 0, };
   gtk_tree_model_get_value(model, &iter, TREE_FORMID, &gv3);
   int id = g_value_get_int(&gv3);
   g_value_unset(&gv3);
   dt_masks_form_t *form = dt_masks_get_from_id(darktable.develop, id);
+
   if(!form) return;
 
   // we want to make sure that the new name is not an empty string. else this would convert
@@ -898,7 +900,8 @@ static void _tree_selection_change(GtkTreeSelection *selection, dt_lib_masks_t *
           gtk_tree_model_get_value(model, &iter, TREE_MODULE, &gv2);
           dt_iop_module_t *module = g_value_peek_pointer(&gv2);
           g_value_unset(&gv2);
-          if(module && (module->flags() & IOP_FLAGS_SUPPORTS_BLENDING)
+          if(module && module->blend_data
+             && (module->flags() & IOP_FLAGS_SUPPORTS_BLENDING)
              && !(module->flags() & IOP_FLAGS_NO_MASKS))
           {
             dt_iop_gui_blend_data_t *bd = (dt_iop_gui_blend_data_t *)module->blend_data;
@@ -959,7 +962,9 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
     // if we are already inside the selection, no change
     if(on_row && !gtk_tree_selection_path_is_selected(selection, mouse_path))
     {
-      if(!(event->state & GDK_CONTROL_MASK)) gtk_tree_selection_unselect_all(selection);
+      if(!dt_modifier_is(event->state, GDK_CONTROL_MASK))
+        gtk_tree_selection_unselect_all(selection);
+
       gtk_tree_selection_select_path(selection, mouse_path);
       gtk_tree_path_free(mouse_path);
     }
@@ -1052,10 +1057,10 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
         for(GList *forms = darktable.develop->forms; forms; forms = g_list_next(forms))
         {
           dt_masks_form_t *form = (dt_masks_form_t *)forms->data;
+
           if((form->type & (DT_MASKS_CLONE|DT_MASKS_NON_CLONE)) || form->formid == grpid)
-          {
             continue;
-          }
+
           char str[10000] = "";
           g_strlcat(str, form->name, sizeof(str));
           int nbuse = 0;
@@ -1199,12 +1204,14 @@ static gboolean _tree_restrict_select(GtkTreeSelection *selection, GtkTreeModel 
     int dd = gtk_tree_path_get_depth(item);
     int *ii = gtk_tree_path_get_indices(item);
     int ok = 1;
+
     if(dd != depth)
       ok = 0;
     else if(dd == 1)
       ok = 1;
     else if(ii[dd - 2] != indices[dd - 2])
       ok = 0;
+
     if(!ok)
     {
       gtk_tree_selection_unselect_path(selection, item);
@@ -1501,6 +1508,12 @@ static void _lib_masks_remove_item(dt_lib_module_t *self, int formid, int parent
   g_list_free(rl);
 }
 
+static void _lib_history_change_callback(gpointer instance, gpointer user_data)
+{
+  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
+  _lib_masks_recreate_list(self);
+}
+
 static void _lib_masks_selection_change(dt_lib_module_t *self, int selectid, int throw_event)
 {
   dt_lib_masks_t *lm = (dt_lib_masks_t *)self->data;
@@ -1647,8 +1660,12 @@ void gui_init(dt_lib_module_t *self)
   gtk_widget_set_tooltip_text(d->bt_brush, _("add brush"));
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(d->bt_brush), FALSE);
   gtk_box_pack_end(GTK_BOX(hbox), d->bt_brush, FALSE, FALSE, 0);
-
   gtk_box_pack_start(GTK_BOX(self->widget), hbox, TRUE, TRUE, 0);
+
+  d->scroll_window = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(d->scroll_window), GTK_POLICY_AUTOMATIC,
+                                 GTK_POLICY_AUTOMATIC);
+  gtk_box_pack_start(GTK_BOX(self->widget), d->scroll_window, TRUE, TRUE, 0);
 
   d->treeview = gtk_tree_view_new();
   GtkTreeViewColumn *col = gtk_tree_view_column_new();
@@ -1678,14 +1695,18 @@ void gui_init(dt_lib_module_t *self)
   gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
   gtk_tree_selection_set_select_function(selection, _tree_restrict_select, d, NULL);
   gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(d->treeview), FALSE);
+  gtk_widget_set_size_request(d->scroll_window, -1, DT_PIXEL_APPLY_DPI(200));
+  gtk_container_add(GTK_CONTAINER(d->scroll_window), d->treeview);
   // gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(d->treeview),TREE_USED_TEXT);
   g_object_set(d->treeview, "has-tooltip", TRUE, (gchar *)0);
   g_signal_connect(d->treeview, "query-tooltip", G_CALLBACK(_tree_query_tooltip), NULL);
   g_signal_connect(selection, "changed", G_CALLBACK(_tree_selection_change), d);
   g_signal_connect(d->treeview, "button-press-event", (GCallback)_tree_button_pressed, self);
- // gtk_box_pack_start(GTK_BOX(self->widget), dt_ui_scroll_wrap(d->treeview, 200, "plugins/darkroom/masks/heightview"), FALSE, FALSE, 0);
   gtk_widget_show_all(self->widget);
 
+  /* connect to history change signal for updating the history view */
+  dt_control_signal_connect(darktable.signals, DT_SIGNAL_DEVELOP_HISTORY_CHANGE,
+                            G_CALLBACK(_lib_history_change_callback), self);
   // set proxy functions
   darktable.develop->proxy.masks.module = self;
   darktable.develop->proxy.masks.list_change = _lib_masks_recreate_list;
@@ -1696,6 +1717,8 @@ void gui_init(dt_lib_module_t *self)
 
 void gui_cleanup(dt_lib_module_t *self)
 {
+  dt_control_signal_disconnect(darktable.signals,
+                               G_CALLBACK(_lib_history_change_callback), self);
   g_free(self->data);
   self->data = NULL;
 }

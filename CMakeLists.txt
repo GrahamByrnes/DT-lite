@@ -44,6 +44,18 @@ include(DefineOptions.cmake)
 include(GNUInstallDirs)
 include(FeatureSummary)
 
+# resolve symbolic links into real path?
+get_filename_component(CMAKE_INSTALL_BINDIR_ABS "${CMAKE_INSTALL_FULL_BINDIR}" REALPATH "${CMAKE_INSTALL_PREFIX}")
+# get relative paths specific to the system
+file(RELATIVE_PATH REL_BIN_TO_LIBDIR    ${CMAKE_INSTALL_FULL_BINDIR} "${CMAKE_INSTALL_FULL_LIBDIR}/darktable")
+file(RELATIVE_PATH REL_BIN_TO_SHAREDIR  ${CMAKE_INSTALL_FULL_BINDIR} "${CMAKE_INSTALL_FULL_DATADIR}")
+file(RELATIVE_PATH REL_BIN_TO_LOCALEDIR ${CMAKE_INSTALL_FULL_BINDIR} "${CMAKE_INSTALL_FULL_LOCALEDIR}")
+set(REL_BIN_TO_DATADIR  "${REL_BIN_TO_SHAREDIR}/darktable")
+set(DARKTABLE_BINDIR    "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}")
+set(DARKTABLE_LIBDIR    "${DARKTABLE_BINDIR}/${REL_BIN_TO_LIBDIR}")
+set(DARKTABLE_SHAREDIR  "${DARKTABLE_BINDIR}/${REL_BIN_TO_SHAREDIR}")
+set(DARKTABLE_DATADIR   "${DARKTABLE_BINDIR}/${REL_BIN_TO_DATADIR}") # DATAROOTDIR == DATADIR # darktablerc, themes, icons, ... Cannot use ${CMAKE_BINDIR}/data because not everything resides there. Like icons (pixmaps)
+set(DARKTABLE_LOCALEDIR "${DARKTABLE_BINDIR}/${REL_BIN_TO_LOCALEDIR}")
 # https://medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
 if(${FORCE_COLORED_OUTPUT})
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -395,37 +407,6 @@ if(BUILD_TESTING)
   include(AddCMockaMockTest)
 endif(BUILD_TESTING)
 
-#
-# Test SSE level
-#
-# if(NOT USE_SSE_FLAG)
-# 	set(SSE_C_TESTS "sse4" "sse3" "sse2" "sse")
-# 	message("-- Checking SSE instructions support by current CPU")
-# 	foreach(sse_test ${SSE_C_TESTS})
-# 		if(NOT SSE_FOUND)
-# 			if(WIN32)
-# 				set(SSE_CHECK_COMMAND "FAILURE")
-# 			elseif(APPLE)
-# 				set(SSE_CHECK_COMMAND sysctl -a | grep ${sse_test})
-# 			else()#other os
-# 				set(SSE_CHECK_COMMAND grep ${sse_test} /proc/cpuinfo)
-# 			endif(WIN32)
-# 			execute_process(COMMAND ${SSE_CHECK_COMMAND} RESULT_VARIABLE ret_var OUTPUT_VARIABLE out_var)
-#
-# 			if(ret_var EQUAL 0) # grep returns 0 on success
-# 				set(SSE_FOUND TRUE)
-# 				message("--  ${sse_test} detected and working.")
-# 				set(USE_SSE_SET ${sse_test})
-# 			endif(ret_var EQUAL 0)
-#
-# 		endif(NOT SSE_FOUND)
-# 	endforeach(sse_test)
-# endif(NOT USE_SSE_FLAG)
-#
-# # set the SSE
-# if(USE_SSE_SET)
-# 	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-m${USE_SSE_SET}")
-# endif(USE_SSE_SET)
 
 # setup some theme specific variables
 set(THEME hicolor)
