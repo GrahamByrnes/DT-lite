@@ -50,10 +50,10 @@ static void _path_border_get_XY(float p0x, float p0y, float p1x, float p1y, floa
 
   // now we get derivative points
   const float ti = 1.0f - t;
-  const float a = 3.0f * ti * ti;
-  const float b = 3.0f * (ti * ti - 2.0f * t * ti);
-  const float c = 3.0f * (2.0f * t * ti - t * t);
-  const float d = 3.0f * t * t;
+  const float a = 3.0f * sqf(ti);
+  const float b = 3.0f * (sqf(ti) - 2.0f * t * ti);
+  const float c = 3.0f * (2.0f * t * ti - sqf(t));
+  const float d = 3.0f * sqf(t);
 
   const float dx = -p0x * a + p1x * b + p2x * c + p3x * d;
   const float dy = -p0y * a + p1y * b + p2y * c + p3y * d;
@@ -65,7 +65,7 @@ static void _path_border_get_XY(float p0x, float p0y, float p1x, float p1y, floa
     *yb = NAN;
     return;
   }
-  const float l = 1.0f / sqrtf(dx * dx + dy * dy);
+  const float l = 1.0f / sqrtf(sqf(dx) + sqf(dy));
   *xb = (*xc) + rad * dy * l;
   *yb = (*yc) - rad * dx * l;
 }
@@ -844,13 +844,13 @@ static void _path_get_distance(float x, float y, float as, dt_masks_form_gui_t *
       y_min = fminf(y_min, yy);
       y_max = fmaxf(y_max, yy);
 
-      const float dd = (xx - x) * (xx - x) + (yy - y) * (yy - y);
+      const float dd = sqf(xx - x) + sqf(yy - y);
       *dist = fminf(*dist, dd);
     }
 
     const float cx = x - (x_min + (x_max - x_min) / 2.0f);
     const float cy = y - (y_min + (y_max - y_min) / 2.0f);
-    const float dd = cx * cx + cy * cy;
+    const float dd = sqf(cx) + sqf(cy);
     *dist = fminf(*dist, dd);
 
     return;
@@ -899,7 +899,7 @@ static void _path_get_distance(float x, float y, float as, dt_masks_form_gui_t *
       y_min = fminf(y_min, yy);
       y_max = fmaxf(y_max, yy);
 
-      const float dd = (xx - x) * (xx - x) + (yy - y) * (yy - y);
+      const float dd = sqf(xx - x) + sqf(yy - y);
       *dist = fminf(*dist, dd);
 
       if(dd < as2)
@@ -919,7 +919,7 @@ static void _path_get_distance(float x, float y, float as, dt_masks_form_gui_t *
 
     const float cx = x - (x_min + (x_max - x_min) / 2.0f);
     const float cy = y - (y_min + (y_max - y_min) / 2.0f);
-    const float dd = cx * cx + cy * cy;
+    const float dd = sqf(cx) + sqf(cy);
     *dist = fminf(*dist, dd);
   }
   else *inside_border = 1;
@@ -2296,7 +2296,7 @@ static int _path_get_area(const dt_iop_module_t *const module, const dt_dev_pixe
 /*static*/ void _path_falloff(float *const restrict buffer, int *p0, int *p1, int posx, int posy, int bw)
 {
   // segment length
-  int l = sqrtf((p1[0] - p0[0]) * (p1[0] - p0[0]) + (p1[1] - p0[1]) * (p1[1] - p0[1])) + 1;
+  int l = sqrtf(sqf(p1[0] - p0[0]) + sqf(p1[1] - p0[1])) + 1;
 
   const float lx = p1[0] - p0[0];
   const float ly = p1[1] - p0[1];

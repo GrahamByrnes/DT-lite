@@ -49,14 +49,14 @@ static void _circle_get_distance(float x, float y, float as, dt_masks_form_gui_t
     // distance from source center
     const float cx = x - gpt->source[0];
     const float cy = y - gpt->source[1];
-    *dist = cx * cx + cy * cy;
+    *dist = sqf(cx) + sqf(cy);
 
     return;
   }
   // distance from center
   const float cx = x - gpt->points[0];
   const float cy = y - gpt->points[1];
-  *dist = cx * cx + cy * cy;
+  *dist = sqf(cx) + sqf(cy);
   // we check if it's inside borders
   if(!dt_masks_point_in_form_exact(x, y, gpt->border, 1, gpt->border_count)) return;
 
@@ -1036,13 +1036,13 @@ static int _circle_get_mask(const dt_iop_module_t *const restrict module,
   for(int i = 0 ; i < h*w; i++)
   {
     // find the square of the distance from the center
-    const float l2 = (points[2 * i] - centerx) * (points[2 * i] - centerx) 
-                      + (points_y[2 * i] - centery) * (points_y[2 * i] - centery);
+    const float l2 = sqf(points[2 * i] - centerx) + sqf(points_y[2 * i] - centery);
+                                                                                  
     // quadratic falloff between the circle's radius and the radius of the outside of the feathering
     const float ratio = (total2 - l2) / border2;
     // enforce 1.0 inside the circle and 0.0 outside the feathering
-    const float f = ratio > 1.0f ? 1.0 : ratio;
-    ptbuffer[i] = f * f;
+    const float f = CLIP(ratio);
+    ptbuffer[i] = sqf(f);
   }
 
   dt_free_align(points);
@@ -1248,8 +1248,7 @@ static int _circle_get_mask_roi(const dt_iop_module_t *const restrict module,
     {
       const size_t index = (size_t)j * bbw + i;
       // find the square of the distance from the center
-      const float l2 = (points[2 * index] - centerx) * (points[2 * index] - centerx)
-                        + (points[2 * index + 1] - centery) * (points[2 * index + 1] - centery);
+      const float l2 = sqf(points[2 * index] - centerx) + sqf(points[2 * index + 1] - centery);
       // quadratic falloff between the circle's radius and the radius of the outside of the feathering
       const float ratio = (total2 - l2) / border2;
       // enforce 1.0 inside the circle and 0.0 outside the feathering
