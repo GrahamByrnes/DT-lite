@@ -1,6 +1,12 @@
 <?xml version="1.0"?>
 <!DOCTYPE dtconfiglist SYSTEM "darktableconfig.dtd">
 <dtconfiglist>
+  <dtconfig prefs="darkroom">
+    <name>ui/test</name>
+    <type>bool</type>
+    <default>true</default>
+    <shortdescription>general test tool</shortdescription>
+  </dtconfig>
   <dtconfig>
     <name>themes/usercss</name>
     <type>bool</type>
@@ -2142,5 +2148,11 @@
     <default>0</default>
     <shortdescription>version of the last completed performance configuration</shortdescription>
     <longdescription>what was the last performance configuration which has been completed</longdescription>
+  </dtconfig>
+    <dtconfig prefs="misc" section="interface">
+    <name>ui/test</name>
+    <type>bool</type>
+    <default>true</default>
+    <shortdescription>general test tool</shortdescription>
   </dtconfig>
 </dtconfiglist>
