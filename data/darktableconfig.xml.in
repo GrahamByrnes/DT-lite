@@ -430,13 +430,6 @@
     <longdescription/>
   </dtconfig>
   <dtconfig>
-    <name>ui_last/colorpicker_display_samples</name>
-    <type>boolean</type>
-    <default>false</default>
-    <shortdescription>display live sample areas on histogram</shortdescription>
-    <longdescription/>
-  </dtconfig>
-  <dtconfig>
     <name>ui_last/fullscreen</name>
     <type>bool</type>
     <default>false</default>

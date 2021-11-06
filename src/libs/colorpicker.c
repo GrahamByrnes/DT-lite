@@ -17,7 +17,7 @@
 */
 
 #include "bauhaus/bauhaus.h"
-#include "libs/colorpicker.h"
+#include "common/colorspaces_inline_conversions.h"
 #include "common/darktable.h"
 #include "common/iop_profile.h"
 #include "control/conf.h"
@@ -28,9 +28,9 @@
 #include "dtgtk/togglebutton.h"
 #include "gui/color_picker_proxy.h"
 #include "gui/gtk.h"
+#include "libs/colorpicker.h"
 #include "libs/lib.h"
 #include "libs/lib_api.h"
-#include "common/colorspaces_inline_conversions.h"
 
 DT_MODULE(1);
 
@@ -129,17 +129,6 @@ static void _update_picker_output(dt_lib_module_t *self)
   }
 }
 
-static void _picker_button_toggled(GtkToggleButton *button, dt_lib_colorpicker_t *data)
-{
-  gtk_widget_set_sensitive(GTK_WIDGET(data->add_sample_button), gtk_toggle_button_get_active(button));
-  
-  if(!gtk_toggle_button_get_active(button))
-  {
-    darktable.lib->proxy.colorpicker.display_samples = gtk_toggle_button_get_active(button);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->display_check_box), FALSE);
-  }
-}
-
 static void _update_samples_output(dt_lib_module_t *self)
 {
   for(GSList *samples = darktable.lib->proxy.colorpicker.live_samples;
@@ -161,10 +150,21 @@ static void _color_mode_changed(GtkWidget *widget, dt_lib_module_t *p)
   _update_samples_output((dt_lib_module_t *)p);
 }
 
-static void _display_samples_changed(GtkToggleButton *button, gpointer data)
+static void _picker_button_toggled(GtkToggleButton *button, dt_lib_colorpicker_t *data)
 {
-  dt_conf_set_bool("ui_last/colorpicker_display_samples", gtk_toggle_button_get_active(button));
-  darktable.lib->proxy.colorpicker.display_samples = gtk_toggle_button_get_active(button);
+  gtk_widget_set_sensitive(GTK_WIDGET(data->display_check_box), gtk_toggle_button_get_active(button));
+  
+  if(!gtk_toggle_button_get_active(button))
+  {
+    darktable.lib->proxy.colorpicker.display_samples = gtk_toggle_button_get_active(button);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->display_check_box), FALSE);
+  }
+}
+
+static void _display_samples_changed(GtkToggleButton *button, dt_lib_colorpicker_t *data)
+{
+  if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->picker_button)))
+      darktable.lib->proxy.colorpicker.display_samples = gtk_toggle_button_get_active(button);
 }
 
 static void _set_sample_point(dt_lib_module_t *self, float x, float y)
@@ -191,7 +191,7 @@ void gui_init(dt_lib_module_t *self)
 
   // Initializing proxy functions and data
   darktable.lib->proxy.colorpicker.module = self;
-  darktable.lib->proxy.colorpicker.display_samples = dt_conf_get_bool("ui_last/colorpicker_display_samples");
+  darktable.lib->proxy.colorpicker.display_samples = FALSE;
   darktable.lib->proxy.colorpicker.live_samples = NULL;
   darktable.lib->proxy.colorpicker.picked_color_rgb_mean = data->proxy_linked.picked_color_rgb_mean;
   darktable.lib->proxy.colorpicker.picked_color_rgb_min = data->proxy_linked.picked_color_rgb_min;
@@ -215,7 +215,6 @@ void gui_init(dt_lib_module_t *self)
   gtk_widget_set_name(GTK_WIDGET(color_patch), "color-sampler");
   g_signal_connect(G_OBJECT(color_patch), "draw", G_CALLBACK(_sample_draw_callback), &data->proxy_linked);
   gtk_box_pack_start(GTK_BOX(color_patch_row), color_patch, TRUE, TRUE, 0);
-  gtk_widget_show(color_patch);
 
   // color model
   GtkWidget *info_col = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -236,6 +235,7 @@ void gui_init(dt_lib_module_t *self)
   gtk_widget_set_tooltip_text(data->picker_button, _("turn on color picker"));
   gtk_widget_set_name(GTK_WIDGET(data->picker_button), "color-picker-button");
   g_signal_connect(G_OBJECT(data->picker_button), "toggled", G_CALLBACK(_picker_button_toggled), data);
+  _picker_button_toggled(GTK_TOGGLE_BUTTON(data->picker_button), data);
   gtk_box_pack_start(GTK_BOX(info_col), picker_row, TRUE, FALSE, 0);
 
   // color label
@@ -249,10 +249,10 @@ void gui_init(dt_lib_module_t *self)
   data->display_check_box = gtk_check_button_new_with_label(_("histogram"));
   gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(data->display_check_box))),
                           PANGO_ELLIPSIZE_MIDDLE);
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->display_check_box),
-                               dt_conf_get_bool("ui_last/colorpicker_display_samples"));
   g_signal_connect(G_OBJECT(data->display_check_box), "toggled",
-                   G_CALLBACK(_display_samples_changed), NULL);
+                   G_CALLBACK(_display_samples_changed), data);
+  gtk_widget_set_sensitive(GTK_WIDGET(data->display_check_box),
+                           gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->picker_button)));
   gtk_box_pack_start(GTK_BOX(display_row), data->display_check_box, TRUE, TRUE, 5);
   gtk_box_pack_start(GTK_BOX(info_col), display_row, TRUE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(color_patch_row), info_col, TRUE, TRUE, 0);
