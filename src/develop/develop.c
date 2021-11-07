@@ -1065,7 +1065,6 @@ void dt_dev_reload_history_items(dt_develop_t *dev)
         module->gui_init(module);
         dt_iop_reload_defaults(module);
         --darktable.gui->reset;
-
         /* add module to right panel */
         GtkWidget *expander = dt_iop_gui_get_expander(module);
         dt_ui_container_add_widget(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER, expander);
@@ -2095,11 +2094,6 @@ void dt_dev_snapshot_request(dt_develop_t *dev, const char *filename)
   dev->proxy.snapshot.filename = filename;
   dev->proxy.snapshot.request = TRUE;
   dt_control_queue_redraw_center();
-}
-
-void dt_dev_invalidate_from_gui(dt_develop_t *dev)
-{
-  dt_dev_pop_history_items(darktable.develop, darktable.develop->history_end);
 }
 
 void dt_dev_average_delay_update(const dt_times_t *start, uint32_t *average_delay)

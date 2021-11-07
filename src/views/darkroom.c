@@ -16,7 +16,7 @@
     along with darktable.  If not, see <http://www.gnu.org/licenses/>.
 */
 // this is the view for the darkroom module.
-// Second window starts at line 3175
+// Second window starts at line 2846
 #include "bauhaus/bauhaus.h"
 #include "common/collection.h"
 #include "common/colorspaces.h"
@@ -148,12 +148,10 @@ void expose(dt_view_t *self, cairo_t *cri, int32_t width, int32_t height,int32_t
   {
     // synch module guis from gtk thread:
     ++darktable.gui->reset;
-    GList *modules = dev->iop;
-    while(modules)
+    for(const GList *modules = dev->iop; modules; modules = g_list_next(modules))
     {
       dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
       dt_iop_gui_update(module);
-      modules = g_list_next(modules);
     }
     --darktable.gui->reset;
     dev->gui_synch = 0;
@@ -1883,9 +1881,7 @@ void gui_init(dt_view_t *self)
     gtk_box_pack_start(GTK_BOX(vbox), display_profile, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), display2_profile, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), histogram_profile, TRUE, TRUE, 0);
-    GList *l = darktable.color_profiles->profiles;
-
-    while(l)
+    for(const GList *l = darktable.color_profiles->profiles; l; l = g_list_next(l))
     {
       dt_colorspaces_color_profile_t *prof = (dt_colorspaces_color_profile_t *)l->data;
 
@@ -1928,8 +1924,6 @@ void gui_init(dt_view_t *self)
               || !strcmp(prof->filename, darktable.color_profiles->histogram_filename)))
           dt_bauhaus_combobox_set(histogram_profile, prof->category_pos);
       }
-
-      l = g_list_next(l);
     }
 
     char *system_profile_dir = g_build_filename(datadir, "color", "out", NULL);
@@ -2055,9 +2049,8 @@ void enter(dt_view_t *self)
   // avoid triggering of events before plugin is ready:
   ++darktable.gui->reset;
   char option[1024];
-  GList *modules = g_list_last(dev->iop);
 
-  while(modules)
+  for(const GList *modules = g_list_last(dev->iop); modules; modules = g_list_previous(modules))
   {
     dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
     /* initialize gui if iop have one defined */
@@ -2069,14 +2062,12 @@ void enter(dt_view_t *self)
       GtkWidget *expander = dt_iop_gui_get_expander(module);
       dt_ui_container_add_widget(darktable.gui->ui, DT_UI_CONTAINER_PANEL_RIGHT_CENTER, expander);
       snprintf(option, sizeof(option), "plugins/darkroom/%s/expanded", module->op);
-      
+
       if(dt_conf_get_bool(option))
         dt_iop_gui_set_expanded(module, TRUE, dt_conf_get_bool("darkroom/ui/single_module"));
       else
         dt_iop_gui_set_expanded(module, FALSE, FALSE);
     }
-
-    modules = g_list_previous(modules);
   }
   // make signals work again:
   --darktable.gui->reset;
@@ -2089,22 +2080,15 @@ void enter(dt_view_t *self)
   dt_thumbtable_set_offset_image(dt_ui_thumbtable(darktable.gui->ui), dev->image_storage.id, TRUE);
   // get last active plugin:
   gchar *active_plugin = dt_conf_get_string("plugins/darkroom/active");
-
   if(active_plugin)
   {
-    modules = dev->iop;
-
-    while(modules)
+    for(const GList *modules = dev->iop; modules; modules = g_list_next(modules))
     {
       dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
 
       if(!strcmp(module->op, active_plugin))
         dt_iop_request_focus(module);
-
-      modules = g_list_next(modules);
     }
-
-    g_free(active_plugin);
   }
   // update module multishow state now modules are loaded
   dt_dev_modules_update_multishow(dev);
