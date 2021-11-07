@@ -602,7 +602,7 @@ static void dt_iop_gui_delete_callback(GtkButton *button, dt_iop_module_t *modul
   dt_develop_t *dev = module->dev;
   // we search another module with the same base
   // we want the next module if any or the previous one
-  GList *modules = g_list_first(module->dev->iop);
+  GList *modules = module->dev->iop;
   dt_iop_module_t *next = NULL;
   int find = 0;
 
@@ -629,7 +629,7 @@ static void dt_iop_gui_delete_callback(GtkButton *button, dt_iop_module_t *modul
                             dt_ioppr_iop_order_copy_deep(darktable.develop->iop_order_list));
 
   // we must pay attention if priority is 0
-  gboolean is_zero = (module->multi_priority == 0);
+  const gboolean is_zero = (module->multi_priority == 0);
   // we set the focus to the other instance
   dt_iop_gui_set_expanded(next, TRUE, FALSE);
   dt_iop_request_focus(next);
@@ -1120,7 +1120,7 @@ static void init_presets(dt_iop_module_so_t *module_so)
   if(module_so->init_presets)
     module_so->init_presets(module_so);
   // this seems like a reasonable place to check for and update legacy presets.
-  int32_t module_version = module_so->version();
+  const int32_t module_version = module_so->version();
   sqlite3_stmt *stmt;
   DT_DEBUG_SQLITE3_PREPARE_V2(
       dt_database_get(darktable.db),
@@ -1568,55 +1568,7 @@ void dt_iop_request_focus(dt_iop_module_t *module)
 {
   if(darktable.gui->reset || (darktable.develop->gui_module == module)) return;
 
-  if(darktable.develop->gui_module != module)
-    darktable.develop->focus_hash++;
-  // lets lose the focus of previous focus module
-  if(darktable.develop->gui_module)
-  {
-    if(darktable.develop->gui_module->gui_focus)
-      darktable.develop->gui_module->gui_focus(darktable.develop->gui_module, FALSE);
-
-    dt_iop_color_picker_reset(darktable.develop->gui_module, TRUE);
-    gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(darktable.develop->gui_module),
-                               GTK_STATE_FLAG_NORMAL, TRUE);
-
-    if(darktable.develop->gui_module->operation_tags_filter())
-      dt_dev_invalidate_from_gui(darktable.develop);
-
-    dt_accel_disconnect_locals_iop(darktable.develop->gui_module);
-    dt_masks_reset_form_gui();
-    dt_iop_gui_blending_lose_focus(darktable.develop->gui_module);
-    gtk_widget_queue_draw(darktable.develop->gui_module->expander);
-    dt_control_hinter_message(darktable.control, "");
-    GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(darktable.develop->gui_module));
-    GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
-    gtk_style_context_remove_class(context, "dt_module_focus");
-  }
-
   darktable.develop->gui_module = module;
-  // set the focus on module
-  if(module)
-  {
-    gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(module), GTK_STATE_FLAG_SELECTED, TRUE);
-
-    if(module->operation_tags_filter())
-      dt_dev_invalidate_from_gui(darktable.develop);
-
-    dt_accel_connect_locals_iop(module);
-
-    if(module->gui_focus)
-      module->gui_focus(module, TRUE);
-    gtk_widget_queue_draw(module->expander);
-    GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(darktable.develop->gui_module));
-    GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
-    gtk_style_context_add_class(context, "dt_module_focus");
-  }
-  // update sticky accels window
-  if(darktable.view_manager->accels_window.window && darktable.view_manager->accels_window.sticky)
-    dt_view_accels_refresh(darktable.view_manager);
-
-  dt_control_change_cursor(GDK_LEFT_PTR);
-  dt_control_queue_redraw_center();
 }
 
 static void dt_iop_gui_set_single_expanded(dt_iop_module_t *module, gboolean expanded)
