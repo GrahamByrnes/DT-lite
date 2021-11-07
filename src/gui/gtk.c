@@ -1056,11 +1056,8 @@ static const char* get_axis_name(int pos)
 
 int dt_gui_gtk_init(dt_gui_gtk_t *gui)
 {
-  /* lets zero mem */
   memset(gui, 0, sizeof(dt_gui_gtk_t));
   // force gtk3 to use normal scroll bars instead of the popup thing. they get in the way of controls
-  // the alternative would be to gtk_scrolled_window_set_overlay_scrolling(..., FALSE); every single widget
-  // that might have scroll bars
   g_setenv("GTK_OVERLAY_SCROLLING", "0", 0);
   // same for ubuntus overlay-scrollbar-gtk3
   g_setenv("LIBOVERLAY_SCROLLBAR", "0", 0);
@@ -1398,10 +1395,8 @@ static gboolean _ui_toast_button_press_event(GtkWidget *widget, GdkEvent *event,
 
 static void init_widgets(dt_gui_gtk_t *gui)
 {
-
   GtkWidget *container;
   GtkWidget *widget;
-
   // Creating the main window
   widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_widget_set_name(widget, "main_window");

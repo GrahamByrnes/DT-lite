@@ -85,8 +85,8 @@ static gchar *get_active_preset_name(dt_lib_module_info_t *minfo)
   sqlite3_stmt *stmt;
   DT_DEBUG_SQLITE3_PREPARE_V2(
       dt_database_get(darktable.db),
-      "SELECT name, op_params, writeprotect FROM data.presets WHERE operation=?1 AND op_version=?2", -1, &stmt,
-      NULL);
+      "SELECT name, op_params, writeprotect FROM data.presets"
+      " WHERE operation=?1 AND op_version=?2", -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, minfo->plugin_name, -1, SQLITE_TRANSIENT);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, minfo->version);
   gchar *name = NULL;
@@ -290,8 +290,8 @@ static void menuitem_update_preset(GtkMenuItem *menuitem, dt_lib_module_info_t *
     // commit all the module fields
     sqlite3_stmt *stmt;
     DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
-                                "UPDATE data.presets SET op_version=?2, op_params=?3 WHERE name=?4 AND operation=?1",
-                                -1, &stmt, NULL);
+                                "UPDATE data.presets SET op_version=?2, op_params=?3"
+                                " WHERE name=?4 AND operation=?1", -1, &stmt, NULL);
 
     DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, minfo->plugin_name, -1, SQLITE_TRANSIENT);
     DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, minfo->version);
@@ -373,8 +373,8 @@ static void menuitem_delete_preset(GtkMenuItem *menuitem, dt_lib_module_info_t *
     dt_accel_deregister_lib(minfo->module, tmp_path);
     DT_DEBUG_SQLITE3_PREPARE_V2(
         dt_database_get(darktable.db),
-        "DELETE FROM data.presets WHERE name=?1 AND operation=?2 AND op_version=?3 AND writeprotect=0", -1, &stmt,
-        NULL);
+        "DELETE FROM data.presets WHERE name=?1 AND operation=?2 AND op_version=?3"
+        " AND writeprotect=0", -1, &stmt, NULL);
     DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, name, -1, SQLITE_TRANSIENT);
     DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 2, minfo->plugin_name, -1, SQLITE_TRANSIENT);
     DT_DEBUG_SQLITE3_BIND_INT(stmt, 3, minfo->version);
@@ -587,6 +587,7 @@ static int dt_lib_load_module(void *m, const char *libname, const char *plugin_n
             dt_version() < 0 ? "debug" : "opt");
     goto error;
   }
+
   if(!g_module_symbol(module->module, "dt_module_mod_version", (gpointer) & (module->version)))
     goto error;
   if(!g_module_symbol(module->module, "name", (gpointer) & (module->name)))
@@ -722,8 +723,8 @@ void dt_lib_init_presets(dt_lib_module_t *module)
   if(module->set_params == NULL)
   {
     sqlite3_stmt *stmt;
-    DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "DELETE FROM data.presets WHERE operation=?1", -1,
-                                &stmt, NULL);
+    DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
+                                "DELETE FROM data.presets WHERE operation=?1", -1, &stmt, NULL);
     DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, module->plugin_name, -1, SQLITE_TRANSIENT);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -732,8 +733,8 @@ void dt_lib_init_presets(dt_lib_module_t *module)
   {
     sqlite3_stmt *stmt;
     DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
-                                "SELECT rowid, op_version, op_params, name FROM data.presets WHERE operation=?1",
-                                -1, &stmt, NULL);
+                                "SELECT rowid, op_version, op_params, name"
+                                " FROM data.presets WHERE operation=?1", -1, &stmt, NULL);
     DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, module->plugin_name, -1, SQLITE_TRANSIENT);
 
     while(sqlite3_step(stmt) == SQLITE_ROW)
@@ -744,7 +745,7 @@ void dt_lib_init_presets(dt_lib_module_t *module)
       size_t op_params_size = sqlite3_column_bytes(stmt, 2);
       const char *name = (char *)sqlite3_column_text(stmt, 3);
       int version = module->version();
-
+S
       if(op_version < version)
       {
         size_t new_params_size = 0;
@@ -759,8 +760,8 @@ void dt_lib_init_presets(dt_lib_module_t *module)
                   module->plugin_name, name, op_version, version);
           sqlite3_stmt *innerstmt;
           DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
-                                      "UPDATE data.presets SET op_version=?1, op_params=?2 WHERE rowid=?3", -1,
-                                      &innerstmt, NULL);
+                                      "UPDATE data.presets SET op_version=?1, op_params=?2"
+                                      " WHERE rowid=?3", -1, &innerstmt, NULL);
           DT_DEBUG_SQLITE3_BIND_INT(innerstmt, 1, version);
           DT_DEBUG_SQLITE3_BIND_BLOB(innerstmt, 2, new_params, new_params_size, SQLITE_TRANSIENT);
           DT_DEBUG_SQLITE3_BIND_INT(innerstmt, 3, rowid);
@@ -774,8 +775,8 @@ void dt_lib_init_presets(dt_lib_module_t *module)
                           "no legacy_params() implemented or unable to update\n",
                   module->plugin_name, name, op_version, version);
           sqlite3_stmt *innerstmt;
-          DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "DELETE FROM data.presets WHERE rowid=?1", -1,
-                                      &innerstmt, NULL);
+          DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
+                                      "DELETE FROM data.presets WHERE rowid=?1", -1, &innerstmt, NULL);
           DT_DEBUG_SQLITE3_BIND_INT(innerstmt, 1, rowid);
           sqlite3_step(innerstmt);
           sqlite3_finalize(innerstmt);
@@ -831,7 +832,6 @@ static void popup_callback(GtkButton *button, GdkEventButton *event, dt_lib_modu
   if(!mi->params)
   {
     // this is a valid case, for example in location.c when nothing got selected
-    // fprintf(stderr, "something went wrong: &params=%p, size=%i\n", mi->params, mi->params_size);
     mi->params_size = 0;
   }
 
@@ -865,25 +865,23 @@ void dt_lib_gui_set_expanded(dt_lib_module_t *module, gboolean expanded)
 
   g_list_free(header_childs);
   dtgtk_button_set_paint(icon, dtgtk_cairo_paint_solid_arrow, flags, NULL);
-  /* show / hide plugin widget */
+  // show / hide plugin widget
   if(expanded)
   {
-    /* register to receive draw events */
+    // register to receive draw events
     darktable.lib->gui_module = module;
 
     if(dt_conf_get_bool("darkroom/ui/scroll_to_module"))
       darktable.gui->scroll_to[1] = module->expander;
   }
   else
-  {
     if(darktable.lib->gui_module == module)
     {
       darktable.lib->gui_module = NULL;
       dt_control_queue_redraw();
     }
-  }
 
-  /* store expanded state of module */
+  // store expanded state of module
   char var[1024];
   const dt_view_t *current_view = dt_view_manager_get_current_view(darktable.view_manager);
   snprintf(var, sizeof(var), "plugins/%s/%s/expanded", current_view->module_name, module->plugin_name);
@@ -902,6 +900,7 @@ gboolean dt_lib_gui_get_expanded(dt_lib_module_t *module)
     snprintf(var, sizeof(var), "plugins/%s/%s/expanded", current_view->module_name, module->plugin_name);
     return dt_conf_get_bool(var);
   }
+  
   return dtgtk_expander_get_expanded(DTGTK_EXPANDER(module->expander));
 }
 
@@ -914,7 +913,7 @@ static gboolean _lib_plugin_header_button_press(GtkWidget *w, GdkEventButton *e,
 
   if(e->button == 1)
   {
-    /* bail out if module is static */
+    // bail out if module is static
     if(!module->expandable(module))
       return FALSE;
 
@@ -928,7 +927,7 @@ static gboolean _lib_plugin_header_button_press(GtkWidget *w, GdkEventButton *e,
         darktable.gui->scroll_to[1] = module->expander;
     }
 
-    /* handle shiftclick on expander, hide all except this */
+    // handle shiftclick on expander, hide all except this
     if(!dt_conf_get_bool("lighttable/ui/single_module") != !(e->state & GDK_SHIFT_MASK))
     {
       GList *it = g_list_first(darktable.lib->plugins);
@@ -969,7 +968,6 @@ static gboolean _lib_plugin_header_button_press(GtkWidget *w, GdkEventButton *e,
 
 static gboolean show_module_callback(GtkAccelGroup *accel_group, GObject *acceleratable, guint keyval,
                                      GdkModifierType modifier, gpointer data)
-
 {
   dt_lib_module_t *module = (dt_lib_module_t *)data;
   // bail out if module is static
