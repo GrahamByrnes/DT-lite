@@ -1560,7 +1560,6 @@ static void histogram_profile_callback(GtkWidget *combo, gpointer user_data)
       goto end;
     }
   }
-
   // profile not found, fall back to export profile. shouldn't happen
   fprintf(stderr, "can't find histogram profile `%s', using export profile instead\n", dt_bauhaus_combobox_get_text(combo));
   profile_changed = darktable.color_profiles->histogram_type != DT_COLORSPACE_WORK;
@@ -1606,9 +1605,7 @@ static void _preference_prev_downsample_change(gpointer instance, gpointer user_
 
 static void _update_display_profile_cmb(GtkWidget *cmb_display_profile)
 {
-  GList *l = darktable.color_profiles->profiles;
-
-  while(l)
+  for(const GList *l = darktable.color_profiles->profiles; l; l = g_list_next(l))
   {
     dt_colorspaces_color_profile_t *prof = (dt_colorspaces_color_profile_t *)l->data;
 
@@ -1622,16 +1619,12 @@ static void _update_display_profile_cmb(GtkWidget *cmb_display_profile)
           dt_bauhaus_combobox_set(cmb_display_profile, prof->display_pos);
           break;
         }
-
-    l = g_list_next(l);
   }
 }
 
 static void _update_display2_profile_cmb(GtkWidget *cmb_display_profile)
 {
-  GList *l = darktable.color_profiles->profiles;
-
-  while(l)
+  for(const GList *l = darktable.color_profiles->profiles; l; l = g_list_next(l))
   {
     dt_colorspaces_color_profile_t *prof = (dt_colorspaces_color_profile_t *)l->data;
 
@@ -1644,8 +1637,6 @@ static void _update_display2_profile_cmb(GtkWidget *cmb_display_profile)
           dt_bauhaus_combobox_set(cmb_display_profile, prof->display2_pos);
           break;
         }
-
-    l = g_list_next(l);
   }
 }
 

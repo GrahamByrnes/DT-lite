@@ -16,11 +16,8 @@
     along with darktable.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "bauhaus/bauhaus.h"
-#include "common/atomic.h"
 #include "common/debug.h"
 #include "control/conf.h"
-#include "control/control.h"
-#include "control/jobs.h"
 #include "develop/imageop.h"
 #include "dtgtk/button.h"
 #include "gui/gtk.h"
@@ -37,8 +34,8 @@ DT_MODULE(1)
 
 typedef struct dt_lib_module_view_t
 {
-  GtkButton *fav_button;
-  gboolean choice;
+  GtkToggleButton *fav_button;
+  gboolean choice; // 0 all, 1 favourites
   char *button_title[2];
 } dt_lib_module_view_t;
 
@@ -80,7 +77,7 @@ static void _lib_module_view_gui_update(dt_lib_module_t *self)
   dt_conf_set_bool("darkroom/ui/iop_view_default", d->choice);
 }
 
-void fav_button_clicked(GtkWidget *widget, gpointer user_data)
+void _fav_button_clicked(GtkWidget *widget, gpointer user_data)
 {
   dt_lib_module_t *self = (dt_lib_module_t *)user_data;
   dt_lib_module_view_t *d = (dt_lib_module_view_t *)self->data;
@@ -103,12 +100,12 @@ void gui_init(dt_lib_module_t *self)
   GtkGrid *grid = GTK_GRID(self->widget);
   gtk_grid_set_column_homogeneous(grid, TRUE);
 
-  d->fav_button = GTK_BUTTON(gtk_button_new_with_label(d->button_title[!d->choice]));
+  d->fav_button = GTK_TOGGLE_BUTTON(gtk_toggle_button_new_with_label(d->button_title[!d->choice]));
   ellipsize_button(d->fav_button);
   gtk_widget_set_tooltip_text(GTK_WIDGET(d->fav_button), _("choose all modules or favourites"));
   gtk_grid_attach(grid, GTK_WIDGET(d->fav_button), 0, 0, 1, 1);
 
-  g_signal_connect(G_OBJECT(d->fav_button), "clicked", G_CALLBACK(fav_button_clicked), self);
+  g_signal_connect(G_OBJECT(d->fav_button), "toggled", G_CALLBACK(_fav_button_clicked), self);
   darktable.view_manager->proxy.module_view.module = self;
   darktable.view_manager->proxy.module_view.update = _lib_module_view_gui_update;
   
