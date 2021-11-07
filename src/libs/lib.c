@@ -745,7 +745,7 @@ void dt_lib_init_presets(dt_lib_module_t *module)
       size_t op_params_size = sqlite3_column_bytes(stmt, 2);
       const char *name = (char *)sqlite3_column_text(stmt, 3);
       int version = module->version();
-S
+
       if(op_version < version)
       {
         size_t new_params_size = 0;
