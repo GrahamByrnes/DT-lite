@@ -66,8 +66,6 @@ typedef struct dt_lib_t
       void (*process)(struct dt_lib_module_t *self, const float *const input,
                       int width, int height,
                       dt_colorspaces_color_profile_type_t icc_type, const gchar *icc_filename);
-      // FIXME: should this be a function or just a boolean which histogram lib keeps updated?
-      // FIXME: should this be a darktable-level value, set by lib/histogram.c and noticed by iops?
       gboolean is_linear;
     } histogram;
   } proxy;
