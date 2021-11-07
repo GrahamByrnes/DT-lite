@@ -152,11 +152,11 @@ static void _color_mode_changed(GtkWidget *widget, dt_lib_module_t *p)
 
 static void _picker_button_toggled(GtkToggleButton *button, dt_lib_colorpicker_t *data)
 {
-  gtk_widget_set_sensitive(GTK_WIDGET(data->display_check_box), gtk_toggle_button_get_active(button));
+  gtk_widget_set_sensitive(data->display_check_box, gtk_toggle_button_get_active(button));
   
   if(!gtk_toggle_button_get_active(button))
   {
-    darktable.lib->proxy.colorpicker.display_samples = gtk_toggle_button_get_active(button);
+    darktable.lib->proxy.colorpicker.display_samples = FALSE;
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(data->display_check_box), FALSE);
   }
 }
@@ -184,9 +184,9 @@ void gui_init(dt_lib_module_t *self)
   dt_lib_colorpicker_t *data = (dt_lib_colorpicker_t *)calloc(1, sizeof(dt_lib_colorpicker_t));
   self->data = (void *)data;
 
-  data->proxy_linked.rgb.red = 0.7;
-  data->proxy_linked.rgb.green = 0.7;
-  data->proxy_linked.rgb.blue = 0.7;
+  data->proxy_linked.rgb.red = 0.0;
+  data->proxy_linked.rgb.green = 0.0;
+  data->proxy_linked.rgb.blue = 0.0;
   data->proxy_linked.rgb.alpha = 1.0;
 
   // Initializing proxy functions and data
@@ -235,7 +235,6 @@ void gui_init(dt_lib_module_t *self)
   gtk_widget_set_tooltip_text(data->picker_button, _("turn on color picker"));
   gtk_widget_set_name(GTK_WIDGET(data->picker_button), "color-picker-button");
   g_signal_connect(G_OBJECT(data->picker_button), "toggled", G_CALLBACK(_picker_button_toggled), data);
-  _picker_button_toggled(GTK_TOGGLE_BUTTON(data->picker_button), data);
   gtk_box_pack_start(GTK_BOX(info_col), picker_row, TRUE, FALSE, 0);
 
   // color label
@@ -246,18 +245,21 @@ void gui_init(dt_lib_module_t *self)
 
   // display on histogram
   GtkWidget *display_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  data->display_check_box = gtk_check_button_new_with_label(_("histogram"));
+  data->display_check_box = gtk_toggle_button_new_with_label(_("histogram"));
   gtk_label_set_ellipsize(GTK_LABEL(gtk_bin_get_child(GTK_BIN(data->display_check_box))),
                           PANGO_ELLIPSIZE_MIDDLE);
   g_signal_connect(G_OBJECT(data->display_check_box), "toggled",
                    G_CALLBACK(_display_samples_changed), data);
-  gtk_widget_set_sensitive(GTK_WIDGET(data->display_check_box),
-                           gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->picker_button)));
+  
   gtk_box_pack_start(GTK_BOX(display_row), data->display_check_box, TRUE, TRUE, 5);
   gtk_box_pack_start(GTK_BOX(info_col), display_row, TRUE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(color_patch_row), info_col, TRUE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(self->widget), color_patch_row, TRUE, TRUE, 0);
-
+  
+  //final set-up of sensitivity etc
+  gtk_widget_set_sensitive(GTK_WIDGET(data->display_check_box),
+                           gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->picker_button)));
+  _picker_button_toggled(GTK_TOGGLE_BUTTON(data->picker_button), data);
   gtk_widget_show_all(self->widget);
 }
 
