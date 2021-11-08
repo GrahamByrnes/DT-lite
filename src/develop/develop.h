@@ -354,7 +354,7 @@ void dt_dev_reorder_gui_module_list(dt_develop_t *dev);
 void dt_dev_snapshot_request(dt_develop_t *dev, const char *filename);
 /** update gliding average for pixelpipe delay */
 void dt_dev_average_delay_update(const dt_times_t *start, uint32_t *average_delay);
-
+void dt_dev_invalidate_from_gui(dt_develop_t *dev);
 /*
  * masks plugin hooks
  */

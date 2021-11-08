@@ -2096,6 +2096,11 @@ void dt_dev_snapshot_request(dt_develop_t *dev, const char *filename)
   dt_control_queue_redraw_center();
 }
 
+void dt_dev_invalidate_from_gui(dt_develop_t *dev)
+{
+  dt_dev_pop_history_items(darktable.develop, darktable.develop->history_end);
+}
+
 void dt_dev_average_delay_update(const dt_times_t *start, uint32_t *average_delay)
 {
   dt_times_t end;
