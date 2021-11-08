@@ -664,7 +664,7 @@ dt_iop_module_t *dt_iop_gui_duplicate(dt_iop_module_t *base, gboolean copy_param
     modules = g_list_next(modules);
     pos++;
   }
-  // we set the gui part of it initialize gui if iop have one defined */
+  // we set the gui part of it initialize gui if iop have one defined
   if(!dt_iop_is_hidden(module))
   {
     // make sure gui_init and reload defaults is called safely
@@ -1090,9 +1090,8 @@ GList *dt_iop_load_modules_ext(dt_develop_t *dev, gboolean no_image)
   dt_iop_module_t *module;
   dt_iop_module_so_t *module_so;
   dev->iop_instance = 0;
-  GList *iop = darktable.iop;
 
-  while(iop)
+  for(GList *iop = darktable.iop; iop; iop = g_list_next(iop))
   {
     module_so = (dt_iop_module_so_t *)iop->data;
     module = (dt_iop_module_t *)calloc(1, sizeof(dt_iop_module_t));
@@ -1109,18 +1108,13 @@ GList *dt_iop_load_modules_ext(dt_develop_t *dev, gboolean no_image)
 
     if(!no_image)
       dt_iop_reload_defaults(module);
-
-    iop = g_list_next(iop);
   }
 
-  GList *it = res;
-
-  while(it)
+  for(GList *it = res; it; it = g_list_next(it))
   {
     module = (dt_iop_module_t *)it->data;
     module->instance = dev->iop_instance++;
     module->multi_name[0] = '\0';
-    it = g_list_next(it);
   }
 
   return res;
@@ -1269,7 +1263,6 @@ void dt_iop_gui_update(dt_iop_module_t *module)
   ++darktable.gui->reset;
 
   if(module->gui_data)
-  {
     if(!dt_iop_is_hidden(module))
     {
       if(module->params)
@@ -1280,7 +1273,7 @@ void dt_iop_gui_update(dt_iop_module_t *module)
       _iop_gui_update_label(module);
       dt_iop_gui_set_enable_button(module);
     }                                                                
-  }
+
   --darktable.gui->reset;
 }
 
@@ -1300,7 +1293,9 @@ static void dt_iop_gui_reset_callback(GtkButton *button, dt_iop_module_t *module
   if(module->blend_params->mask_id > 0)
   {
     dt_masks_form_t *grp = dt_masks_get_from_id(darktable.develop, module->blend_params->mask_id);
-    if(grp) dt_masks_form_remove(module, NULL, grp);
+
+    if(grp)
+      dt_masks_form_remove(module, NULL, grp);
   }
   // reset to default params
   memcpy(module->params, module->default_params, module->params_size);
@@ -1332,7 +1327,7 @@ void dt_iop_request_focus(dt_iop_module_t *module)
 
   if(darktable.develop->gui_module != module)
     darktable.develop->focus_hash++;
-  // lets lose the focus of previous focus module
+  // lose the focus of previous focus module
   if(darktable.develop->gui_module)
   {
     if(darktable.develop->gui_module->gui_focus)
@@ -1368,6 +1363,7 @@ void dt_iop_request_focus(dt_iop_module_t *module)
 
     if(module->gui_focus)
       module->gui_focus(module, TRUE);
+
     gtk_widget_queue_draw(module->expander);
     GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(darktable.develop->gui_module));
     GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
@@ -1390,7 +1386,7 @@ static void dt_iop_gui_set_single_expanded(dt_iop_module_t *module, gboolean exp
   // store expanded state of module, so update_expanded won't think it should be visible
   // and undo our changes right away.
   module->expanded = expanded;
-  // show / hide plugin widget
+
   if(expanded)
   {
     // set this module to receive focus / draw events
@@ -1401,12 +1397,11 @@ static void dt_iop_gui_set_single_expanded(dt_iop_module_t *module, gboolean exp
     // redraw center, iop might have post expose
     dt_control_queue_redraw_center();
   }
-  else
-    if(module->dev->gui_module == module)
-    {
-      dt_iop_request_focus(NULL);
-      dt_control_queue_redraw_center();
-    }
+  else if(module->dev->gui_module == module)
+  {
+    dt_iop_request_focus(NULL);
+    dt_control_queue_redraw_center();
+  }
 
   char var[1024];
   snprintf(var, sizeof(var), "plugins/darkroom/%s/expanded", module->op);
@@ -1419,19 +1414,17 @@ void dt_iop_gui_set_expanded(dt_iop_module_t *module, gboolean expanded, gboolea
   // handle shiftclick on expander, hide all except this
   if(collapse_others)
   {
-    GList *iop = module->dev->iop;
     gboolean all_other_closed = TRUE;
 
-    while(iop)
+    for(GList *iop = module->dev->iop; iop; iop = g_list_next(iop))
     {
       dt_iop_module_t *m = (dt_iop_module_t *)iop->data;
+
       if(m != module)
       {
         all_other_closed = all_other_closed && !m->expanded;
         dt_iop_gui_set_single_expanded(m, FALSE);
       }
-
-      iop = g_list_next(iop);
     }
 
     if(all_other_closed)
@@ -1540,9 +1533,8 @@ GtkWidget *dt_iop_gui_get_expander(dt_iop_module_t *module)
   // add multi instances menu button
   hw[IOP_MODULE_INSTANCE] = dtgtk_button_new(dtgtk_cairo_paint_multiinstance, CPF_STYLE_FLAT, NULL);
   module->multimenu_button = GTK_WIDGET(hw[IOP_MODULE_INSTANCE]);
-  gtk_widget_set_tooltip_text(GTK_WIDGET(hw[IOP_MODULE_INSTANCE]),
-                              _(""));
-  gtk_widget_set_name(GTK_WIDGET(hw[IOP_MODULE_INSTANCE]), "currently vacant");
+  gtk_widget_set_tooltip_text(GTK_WIDGET(hw[IOP_MODULE_INSTANCE]), "currently vacant");
+  gtk_widget_set_name(GTK_WIDGET(hw[IOP_MODULE_INSTANCE]), "module-instance-button");
   // add reset button
   hw[IOP_MODULE_RESET] = dtgtk_button_new(dtgtk_cairo_paint_reset, CPF_STYLE_FLAT, NULL);
   module->reset_button = GTK_WIDGET(hw[IOP_MODULE_RESET]);
@@ -1650,6 +1642,7 @@ dt_iop_module_t *dt_iop_get_colorout_module(void)
 dt_iop_module_t *dt_iop_get_module_from_list(GList *iop_list, const char *op)
 {
   dt_iop_module_t *result = NULL;
+
   for(GList *modules = iop_list; modules; modules = g_list_next(modules))
   {
     dt_iop_module_t *mod = (dt_iop_module_t *)modules->data;
@@ -1671,16 +1664,12 @@ dt_iop_module_t *dt_iop_get_module(const char *op)
 
 int get_module_flags(const char *op)
 {
-  GList *modules = darktable.iop;
-
-  while(modules)
+  for(GList *modules = darktable.iop; modules; modules = g_list_next(modules))
   {
     dt_iop_module_so_t *module = (dt_iop_module_so_t *)modules->data;
 
     if(!strcmp(module->op, op))
       return module->flags();
-
-    modules = g_list_next(modules);
   }
   return 0;
 }
@@ -1690,6 +1679,7 @@ void dt_iop_set_darktable_iop_table()
 {
   sqlite3_stmt *stmt;
   gchar *module_list = NULL;
+
   for(GList *iop = darktable.iop; iop; iop = g_list_next(iop))
   {
     dt_iop_module_so_t *module = (dt_iop_module_so_t *)iop->data;
@@ -1778,7 +1768,7 @@ void dt_iop_so_gui_set_state(dt_iop_module_so_t *module, dt_iop_module_state_t s
       if(mod->so == module && mod->expander)
         gtk_widget_show(GTK_WIDGET(mod->expander));
     }
-    // module is shown and favorite lets set conf values
+    // module is shown and favorite, set conf values
     snprintf(option, sizeof(option), "plugins/darkroom/%s/visible", module->op);
     dt_conf_set_bool(option, TRUE);
     snprintf(option, sizeof(option), "plugins/darkroom/%s/favorite", module->op);

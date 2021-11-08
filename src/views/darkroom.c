@@ -636,7 +636,6 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   darktable.view_manager->active_images
       = g_slist_append(darktable.view_manager->active_images, GINT_TO_POINTER(imgid));
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_ACTIVE_IMAGES_CHANGE);
-
   // if the previous shown image is selected and the selection is unique
   // then we change the selected image to the new one
   if(dev->image_storage.id > 0)
@@ -702,7 +701,6 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
 
   if(darktable.develop->gui_module)
     active_plugin = g_strdup(darktable.develop->gui_module->op);
-
   dt_iop_request_focus(NULL);
   g_assert(dev->gui_attached);
   // commit image ops to db
@@ -768,10 +766,8 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
         dt_iop_gui_cleanup_module(module);
         gtk_widget_destroy(module->expander);
       }
-
       // we remove the module from the list
       dev->iop = g_list_remove_link(dev->iop, g_list_nth(dev->iop, i));
-
       // we cleanup the module
       dt_accel_disconnect_list(&module->accel_closures);
       dt_accel_cleanup_locals_iop(module);
@@ -836,11 +832,10 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   dt_dev_masks_list_change(dev);
   // cleanup histograms
   g_list_foreach(dev->iop, (GFunc)dt_iop_cleanup_histogram, (gpointer)NULL);
-  // make signals work again, we can't restore the active_plugin while signals
-  //   are blocked due to implementation of dt_iop_request_focus so we do it now
+  // make signals work again
   //  A double history entry is not generated.
   --darktable.gui->reset;
-  // Now we can request focus again and write a safe plugins/darkroom/active
+  // I don't think it makes sense to look for an active plugin directly after an install
   if(active_plugin)
   {
     gboolean valid = FALSE;
@@ -852,7 +847,6 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
       {
         valid = TRUE;
         dt_conf_set_string("plugins/darkroom/active", active_plugin);
-        dt_iop_request_focus(module);
       }
     }
 
