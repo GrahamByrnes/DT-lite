@@ -808,9 +808,7 @@ static void _tree_cell_edited(GtkCellRendererText *cell, gchar *path_string, gch
   // in the xmp file into "<rdf:li/>" which produces problems. we use a single whitespace
   // as the pure minimum text.
   gchar *text = strlen(new_text) == 0 ? " " : new_text;
-
   // first, we need to update the mask name
-
   g_strlcpy(form->name, text, sizeof(form->name));
   dt_dev_add_masks_history_item(darktable.develop, NULL, FALSE);
 }
@@ -820,7 +818,6 @@ static void _tree_selection_change(GtkTreeSelection *selection, dt_lib_masks_t *
   if(self->gui_reset) return;
   // we reset all "show mask" icon of iops
   dt_masks_reset_show_masks_icons();
-
   // if selection empty, we hide all
   const int nb = gtk_tree_selection_count_selected_rows(selection);
   if(nb == 0)
@@ -840,15 +837,11 @@ static void _tree_selection_change(GtkTreeSelection *selection, dt_lib_masks_t *
     GtkTreeIter iter;
     if(gtk_tree_model_get_iter(model, &iter, item))
     {
-      GValue gv = {
-        0,
-      };
+      GValue gv = { 0, };
       gtk_tree_model_get_value(model, &iter, TREE_GROUPID, &gv);
       int grid = g_value_get_int(&gv);
       g_value_unset(&gv);
-      GValue gv2 = {
-        0,
-      };
+      GValue gv2 = { 0, };
       gtk_tree_model_get_value(model, &iter, TREE_FORMID, &gv2);
       int id = g_value_get_int(&gv2);
       g_value_unset(&gv2);
@@ -864,9 +857,7 @@ static void _tree_selection_change(GtkTreeSelection *selection, dt_lib_masks_t *
         // we eventually set the "show masks" icon of iops
         if(nb == 1 && (form->type & DT_MASKS_GROUP))
         {
-          GValue gv2 = {
-            0,
-          };
+          GValue gv2 = { 0, };
           gtk_tree_model_get_value(model, &iter, TREE_MODULE, &gv2);
           dt_iop_module_t *module = g_value_peek_pointer(&gv2);
           g_value_unset(&gv2);
@@ -910,9 +901,7 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
     // we retrieve the iter and module from path
     if(gtk_tree_model_get_iter(model, &iter, mouse_path))
     {
-      GValue gv = {
-        0,
-      };
+      GValue gv = { 0, };
       gtk_tree_model_get_value(model, &iter, TREE_MODULE, &gv);
       module = g_value_peek_pointer(&gv);
       g_value_unset(&gv);
@@ -923,9 +912,7 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
   {
     // if click on a blank space, then deselect all
     if(!on_row)
-    {
       gtk_tree_selection_unselect_all(selection);
-    }
   }
   else if(event->type == GDK_BUTTON_PRESS && event->button == 3)
   {
@@ -947,7 +934,6 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
     // we get all infos from selection
     int nb = gtk_tree_selection_count_selected_rows(selection);
     int from_group = 0;
-
     int grpid = 0;
     int depth = 0;
     if(nb > 0)
@@ -960,9 +946,7 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
         // before freeing the list of selected rows, we check if the form is a group or not
         if(gtk_tree_model_get_iter(model, &iter, it0))
         {
-          GValue gv = {
-            0,
-          };
+          GValue gv = { 0, };
           gtk_tree_model_get_value(model, &iter, TREE_FORMID, &gv);
           grpid = g_value_get_int(&gv);
           g_value_unset(&gv);
@@ -1154,13 +1138,10 @@ static gboolean _tree_restrict_select(GtkTreeSelection *selection, GtkTreeModel 
 {
   dt_lib_masks_t *self = (dt_lib_masks_t *)data;
   if(self->gui_reset) return TRUE;
-
   // if the change is SELECT->UNSELECT no pb
   if(path_currently_selected) return TRUE;
-
   // if selection is empty, no pb
   if(gtk_tree_selection_count_selected_rows(selection) == 0) return TRUE;
-
   // now we unselect all members of selection with not the same parent node
   // idem for all those with a different depth
   int *indices = gtk_tree_path_get_indices(path);
@@ -1223,6 +1204,7 @@ static gboolean _tree_query_tooltip(GtkWidget *widget, gint x, gint y, gboolean 
 static int _is_form_used(int formid, dt_masks_form_t *grp, char *text, size_t text_length)
 {
   int nb = 0;
+
   if(!grp)
   {
     for(const GList *forms = darktable.develop->forms; forms; forms = g_list_next(forms))
@@ -1249,6 +1231,7 @@ static int _is_form_used(int formid, dt_masks_form_t *grp, char *text, size_t te
       }
     }
   }
+
   return nb;
 }
 
@@ -1264,6 +1247,7 @@ static void _lib_masks_list_recurs(GtkTreeStore *treestore, GtkTreeIter *topleve
   GdkPixbuf *icop = NULL;
   GdkPixbuf *icinv = NULL;
   GdkPixbuf *icuse = NULL;
+
   if(gstate & DT_MASKS_STATE_UNION)
     icop = lm->ic_union;
   else if(gstate & DT_MASKS_STATE_INTERSECTION)
@@ -1272,13 +1256,19 @@ static void _lib_masks_list_recurs(GtkTreeStore *treestore, GtkTreeIter *topleve
     icop = lm->ic_difference;
   else if(gstate & DT_MASKS_STATE_EXCLUSION)
     icop = lm->ic_exclusion;
-  if(gstate & DT_MASKS_STATE_INVERSE) icinv = lm->ic_inverse;
+
+  if(gstate & DT_MASKS_STATE_INVERSE)
+    icinv = lm->ic_inverse;
+
   char str2[1000] = "";
   int nbuse = 0;
+
   if(grp_id == 0)
   {
     nbuse = _is_form_used(form->formid, NULL, str2, sizeof(str2));
-    if(nbuse > 0) icuse = lm->ic_used;
+
+    if(nbuse > 0)
+      icuse = lm->ic_used;
   }
 
   if(!(form->type & DT_MASKS_GROUP))
@@ -1334,15 +1324,15 @@ static void _lib_masks_recreate_list(dt_lib_module_t *self)
 {
   /* first destroy all buttons in list */
   dt_lib_masks_t *lm = (dt_lib_masks_t *)self->data;
+
   if(!lm) return;
+
   if(lm->gui_reset) return;
 
   const int gui_reset = lm->gui_reset;
   lm->gui_reset = 1;
   // if (lm->treeview) gtk_widget_destroy(lm->treeview);
-
   _lib_masks_inactivate_icons(self);
-
   GtkTreeStore *treestore;
   // we store : text ; *module ; groupid ; formid
   treestore = gtk_tree_store_new(TREE_COUNT, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_INT, G_TYPE_INT,
@@ -1353,14 +1343,17 @@ static void _lib_masks_recreate_list(dt_lib_module_t *self)
   for(const GList *forms = darktable.develop->forms; forms; forms = g_list_next(forms))
   {
     dt_masks_form_t *form = (dt_masks_form_t *)forms->data;
-    if(form->type & DT_MASKS_GROUP) _lib_masks_list_recurs(treestore, NULL, form, 0, NULL, 0, 1.0, lm);
+
+    if(form->type & DT_MASKS_GROUP)
+      _lib_masks_list_recurs(treestore, NULL, form, 0, NULL, 0, 1.0, lm);
   }
 
   // and we add all forms
   for(const GList *forms = darktable.develop->forms; forms; forms = g_list_next(forms))
   {
     dt_masks_form_t *form = (dt_masks_form_t *)forms->data;
-    if(!(form->type & DT_MASKS_GROUP)) _lib_masks_list_recurs(treestore, NULL, form, 0, NULL, 0, 1.0, lm);
+    if(!(form->type & DT_MASKS_GROUP))
+      _lib_masks_list_recurs(treestore, NULL, form, 0, NULL, 0, 1.0, lm);
   }
 
   gtk_tree_view_set_model(GTK_TREE_VIEW(lm->treeview), GTK_TREE_MODEL(treestore));
@@ -1374,15 +1367,11 @@ static gboolean _update_foreach(GtkTreeModel *model, GtkTreePath *path, GtkTreeI
   if(!iter) return 0;
 
   // we retrieve the ids
-  GValue gv = {
-    0,
-  };
+  GValue gv = { 0, };
   gtk_tree_model_get_value(model, iter, TREE_GROUPID, &gv);
   int grid = g_value_get_int(&gv);
   g_value_unset(&gv);
-  GValue gv3 = {
-    0,
-  };
+  GValue gv3 = { 0, };
   gtk_tree_model_get_value(model, iter, TREE_FORMID, &gv3);
   int id = g_value_get_int(&gv3);
   g_value_unset(&gv3);
@@ -1430,15 +1419,11 @@ static gboolean _remove_foreach(GtkTreeModel *model, GtkTreePath *path, GtkTreeI
   int refgid = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(model), "groupid"));
 
   // we retrieve the id
-  GValue gv = {
-    0,
-  };
+  GValue gv = { 0, };
   gtk_tree_model_get_value(model, iter, TREE_GROUPID, &gv);
   int grid = g_value_get_int(&gv);
   g_value_unset(&gv);
-  GValue gv3 = {
-    0,
-  };
+  GValue gv3 = { 0, };
   gtk_tree_model_get_value(model, iter, TREE_FORMID, &gv3);
   int id = g_value_get_int(&gv3);
   g_value_unset(&gv3);
@@ -1503,9 +1488,7 @@ static void _lib_masks_selection_change(dt_lib_module_t *self, int selectid, int
   while(valid)
   {
     // we get the formid from the iter
-    GValue gv = {
-      0,
-    };
+    GValue gv = { 0, };
     gtk_tree_model_get_value(model, &iter, TREE_FORMID, &gv);
     int id = g_value_get_int(&gv);
     g_value_unset(&gv);
