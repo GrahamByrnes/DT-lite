@@ -204,12 +204,7 @@ typedef struct dt_iop_module_so_t
   void (*gui_post_expose)(struct dt_iop_module_t *self, cairo_t *cr, int32_t width, int32_t height,
                           int32_t pointerx, int32_t pointery);
   void (*gui_focus)(struct dt_iop_module_t *self, gboolean in);
-  // Optional callback for keyboard accelerators 
-/*  void (*init_key_accels)(struct dt_iop_module_so_t *so);
-  void (*original_init_key_accels)(struct dt_iop_module_so_t *so);
-  void (*connect_key_accels)(struct dt_iop_module_t *self);
-  void (*original_connect_key_accels)(struct dt_iop_module_t *self);
-  void (*disconnect_key_accels)(struct dt_iop_module_t *self);*/
+
   GSList *(*mouse_actions)(struct dt_iop_module_t *self);
 
   int (*mouse_leave)(struct dt_iop_module_t *self);
@@ -515,10 +510,6 @@ typedef struct dt_iop_module_t
   void (*distort_mask)(struct dt_iop_module_t *self, struct dt_dev_pixelpipe_iop_t *piece, const float *const in,
                        float *const out, const dt_iop_roi_t *const roi_in, const dt_iop_roi_t *const roi_out);
 
-  /** Key accelerator registration callbacks */
-/*  void (*connect_key_accels)(struct dt_iop_module_t *self);
-  void (*original_connect_key_accels)(struct dt_iop_module_t *self);
-  void (*disconnect_key_accels)(struct dt_iop_module_t *self);*/
   GSList *(*mouse_actions)(struct dt_iop_module_t *self);
 
   // introspection related data
