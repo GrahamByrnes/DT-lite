@@ -266,9 +266,6 @@ int64_t dt_collection_get_image_position(const int32_t image_id, const int32_t t
 void dt_collection_shift_image_positions(const unsigned int length, const int64_t image_position,
                                          const int32_t tagid);
 
-/* move images with drag and drop */
-void dt_collection_move_before(const int32_t image_id, GList * selected_images);
-
 /* initialize memory table */
 void dt_collection_memory_update();
 

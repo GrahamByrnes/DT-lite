@@ -881,6 +881,179 @@ static void init_presets(dt_iop_module_so_t *module_so)
 {
   if(module_so->init_presets)
     module_so->init_presets(module_so);
+  // this seems like a reasonable place to check for and update legacy presets.
+  const int32_t module_version = module_so->version();
+  sqlite3_stmt *stmt;
+  DT_DEBUG_SQLITE3_PREPARE_V2(
+      dt_database_get(darktable.db),
+      "SELECT name, op_version, op_params, blendop_version, blendop_params FROM data.presets WHERE operation = ?1",
+      -1, &stmt, NULL);
+  DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, module_so->op, -1, SQLITE_TRANSIENT);
+
+  while(sqlite3_step(stmt) == SQLITE_ROW)
+  {
+    const char *name = (char *)sqlite3_column_text(stmt, 0);
+    int32_t old_params_version = sqlite3_column_int(stmt, 1);
+    const void *old_params = (void *)sqlite3_column_blob(stmt, 2);
+    const int32_t old_params_size = sqlite3_column_bytes(stmt, 2);
+    const int32_t old_blend_params_version = sqlite3_column_int(stmt, 3);
+    const void *old_blend_params = (void *)sqlite3_column_blob(stmt, 4);
+    const int32_t old_blend_params_size = sqlite3_column_bytes(stmt, 4);
+
+    if(old_params_version == 0)
+    {
+      // this preset doesn't have a version.  go digging through the database
+      // to find a history entry that matches the preset params, and get
+      // the module version from that.
+      sqlite3_stmt *stmt2;
+      DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
+                                  "SELECT module FROM main.history WHERE operation = ?1 AND op_params = ?2", -1,
+                                  &stmt2, NULL);
+      DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 1, module_so->op, -1, SQLITE_TRANSIENT);
+      DT_DEBUG_SQLITE3_BIND_BLOB(stmt2, 2, old_params, old_params_size, SQLITE_TRANSIENT);
+
+      if(sqlite3_step(stmt2) == SQLITE_ROW)
+        old_params_version = sqlite3_column_int(stmt2, 0);
+      else
+      {
+        fprintf(stderr, "[imageop_init_presets] WARNING: Could not find versioning information for '%s' "
+                        "preset '%s'\nUntil some is found, the preset will be unavailable.\n(To make it "
+                        "return, please load an image that uses the preset.)\n",
+                module_so->op, name);
+        sqlite3_finalize(stmt2);
+        continue;
+      }
+
+      sqlite3_finalize(stmt2);
+      // we found an old params version.  Update the database with it.
+      fprintf(stderr, "[imageop_init_presets] Found version %d for '%s' preset '%s'\n", old_params_version,
+              module_so->op, name);
+      DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
+                                  "UPDATE data.presets SET op_version=?1 WHERE operation=?2 AND name=?3", -1,
+                                  &stmt2, NULL);
+      DT_DEBUG_SQLITE3_BIND_INT(stmt2, 1, old_params_version);
+      DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 2, module_so->op, -1, SQLITE_TRANSIENT);
+      DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 3, name, -1, SQLITE_TRANSIENT);
+
+      sqlite3_step(stmt2);
+      sqlite3_finalize(stmt2);
+    }
+
+    if(module_version > old_params_version && module_so->legacy_params != NULL)
+    {
+      // we need a dt_iop_module_t for legacy_params()
+      dt_iop_module_t *module;
+      module = (dt_iop_module_t *)calloc(1, sizeof(dt_iop_module_t));
+
+      if(dt_iop_load_module_by_so(module, module_so, NULL))
+      {
+        free(module);
+        continue;
+      }
+
+      module->init(module);
+
+      if(module->params_size == 0)
+      {
+        dt_iop_cleanup_module(module);
+        free(module);
+        continue;
+      }
+      // we call reload_defaults() in case the module defines it
+      if(module->reload_defaults)
+        module->reload_defaults(module);
+
+      const int32_t new_params_size = module->params_size;
+      void *new_params = calloc(1, new_params_size);
+      // convert the old params to new
+      if(module->legacy_params(module, old_params, old_params_version, new_params, module_version))
+      {
+        free(new_params);
+        dt_iop_cleanup_module(module);
+        free(module);
+        continue;
+      }
+
+      fprintf(stderr, "[imageop_init_presets] updating '%s' preset '%s' from version %d to version %d\nto:'%s'",
+              module_so->op, name, old_params_version, module_version,
+              dt_exif_xmp_encode(new_params, new_params_size, NULL));
+
+      // and write the new params back to the database
+      sqlite3_stmt *stmt2;
+      DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "UPDATE data.presets "
+                                                                 "SET op_version=?1, op_params=?2 "
+                                                                 "WHERE operation=?3 AND name=?4",
+                                  -1, &stmt2, NULL);
+      DT_DEBUG_SQLITE3_BIND_INT(stmt2, 1, module->version());
+      DT_DEBUG_SQLITE3_BIND_BLOB(stmt2, 2, new_params, new_params_size, SQLITE_TRANSIENT);
+      DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 3, module->op, -1, SQLITE_TRANSIENT);
+      DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 4, name, -1, SQLITE_TRANSIENT);
+      sqlite3_step(stmt2);
+      sqlite3_finalize(stmt2);
+      free(new_params);
+      dt_iop_cleanup_module(module);
+      free(module);
+    }
+    else if(module_version > old_params_version)
+      fprintf(stderr, "[imageop_init_presets] Can't upgrade '%s' preset '%s' from version %d to %d, no "
+                      "legacy_params() implemented \n",
+              module_so->op, name, old_params_version, module_version);
+
+    if(!old_blend_params || dt_develop_blend_version() > old_blend_params_version)
+    {
+      fprintf(stderr,
+              "[imageop_init_presets] updating '%s' preset '%s' from blendop version %d to version %d\n",
+              module_so->op, name, old_blend_params_version, dt_develop_blend_version());
+
+      // we need a dt_iop_module_t for dt_develop_blend_legacy_params()
+      // using dt_develop_blend_legacy_params_by_so won't help as we need "module" anyway
+      dt_iop_module_t *module;
+      module = (dt_iop_module_t *)calloc(1, sizeof(dt_iop_module_t));
+
+      if(dt_iop_load_module_by_so(module, module_so, NULL))
+      {
+        free(module);
+        continue;
+      }
+
+      if(module->params_size == 0)
+      {
+        dt_iop_cleanup_module(module);
+        free(module);
+        continue;
+      }
+
+      void *new_blend_params = malloc(sizeof(dt_develop_blend_params_t));
+      // convert the old blend params to new
+      if(old_blend_params
+         && dt_develop_blend_legacy_params(module, old_blend_params, old_blend_params_version,
+                                           new_blend_params, dt_develop_blend_version(),
+                                           old_blend_params_size) == 0)
+      {
+        // do nothing
+      }
+      else
+        memcpy(new_blend_params, module->default_blendop_params, sizeof(dt_develop_blend_params_t));
+
+      // and write the new blend params back to the database
+      sqlite3_stmt *stmt2;
+      DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), "UPDATE data.presets "
+                                                                 "SET blendop_version=?1, blendop_params=?2 "
+                                                                 "WHERE operation=?3 AND name=?4",
+                                  -1, &stmt2, NULL);
+      DT_DEBUG_SQLITE3_BIND_INT(stmt2, 1, dt_develop_blend_version());
+      DT_DEBUG_SQLITE3_BIND_BLOB(stmt2, 2, new_blend_params, sizeof(dt_develop_blend_params_t),
+                                 SQLITE_TRANSIENT);
+      DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 3, module->op, -1, SQLITE_TRANSIENT);
+      DT_DEBUG_SQLITE3_BIND_TEXT(stmt2, 4, name, -1, SQLITE_TRANSIENT);
+      sqlite3_step(stmt2);
+      sqlite3_finalize(stmt2);
+      free(new_blend_params);
+      dt_iop_cleanup_module(module);
+      free(module);
+    }
+  }
+  sqlite3_finalize(stmt);
 }
 
 static void dt_iop_init_module_so(void *m)

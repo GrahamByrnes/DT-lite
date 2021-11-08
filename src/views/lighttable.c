@@ -35,7 +35,6 @@
 #include "dtgtk/culling.h"
 #include "dtgtk/thumbtable.h"
 #include "gui/accelerators.h"
-#include "gui/drag_and_drop.h"
 #include "gui/draw.h"
 #include "gui/gtk.h"
 #include "libs/lib.h"

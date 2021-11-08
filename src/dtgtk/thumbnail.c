@@ -30,7 +30,6 @@
 #include "dtgtk/button.h"
 #include "dtgtk/icon.h"
 #include "dtgtk/thumbnail_btn.h"
-#include "gui/drag_and_drop.h"
 #include "views/view.h"
 
 static void _thumb_resize_overlays(dt_thumbnail_t *thumb);
@@ -995,14 +994,6 @@ static gboolean _event_main_leave(GtkWidget *widget, GdkEventCrossing *event, gp
   return FALSE;
 }
 
-// we only want to specify that the mouse is hovereing the thumbnail
-static gboolean _event_main_drag_motion(GtkWidget *widget, GdkDragContext *dc, gint x, gint y, guint time,
-                                        gpointer user_data)
-{
-  _event_main_motion(widget, NULL, user_data);
-  return TRUE;
-}
-
 GtkWidget *dt_thumbnail_create_widget(dt_thumbnail_t *thumb)
 {
   // main widget (overlay)
@@ -1011,11 +1002,6 @@ GtkWidget *dt_thumbnail_create_widget(dt_thumbnail_t *thumb)
 
   if(thumb->imgid > 0)
   {
-    // this is only here to ensure that mouse-over value is updated correctly
-    // all dragging actions take place inside thumbtable.c
-    gtk_drag_dest_set(thumb->w_main, GTK_DEST_DEFAULT_MOTION, target_list_all, n_targets_all, GDK_ACTION_COPY);
-    g_signal_connect(G_OBJECT(thumb->w_main), "drag-motion", G_CALLBACK(_event_main_drag_motion), thumb);
-
     g_signal_connect(G_OBJECT(thumb->w_main), "button-press-event", G_CALLBACK(_event_main_press), thumb);
     g_signal_connect(G_OBJECT(thumb->w_main), "button-release-event", G_CALLBACK(_event_main_release), thumb);
 

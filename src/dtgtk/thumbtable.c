@@ -26,7 +26,6 @@
 #include "common/selection.h"
 #include "control/control.h"
 #include "gui/accelerators.h"
-#include "gui/drag_and_drop.h"
 #include "views/view.h"
 #include "bauhaus/bauhaus.h"
 
@@ -1398,7 +1397,7 @@ static void _dt_collection_changed_callback(gpointer instance, dt_collection_cha
     dt_view_lighttable_change_offset(darktable.view_manager, TRUE, table->offset_imgid);
   }
 }
-
+/*
 static void _event_dnd_get(GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data,
                            const guint target_type, const guint time, gpointer user_data)
 {
@@ -1577,7 +1576,7 @@ static void _event_dnd_end(GtkWidget *widget, GdkDragContext *context, gpointer 
   // in any case, with reset the reordering class if any
   GtkStyleContext *tablecontext = gtk_widget_get_style_context(table->widget);
   gtk_style_context_remove_class(tablecontext, "dt_thumbtable_reorder");
-}
+}*/
 
 dt_thumbtable_t *dt_thumbtable_new()
 {
@@ -1607,13 +1606,13 @@ dt_thumbtable_t *dt_thumbtable_new()
 
   // drag and drop : used for reordering, interactions with maps, exporting uri to external apps, importing images
   // in filmroll...
-  gtk_drag_source_set(table->widget, GDK_BUTTON1_MASK, target_list_all, n_targets_all, GDK_ACTION_COPY);
+/*  gtk_drag_source_set(table->widget, GDK_BUTTON1_MASK, target_list_all, n_targets_all, GDK_ACTION_COPY);
   gtk_drag_dest_set(table->widget, GTK_DEST_DEFAULT_ALL, target_list_all, n_targets_all, GDK_ACTION_COPY);
   g_signal_connect_after(table->widget, "drag-begin", G_CALLBACK(_event_dnd_begin), table);
   g_signal_connect_after(table->widget, "drag-end", G_CALLBACK(_event_dnd_end), table);
   g_signal_connect(table->widget, "drag-data-get", G_CALLBACK(_event_dnd_get), table);
   g_signal_connect(table->widget, "drag-data-received", G_CALLBACK(_event_dnd_received), table);
-
+*/
   g_signal_connect(G_OBJECT(table->widget), "scroll-event", G_CALLBACK(_event_scroll), table);
   g_signal_connect(G_OBJECT(table->widget), "draw", G_CALLBACK(_event_draw), table);
   g_signal_connect(G_OBJECT(table->widget), "leave-notify-event", G_CALLBACK(_event_leave_notify), table);
@@ -1879,12 +1878,6 @@ void dt_thumbtable_set_parent(dt_thumbtable_t *table, GtkWidget *new_parent, dt_
       gtk_widget_set_name(table->widget, "thumbtable_filmstrip");
     else if(mode == DT_THUMBTABLE_MODE_ZOOM)
       gtk_widget_set_name(table->widget, "thumbtable_zoom");
-
-    // if needed, we block/unblock drag and drop
-    if(mode == DT_THUMBTABLE_MODE_ZOOM)
-      gtk_drag_source_unset(table->widget);
-    else if(table->mode == DT_THUMBTABLE_MODE_ZOOM)
-      gtk_drag_source_set(table->widget, GDK_BUTTON1_MASK, target_list_all, n_targets_all, GDK_ACTION_COPY);
 
     // we set selection/activation properties of all thumbs
     dt_thumbnail_selection_mode_t sel_mode = DT_THUMBNAIL_SEL_MODE_NORMAL;

@@ -30,7 +30,6 @@
 #include "develop/develop.h"
 #include "dtgtk/thumbtable.h"
 #include "gui/accelerators.h"
-#include "gui/drag_and_drop.h"
 #include "gui/gtk.h"
 #include "gui/hist_dialog.h"
 #include "libs/lib.h"
