@@ -1304,9 +1304,11 @@ void dt_masks_form_remove(struct dt_iop_module_t *module, dt_masks_form_t *grp, 
   // if we are here that mean we have to permanently delete this form
   // we drop the form from all modules
   int form_removed = 0;
+
   for(GList *iops = darktable.develop->iop; iops; iops = g_list_next(iops))
   {
     dt_iop_module_t *m = (dt_iop_module_t *)iops->data;
+
     if(m->flags() & IOP_FLAGS_SUPPORTS_BLENDING)
     {
       // is the form the base group of the iop ?
@@ -1319,11 +1321,11 @@ void dt_masks_form_remove(struct dt_iop_module_t *module, dt_masks_form_t *grp, 
       else
       {
         dt_masks_form_t *iopgrp = _group_from_module(darktable.develop, m);
+
         if(iopgrp && (iopgrp->type & DT_MASKS_GROUP))
         {
           int ok = 0;
-          GList *forms = iopgrp->points;
-          while(forms)
+          for(GList *forms = iopgrp->points; forms; forms = g_list_next(forms))
           {
             dt_masks_point_group_t *grpt = (dt_masks_point_group_t *)forms->data;
             if(grpt->formid == id)
@@ -1334,14 +1336,16 @@ void dt_masks_form_remove(struct dt_iop_module_t *module, dt_masks_form_t *grp, 
               forms = iopgrp->points;
               continue;
             }
-            forms = g_list_next(forms);
           }
+
           if(ok)
           {
             form_removed = 1;
             dt_masks_iop_update(m);
             dt_masks_update_image(darktable.develop);
-            if(iopgrp->points == NULL) dt_masks_form_remove(m, NULL, iopgrp);
+
+            if(iopgrp->points == NULL)
+              dt_masks_form_remove(m, NULL, iopgrp);
           }
         }
       }
