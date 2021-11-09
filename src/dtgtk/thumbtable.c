@@ -41,6 +41,7 @@ static gint _list_compare_by_imgid(gconstpointer a, gconstpointer b)
   if(th->imgid < 0 || b < 0) return 1;
   return (th->imgid != imgid);
 }
+
 static void _list_remove_thumb(gpointer user_data)
 {
   dt_thumbnail_t *thumb = (dt_thumbnail_t *)user_data;
@@ -1397,186 +1398,6 @@ static void _dt_collection_changed_callback(gpointer instance, dt_collection_cha
     dt_view_lighttable_change_offset(darktable.view_manager, TRUE, table->offset_imgid);
   }
 }
-/*
-static void _event_dnd_get(GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data,
-                           const guint target_type, const guint time, gpointer user_data)
-{
-  dt_thumbtable_t *table = (dt_thumbtable_t *)user_data;
-  g_assert(selection_data != NULL);
-
-  switch(target_type)
-  {
-    case DND_TARGET_IMGID:
-    {
-      const int imgs_nb = g_list_length(table->drag_list);
-      if(imgs_nb)
-      {
-        uint32_t *imgs = malloc(sizeof(uint32_t) * imgs_nb);
-        GList *l = table->drag_list;
-        for(int i = 0; i < imgs_nb; i++)
-        {
-          imgs[i] = GPOINTER_TO_INT(l->data);
-          l = g_list_next(l);
-        }
-        gtk_selection_data_set(selection_data, gtk_selection_data_get_target(selection_data),
-                               _DWORD, (guchar *)imgs, imgs_nb * sizeof(uint32_t));
-        free(imgs);
-      }
-      break;
-    }
-    default: // return the location of the file as a last resort
-    case DND_TARGET_URI:
-    {
-      GList *l = table->drag_list;
-      if(g_list_length(l) == 1)
-      {
-        gchar pathname[PATH_MAX] = { 0 };
-        gboolean from_cache = TRUE;
-        const int id = GPOINTER_TO_INT(g_list_nth_data(l, 0));
-        dt_image_full_path(id, pathname, sizeof(pathname), &from_cache);
-        gchar *uri = g_strdup_printf("file://%s", pathname); // TODO: should we add the host?
-        gtk_selection_data_set(selection_data, gtk_selection_data_get_target(selection_data),
-                               _BYTE, (guchar *)uri, strlen(uri));
-        g_free(uri);
-      }
-      else
-      {
-        GList *images = NULL;
-
-        for(; l; l = g_list_next(l))
-       {
-          const int id = GPOINTER_TO_INT(l->data);
-          gchar pathname[PATH_MAX] = { 0 };
-          gboolean from_cache = TRUE;
-          dt_image_full_path(id, pathname, sizeof(pathname), &from_cache);
-          gchar *uri = g_strdup_printf("file://%s", pathname); // TODO: should we add the host?
-          images = g_list_prepend(images, uri);
-        }
-        gchar *uri_list = dt_util_glist_to_str("\r\n", images);
-        g_list_free_full(images, g_free);
-        gtk_selection_data_set(selection_data, gtk_selection_data_get_target(selection_data), _BYTE,
-                               (guchar *)uri_list, strlen(uri_list));
-        g_free(uri_list);
-      }
-      break;
-    }
-  }
-}
-
-static void _event_dnd_begin(GtkWidget *widget, GdkDragContext *context, gpointer user_data)
-{
-  const int ts = DT_PIXEL_APPLY_DPI(64);
-
-  dt_thumbtable_t *table = (dt_thumbtable_t *)user_data;
-
-  table->drag_list = g_list_copy((GList *)dt_view_get_images_to_act_on(FALSE, TRUE));
-
-  // if we are dragging a single image -> use the thumbnail of that image
-  // otherwise use the generic d&d icon
-  // TODO: have something pretty in the 2nd case, too.
-  if(g_list_length(table->drag_list) == 1)
-  {
-    const int id = GPOINTER_TO_INT(g_list_nth_data(table->drag_list, 0));
-    dt_mipmap_buffer_t buf;
-    dt_mipmap_size_t mip = dt_mipmap_cache_get_matching_size(darktable.mipmap_cache, ts, ts);
-    dt_mipmap_cache_get(darktable.mipmap_cache, &buf, id, mip, DT_MIPMAP_BLOCKING, 'r');
-
-    if(buf.buf)
-    {
-      for(size_t i = 3; i < (size_t)4 * buf.width * buf.height; i += 4) buf.buf[i] = UINT8_MAX;
-
-      int w = ts, h = ts;
-      if(buf.width < buf.height)
-        w = (buf.width * ts) / buf.height; // portrait
-      else
-        h = (buf.height * ts) / buf.width; // landscape
-
-      GdkPixbuf *source = gdk_pixbuf_new_from_data(buf.buf, GDK_COLORSPACE_RGB, TRUE, 8, buf.width, buf.height,
-                                                   buf.width * 4, NULL, NULL);
-      GdkPixbuf *scaled = gdk_pixbuf_scale_simple(source, w, h, GDK_INTERP_HYPER);
-      gtk_drag_set_icon_pixbuf(context, scaled, 0, h);
-
-      if(source) g_object_unref(source);
-      if(scaled) g_object_unref(scaled);
-    }
-
-    dt_mipmap_cache_release(darktable.mipmap_cache, &buf);
-  }
-
-  // if we can reorder, let's update the thumbtable class acoordingly
-  // this will show up vertical bar for the image destination point
-  if(darktable.collection->params.sort == DT_COLLECTION_SORT_CUSTOM_ORDER && table->mode != DT_THUMBTABLE_MODE_ZOOM)
-  {
-    // we set the class correctly
-    GtkStyleContext *tablecontext = gtk_widget_get_style_context(table->widget);
-    gtk_style_context_add_class(tablecontext, "dt_thumbtable_reorder");
-  }
-}
-
-static void _event_dnd_received(GtkWidget *widget, GdkDragContext *context, gint x, gint y,
-                                GtkSelectionData *selection_data, guint target_type, guint time,
-                                gpointer user_data)
-{
-  gboolean success = FALSE;
-
-  if((target_type == DND_TARGET_URI) && (selection_data != NULL)
-     && (gtk_selection_data_get_length(selection_data) >= 0))
-  {
-    gchar **uri_list = g_strsplit_set((gchar *)gtk_selection_data_get_data(selection_data), "\r\n", 0);
-    if(uri_list)
-    {
-      gchar **image_to_load = uri_list;
-      while(*image_to_load)
-      {
-        if(**image_to_load)
-        {
-          dt_load_from_string(*image_to_load, FALSE, NULL); // TODO: do we want to open the image in darkroom mode?
-                                                            // If yes -> set to TRUE.
-        }
-        image_to_load++;
-      }
-    }
-    g_strfreev(uri_list);
-    success = TRUE;
-  }
-  else if((target_type == DND_TARGET_IMGID) && (selection_data != NULL)
-          && (gtk_selection_data_get_length(selection_data) >= 0))
-  {
-    dt_thumbtable_t *table = (dt_thumbtable_t *)user_data;
-    if(table->drag_list)
-    {
-      if(darktable.collection->params.sort == DT_COLLECTION_SORT_CUSTOM_ORDER
-         && table->mode != DT_THUMBTABLE_MODE_ZOOM)
-      {
-        // source = dest = thumbtable => we are reordering
-        // set order to "user defined" (this shouldn't trigger anything)
-        const int32_t mouse_over_id = dt_control_get_mouse_over_id();
-        dt_collection_move_before(mouse_over_id, table->drag_list);
-        dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD,
-                                   g_list_copy(table->drag_list));
-        success = TRUE;
-      }
-    }
-    else
-    {
-      // we don't catch anything here at the moment
-    }
-  }
-  gtk_drag_finish(context, success, FALSE, time);
-}
-
-static void _event_dnd_end(GtkWidget *widget, GdkDragContext *context, gpointer user_data)
-{
-  dt_thumbtable_t *table = (dt_thumbtable_t *)user_data;
-  if(table->drag_list)
-  {
-    g_list_free(table->drag_list);
-    table->drag_list = NULL;
-  }
-  // in any case, with reset the reordering class if any
-  GtkStyleContext *tablecontext = gtk_widget_get_style_context(table->widget);
-  gtk_style_context_remove_class(tablecontext, "dt_thumbtable_reorder");
-}*/
 
 dt_thumbtable_t *dt_thumbtable_new()
 {
@@ -1604,15 +1425,6 @@ dt_thumbtable_t *dt_thumbtable_new()
   gtk_widget_set_app_paintable(table->widget, TRUE);
   gtk_widget_set_can_focus(table->widget, TRUE);
 
-  // drag and drop : used for reordering, interactions with maps, exporting uri to external apps, importing images
-  // in filmroll...
-/*  gtk_drag_source_set(table->widget, GDK_BUTTON1_MASK, target_list_all, n_targets_all, GDK_ACTION_COPY);
-  gtk_drag_dest_set(table->widget, GTK_DEST_DEFAULT_ALL, target_list_all, n_targets_all, GDK_ACTION_COPY);
-  g_signal_connect_after(table->widget, "drag-begin", G_CALLBACK(_event_dnd_begin), table);
-  g_signal_connect_after(table->widget, "drag-end", G_CALLBACK(_event_dnd_end), table);
-  g_signal_connect(table->widget, "drag-data-get", G_CALLBACK(_event_dnd_get), table);
-  g_signal_connect(table->widget, "drag-data-received", G_CALLBACK(_event_dnd_received), table);
-*/
   g_signal_connect(G_OBJECT(table->widget), "scroll-event", G_CALLBACK(_event_scroll), table);
   g_signal_connect(G_OBJECT(table->widget), "draw", G_CALLBACK(_event_draw), table);
   g_signal_connect(G_OBJECT(table->widget), "leave-notify-event", G_CALLBACK(_event_leave_notify), table);
