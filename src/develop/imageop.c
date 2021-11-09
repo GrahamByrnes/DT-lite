@@ -470,8 +470,8 @@ int dt_iop_load_module_by_so(dt_iop_module_t *module, dt_iop_module_so_t *so, dt
   module->color_picker_box[2] = module->color_picker_box[3] = .75f;
   module->color_picker_point[0] = module->color_picker_point[1] = 0.5f;
   module->histogram = NULL;
-  module->histogram_max[0] = module->histogram_max[1] = module->histogram_max[2] = module->histogram_max[3]
-      = 0;
+  module->histogram_max[0] = module->histogram_max[1] = module->histogram_max[2]
+                           = module->histogram_max[3] = 0;
   module->histogram_middle_grey = FALSE;
   module->request_mask_display = DT_DEV_PIXELPIPE_DISPLAY_NONE;
   module->suppress_mask = 0;
@@ -1323,39 +1323,39 @@ static void popup_callback(GtkButton *button, GdkEventButton *event, dt_iop_modu
 
 void dt_iop_request_focus(dt_iop_module_t *module)
 {
-  if(darktable.gui->reset || (darktable.develop->gui_module == module)) return;
+  dt_iop_module_t *out_focus_module = darktable.develop->gui_module;
+  
+  if(darktable.gui->reset || (out_focus_module == module)) return;
+ //                         || dt_iop_is_hidden(out_focus_module)) return;
 
-  if(darktable.develop->gui_module != module)
-    darktable.develop->focus_hash++;
-  // lose the focus of previous focus module
-  if(darktable.develop->gui_module)
+  darktable.develop->focus_hash++;
+  darktable.develop->gui_module = module;
+
+  if(out_focus_module)
   {
-    if(darktable.develop->gui_module->gui_focus)
-      darktable.develop->gui_module->gui_focus(darktable.develop->gui_module, FALSE);
+    if(out_focus_module->gui_focus)
+      out_focus_module->gui_focus(out_focus_module, FALSE);
 
-    dt_iop_color_picker_reset(darktable.develop->gui_module, TRUE);
-    gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(darktable.develop->gui_module),
+    dt_iop_color_picker_reset(out_focus_module, TRUE);
+    gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(out_focus_module),
                                GTK_STATE_FLAG_NORMAL, TRUE);
-
-    if(darktable.develop->gui_module->operation_tags_filter())
+    if(out_focus_module->operation_tags_filter())
       dt_dev_invalidate_from_gui(darktable.develop);
 
-    dt_accel_disconnect_locals_iop(darktable.develop->gui_module);
+    dt_accel_disconnect_locals_iop(out_focus_module);
     dt_masks_reset_form_gui();
-    dt_iop_gui_blending_lose_focus(darktable.develop->gui_module);
-    gtk_widget_queue_draw(darktable.develop->gui_module->expander);
+    dt_iop_gui_blending_lose_focus(out_focus_module);
+    gtk_widget_queue_draw(out_focus_module->expander);
     dt_control_hinter_message(darktable.control, "");
-    GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(darktable.develop->gui_module));
+    GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(out_focus_module));
     GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
     gtk_style_context_remove_class(context, "dt_module_focus");
   }
-
-  darktable.develop->gui_module = module;
   // set the focus on module
   if(module)
   {
     gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(module), GTK_STATE_FLAG_SELECTED, TRUE);
-
+ 
     if(module->operation_tags_filter())
       dt_dev_invalidate_from_gui(darktable.develop);
 
@@ -1365,7 +1365,7 @@ void dt_iop_request_focus(dt_iop_module_t *module)
       module->gui_focus(module, TRUE);
 
     gtk_widget_queue_draw(module->expander);
-    GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(darktable.develop->gui_module));
+    GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(/*darktable.develop->gui_*/module));
     GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
     gtk_style_context_add_class(context, "dt_module_focus");
   }
