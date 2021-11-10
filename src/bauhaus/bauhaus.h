@@ -19,6 +19,7 @@
 #pragma once
 
 #include "common/debug.h"
+#include "common/colorlabels.h"
 #include "control/control.h"
 #include "develop/develop.h"
 #include "develop/imageop.h"
@@ -204,9 +205,9 @@ typedef struct dt_bauhaus_t
   // appearance relevant stuff:
   // sizes and fonts:
   float scale;                           // gui scale multiplier
-  float widget_space;                      // space between widgets in a module
-  float line_space;                        // space between lines of text in e.g. the combo box
-  float line_height;                       // height of a line of text
+  float widget_space;                    // space between widgets in a module
+  float line_space;                      // space between lines of text in e.g. the combo box
+  float line_height;                     // height of a line of text
   float marker_size;                     // height of the slider indicator
   float baseline_size;                   // height of the slider bar
   float border_width;                    // width of the border of the slider marker
@@ -227,6 +228,7 @@ typedef struct dt_bauhaus_t
 
   // colors for graphs
   GdkRGBA graph_bg, graph_border, graph_fg, graph_grid, graph_fg_active, inset_histogram;
+  GdkRGBA colorlabels[DT_COLORLABELS_LAST];
 } dt_bauhaus_t;
 
 #define DT_BAUHAUS_SPACE 0

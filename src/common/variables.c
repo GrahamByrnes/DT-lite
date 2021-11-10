@@ -16,20 +16,18 @@
     along with darktable.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "common/debug.h"
+#include "common/darktable.h"
+#include "bauhaus/bauhaus.h"
 #include "common/variables.h"
 #include "common/colorlabels.h"
 #include "common/darktable.h"
 #include "common/file_location.h"
 #include "common/image.h"
 #include "common/image_cache.h"
-#include "common/metadata.h"                       
+#include "common/metadata.h"
 #include "common/utility.h"
 #include "common/tags.h"
 #include "control/conf.h"
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -141,9 +139,11 @@ static void init_expansion(dt_variables_params_t *params, gboolean iterate)
 
     params->data->flags = img->flags;
 
-    dt_image_cache_read_release(darktable.image_cache, img);
+    if(params->img == NULL)
+      dt_image_cache_read_release(darktable.image_cache, img);
   }
-  else if (params->data->exif_time) {
+  else if (params->data->exif_time)
+  {
     localtime_r(&params->data->exif_time, &params->data->exif_tm);
     params->data->have_exif_tm = TRUE;
   }
@@ -233,11 +233,10 @@ static char *get_base_value(dt_variables_params_t *params, char **variable)
   else if(has_prefix(variable, "VERSION_NAME"))
   {
     GList *res = dt_metadata_get(params->imgid, "Xmp.darktable.version_name", NULL);
-    res = g_list_first(res);
+
     if(res != NULL)
-    {
       result = g_strdup((char *)res->data);
-    }
+
     g_list_free_full(res, &g_free);
   }
   else if(has_prefix(variable, "VERSION_IF_MULTI"))
@@ -350,87 +349,33 @@ static char *get_base_value(dt_variables_params_t *params, char **variable)
         break;
     }
   }
-  else if(has_prefix(variable, "LABELS_ICONS") && g_strcmp0(params->jobcode, "infos") == 0)
+  else if((has_prefix(variable, "LABELS_ICONS") ||
+           has_prefix(variable, "LABELS_COLORICONS"))
+          && g_strcmp0(params->jobcode, "infos") == 0)
   {
     escape = FALSE;
     GList *res = dt_metadata_get(params->imgid, "Xmp.darktable.colorlabels", NULL);
-    res = g_list_first(res);
-    if(res != NULL)
+    for(GList *res_iter = res; res_iter; res_iter = g_list_next(res_iter))
     {
-      do
-      {
-        const char *lb = (char *)(dt_colorlabels_to_string(GPOINTER_TO_INT(res->data)));
-        if(g_strcmp0(lb, "red") == 0)
-        {
-          result = dt_util_dstrcat(result, "<span foreground=\"#ee0000\">⚫ </span>");
-        }
-        else if(g_strcmp0(lb, "yellow") == 0)
-        {
-          result = dt_util_dstrcat(result, "<span foreground=\"#eeee00\">⚫ </span>");
-        }
-        else if(g_strcmp0(lb, "green") == 0)
-        {
-          result = dt_util_dstrcat(result, "<span foreground=\"#00ee00\">⚫ </span>");
-        }
-        else if(g_strcmp0(lb, "blue") == 0)
-        {
-          result = dt_util_dstrcat(result, "<span foreground=\"#0000ee\">⚫ </span>");
-        }
-        else if(g_strcmp0(lb, "purple") == 0)
-        {
-          result = dt_util_dstrcat(result, "<span foreground=\"#ee00ee\">⚫ </span>");
-        }
-      } while((res = g_list_next(res)) != NULL);
+      const int dot_index = GPOINTER_TO_INT(res_iter->data);
+      const GdkRGBA c = darktable.bauhaus->colorlabels[dot_index];
+      result = dt_util_dstrcat(result, "<span foreground='#%02x%02x%02x'>⬤ </span>",
+                               (guint)(c.red*255), (guint)(c.green*255), (guint)(c.blue*255));
     }
-    g_list_free_full(res, &g_free);
+    g_list_free(res);
   }
-  else if(has_prefix(variable, "LABELS_COLORICONS") && g_strcmp0(params->jobcode, "infos") == 0)
+  else if(has_prefix(variable, "LABELS"))
   {
-    escape = FALSE;
     GList *res = dt_metadata_get(params->imgid, "Xmp.darktable.colorlabels", NULL);
-    res = g_list_first(res);
-    if(res != NULL)
-    {
-      do
-      {
-        const char *lb = (char *)(dt_colorlabels_to_string(GPOINTER_TO_INT(res->data)));
-        if(g_strcmp0(lb, "red") == 0)
-        {
-          result = dt_util_dstrcat(result, "<span foreground=\"#ee0000\">🔴 </span>");
-        }
-        else if(g_strcmp0(lb, "yellow") == 0)
-        {
-          result = dt_util_dstrcat(result, "<span foreground=\"#eeee00\">🟡 </span>");
-        }
-        else if(g_strcmp0(lb, "green") == 0)
-        {
-          result = dt_util_dstrcat(result, "<span foreground=\"#00ee00\">🟢 </span>");
-        }
-        else if(g_strcmp0(lb, "blue") == 0)
-        {
-          result = dt_util_dstrcat(result, "<span foreground=\"#0000ee\">🔵 </span>");
-        }
-        else if(g_strcmp0(lb, "purple") == 0)
-        {
-          result = dt_util_dstrcat(result, "<span foreground=\"#ee00ee\">🟣 </span>");
-        }
-      } while((res = g_list_next(res)) != NULL);
-    }
-    g_list_free_full(res, &g_free);
-  }
-  else if(has_prefix(variable, "LABELS") || has_prefix(variable, "LABELS_ICONS") || has_prefix(variable, "LABELS_COLORICONS"))
-  {
-    // TODO: currently we concatenate all the color labels with a ',' as a separator. Maybe it's better to
-    // only use the first/last label?
-    GList *res = dt_metadata_get(params->imgid, "Xmp.darktable.colorlabels", NULL);
-    res = g_list_first(res);
+
     if(res != NULL)
     {
       GList *labels = NULL;
-      do
-      {
-        labels = g_list_append(labels, (char *)(_(dt_colorlabels_to_string(GPOINTER_TO_INT(res->data)))));
-      } while((res = g_list_next(res)) != NULL);
+
+      for(GList *res_iter = res; res_iter; res_iter = g_list_next(res_iter))
+        labels = g_list_prepend(labels, (char *)(_(dt_colorlabels_to_string(GPOINTER_TO_INT(res_iter->data)))));
+
+      labels = g_list_reverse(labels);  // list was built in reverse order, so un-reverse it
       result = dt_util_glist_to_str(",", labels);
       g_list_free(labels);
     }
@@ -439,51 +384,46 @@ static char *get_base_value(dt_variables_params_t *params, char **variable)
   else if(has_prefix(variable, "TITLE"))
   {
     GList *res = dt_metadata_get(params->imgid, "Xmp.dc.title", NULL);
-    res = g_list_first(res);
+
     if(res != NULL)
-    {
       result = g_strdup((char *)res->data);
-    }
+
     g_list_free_full(res, &g_free);
   }
   else if(has_prefix(variable, "DESCRIPTION"))
   {
     GList *res = dt_metadata_get(params->imgid, "Xmp.dc.description", NULL);
-    res = g_list_first(res);
+
     if(res != NULL)
-    {
       result = g_strdup((char *)res->data);
-    }
+
     g_list_free_full(res, &g_free);
   }
   else if(has_prefix(variable, "CREATOR"))
   {
     GList *res = dt_metadata_get(params->imgid, "Xmp.dc.creator", NULL);
-    res = g_list_first(res);
+
     if(res != NULL)
-    {
       result = g_strdup((char *)res->data);
-    }
+
     g_list_free_full(res, &g_free);
   }
   else if(has_prefix(variable, "PUBLISHER"))
   {
     GList *res = dt_metadata_get(params->imgid, "Xmp.dc.publisher", NULL);
-    res = g_list_first(res);
+
     if(res != NULL)
-    {
       result = g_strdup((char *)res->data);
-    }
+
     g_list_free_full(res, &g_free);
   }
   else if(has_prefix(variable, "RIGHTS"))
   {
     GList *res = dt_metadata_get(params->imgid, "Xmp.dc.rights", NULL);
-    res = g_list_first(res);
+
     if(res != NULL)
-    {
       result = g_strdup((char *)res->data);
-    }
+
     g_list_free_full(res, &g_free);
   }
   else if(has_prefix(variable, "MAX_WIDTH"))
@@ -520,7 +460,7 @@ static char *get_base_value(dt_variables_params_t *params, char **variable)
   else if (has_prefix(variable, "TAGS"))
   {
     GList *tags_list = dt_tag_get_list_export(params->imgid, params->data->tags_flags);
-    char *tags = dt_util_glist_to_str(",", tags_list);
+    char *tags = dt_util_glist_to_str(", ", tags_list);
     g_list_free_full(tags_list, g_free);
     result = g_strdup(tags);
     g_free(tags);
@@ -608,18 +548,6 @@ static char *variable_get_value(dt_variables_params_t *params, char **variable)
       }
       break;
     case ':':
-      /*
-        $(var:offset)
-          Variable var expanded, starting from offset.
-
-        $(var:offset:length)
-          Expansion to a max of length characters of variable var, from offset.
-
-        If offset evaluates to a number less than zero, the value is used as an offset in characters from the
-        end of the value of parameter. If length evaluates to a number less than zero, it is interpreted as an
-        offset in characters from the end of the value of parameter rather than a number of characters, and the
-        expansion is the characters between offset and that result.
-      */
       {
         const glong base_value_utf8_length = g_utf8_strlen(base_value, -1);
         const glong offset = strtol(*variable, variable, 10);
@@ -650,10 +578,6 @@ static char *variable_get_value(dt_variables_params_t *params, char **variable)
       }
       break;
     case '#':
-      /*
-        $(var#Pattern)
-          Remove from $var the shortest part of $Pattern that matches the front end of $var.
-      */
       {
         char *pattern = expand(params, variable, ')');
         const size_t pattern_length = strlen(pattern);
@@ -667,10 +591,6 @@ static char *variable_get_value(dt_variables_params_t *params, char **variable)
       }
       break;
     case '%':
-      /*
-        $(var%Pattern)
-          Remove from $var the shortest part of $Pattern that matches the back end of $var.
-      */
       {
         char *pattern = expand(params, variable, ')');
         const size_t pattern_length = strlen(pattern);
@@ -680,23 +600,6 @@ static char *variable_get_value(dt_variables_params_t *params, char **variable)
       }
       break;
     case '/':
-      /*
-        replacement. the following cases are possible:
-
-        $(var/Pattern/Replacement)
-          First match of Pattern, within var replaced with Replacement.
-          If Replacement is omitted, then the first match of Pattern is replaced by nothing, that is, deleted.
-
-        $(var//Pattern/Replacement)
-          Global replacement. All matches of Pattern, within var replaced with Replacement.
-          As above, if Replacement is omitted, then all occurrences of Pattern are replaced by nothing, that is, deleted.
-
-        $(var/#Pattern/Replacement)
-          If prefix of var matches Pattern, then substitute Replacement for Pattern.
-
-        $(var/%Pattern/Replacement)
-          If suffix of var matches Pattern, then substitute Replacement for Pattern.
-      */
       {
         const char mode = **variable;
 
@@ -769,19 +672,6 @@ static char *variable_get_value(dt_variables_params_t *params, char **variable)
       break;
     case '^':
     case ',':
-      /*
-        changing the case:
-
-        $(parameter^pattern)
-        $(parameter^^pattern)
-        $(parameter,pattern)
-        $(parameter,,pattern)
-          This expansion modifies the case of alphabetic characters in parameter.
-          The ‘^’ operator converts lowercase letters to uppercase;
-          the ‘,’ operator converts uppercase letters to lowercase.
-          The ‘^^’ and ‘,,’ expansions convert each character in the expanded value;
-          the ‘^’ and ‘,’ expansions convert only the first character in the expanded value.
-      */
       {
         const char mode = **variable;
         char *_base_value = NULL;
@@ -837,6 +727,9 @@ static void grow_buffer(char **result, char **result_iter, size_t *result_length
 static char *expand(dt_variables_params_t *params, char **source, char extra_stop)
 {
   char *result = g_strdup("");
+
+  if(!*source) return result;
+
   char *result_iter = result;
   size_t result_length = 0;
   char *source_iter = *source;
@@ -943,8 +836,6 @@ void dt_variables_set_tags_flags(dt_variables_params_t *params, uint32_t flags)
 {
   params->data->tags_flags = flags;
 }
-
-
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent

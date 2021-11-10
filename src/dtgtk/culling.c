@@ -43,6 +43,7 @@ static gint _list_compare_by_imgid(gconstpointer a, gconstpointer b)
   if(th->imgid < 0 || b < 0) return 1;
   return (th->imgid != imgid);
 }
+
 static void _list_remove_thumb(gpointer user_data)
 {
   dt_thumbnail_t *thumb = (dt_thumbnail_t *)user_data;
@@ -61,9 +62,8 @@ static int _get_selection_count()
   if(stmt != NULL)
   {
     if(sqlite3_step(stmt) == SQLITE_ROW)
-    {
       nb = sqlite3_column_int(stmt, 0);
-    }
+
     sqlite3_finalize(stmt);
   }
   g_free(query);

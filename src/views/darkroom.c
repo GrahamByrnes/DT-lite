@@ -696,11 +696,7 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
     dt_pthread_mutex_BAD_unlock(&dev->preview_pipe_mutex);
     return;
   }
-  // get current plugin in focus before defocus
-  gchar *active_plugin = NULL;
 
-  if(darktable.develop->gui_module)
-    active_plugin = g_strdup(darktable.develop->gui_module->op);
   dt_iop_request_focus(NULL);
   g_assert(dev->gui_attached);
   // commit image ops to db
@@ -836,25 +832,8 @@ static void dt_dev_change_image(dt_develop_t *dev, const int32_t imgid)
   //  A double history entry is not generated.
   --darktable.gui->reset;
   // I don't think it makes sense to look for an active plugin directly after an install
-  if(active_plugin)
-  {
-    gboolean valid = FALSE;
-    for(const GList *modules = dev->iop; modules; modules = g_list_next(modules))
-    {
-      dt_iop_module_t *module = (dt_iop_module_t *)(modules->data);
+  dt_conf_set_string("plugins/darkroom/active", "");
 
-      if(!strcmp(module->op, active_plugin))
-      {
-        valid = TRUE;
-        dt_conf_set_string("plugins/darkroom/active", active_plugin);
-      }
-    }
-
-    if(!valid)
-      dt_conf_set_string("plugins/darkroom/active", "");
-
-    g_free(active_plugin);
-  }
   // Signal develop initialize
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_DEVELOP_IMAGE_CHANGED);
   // release pixel pipe mutices
@@ -2180,7 +2159,8 @@ void leave(dt_view_t *self)
   while(dev->iop)
   {
     dt_iop_module_t *module = (dt_iop_module_t *)(dev->iop->data);
-    if(!dt_iop_is_hidden(module)) dt_iop_gui_cleanup_module(module);
+    if(!dt_iop_is_hidden(module))
+      dt_iop_gui_cleanup_module(module);
 
     dt_dev_cleanup_module_accels(module);
     module->accel_closures = NULL;

@@ -1408,7 +1408,9 @@ dt_thumbtable_t *dt_thumbtable_new()
   gtk_widget_set_name(table->widget, "thumbtable_filemanager");
   GtkStyleContext *context = gtk_widget_get_style_context(table->widget);
   gtk_style_context_add_class(context, "dt_thumbtable");
-  if(dt_conf_get_bool("lighttable/ui/expose_statuses")) gtk_style_context_add_class(context, "dt_show_overlays");
+
+  if(dt_conf_get_bool("lighttable/ui/expose_statuses"))
+    gtk_style_context_add_class(context, "dt_show_overlays");
 
   // overlays mode
   table->overlays = DT_THUMBNAIL_OVERLAYS_NONE;

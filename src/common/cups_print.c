@@ -75,7 +75,7 @@ void dt_init_print_info(dt_print_info_t *pinfo)
 void dt_get_printer_info(const char *printer_name, dt_printer_info_t *pinfo)
 {
   cups_dest_t *dests;
-  int num_dests = cupsGetDests(&dests);
+  const int num_dests = cupsGetDests(&dests);
   cups_dest_t *dest = cupsGetDest(printer_name, NULL, num_dests, dests);
 
   if (dest)
@@ -206,28 +206,25 @@ void dt_printers_discovery(void (*cb)(dt_printer_info_t *pr, void *user_data), v
   }
 }
 
-static int paper_exists(GList *papers, const char *name)
+static gboolean paper_exists(GList *papers, const char *name)
 {
   if (strstr(name,"custom_") == name)
-    return 1;
+    return TRUE;
 
-  GList *p = papers;
-  while (p)
+  for(GList *p = papers; p; p = g_list_next(p))
   {
     const dt_paper_info_t *pi = (dt_paper_info_t*)p->data;
     if (!strcmp(pi->name,name) || !strcmp(pi->common_name,name))
-      return 1;
-    p = g_list_next (p);
+      return TRUE;
   }
-  return 0;
+  return TRUE;
 }
 
 dt_paper_info_t *dt_get_paper(GList *papers, const char *name)
 {
-  GList *p = papers;
   dt_paper_info_t *result = NULL;
 
-  while (p)
+  for(GList *p = papers; p; p = g_list_next(p))
   {
     dt_paper_info_t *pi = (dt_paper_info_t*)p->data;
     if (!strcmp(pi->name,name) || !strcmp(pi->common_name,name))
@@ -235,7 +232,6 @@ dt_paper_info_t *dt_get_paper(GList *papers, const char *name)
       result = pi;
       break;
     }
-    p = g_list_next (p);
   }
   return result;
 }
@@ -262,7 +258,7 @@ GList *dt_get_papers(const dt_printer_info_t *printer)
 #endif
   {
     cups_dest_t *dests;
-    int num_dests = cupsGetDests(&dests);
+    const int num_dests = cupsGetDests(&dests);
     cups_dest_t *dest = cupsGetDest(printer_name, NULL, num_dests, dests);
     int cancel = 0; // important
     char resource[1024];
@@ -371,7 +367,7 @@ GList *dt_get_media_type(const dt_printer_info_t *printer)
           dt_medium_info_t *media = (dt_medium_info_t*)malloc(sizeof(dt_medium_info_t));
           g_strlcpy(media->name, choice->choice, MAX_NAME);
           g_strlcpy(media->common_name, choice->text, MAX_NAME);
-          result = g_list_append (result, media);
+          result = g_list_prepend (result, media);
 
           dt_print(DT_DEBUG_PRINT, "[print] new media %2d (%s) (%s)\n", k, media->name, media->common_name);
           choice++;
@@ -382,15 +378,14 @@ GList *dt_get_media_type(const dt_printer_info_t *printer)
   ppdClose(ppd);
   g_unlink(PPDFile);
 
-  return result;
+  return g_list_reverse(result);
 }
 
 dt_medium_info_t *dt_get_medium(GList *media, const char *name)
 {
-  GList *m = media;
   dt_medium_info_t *result = NULL;
 
-  while (m)
+  for(GList *m = media; m; m = g_list_next(m))
   {
     dt_medium_info_t *mi = (dt_medium_info_t*)m->data;
     if (!strcmp(mi->name, name) || !strcmp(mi->common_name, name))
@@ -398,7 +393,6 @@ dt_medium_info_t *dt_get_medium(GList *media, const char *name)
       result = mi;
       break;
     }
-    m = g_list_next (m);
   }
   return result;
 }
@@ -498,7 +492,7 @@ void dt_print_file(const int32_t imgid, const char *filename, const char *job_ti
   else
   {
     cups_dest_t *dests;
-    int num_dests = cupsGetDests(&dests);
+    const int num_dests = cupsGetDests(&dests);
     cups_dest_t *dest = cupsGetDest(pinfo->printer.name, NULL, num_dests, dests);
 
     for (int j = 0; j < dest->num_options; j ++)
@@ -582,14 +576,14 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
   float np_bottom = prt->printer.hw_margin_bottom;
 
   /* do some arrangements for the landscape mode. */
-  if (prt->page.landscape)
+  if(prt->page.landscape)
   {
     float tmp = pg_width;
     pg_width = pg_height;
     pg_height = tmp;
 
     //  only invert if we did not get a specific area
-    if (area_width == 0 && area_height == 0)
+    if(area_width == 0 && area_height == 0)
     {
       tmp = width;
       width = height;
@@ -611,7 +605,7 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
   // display page
   int32_t p_bottom, p_right;
 
-  if (a_aspect > pg_aspect)
+  if(a_aspect > pg_aspect)
   {
     *px = (width - (height * pg_aspect)) / 2;
     *py = 0;
