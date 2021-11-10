@@ -382,7 +382,7 @@ static char *get_base_value(dt_variables_params_t *params, char **variable)
         }
       } while((res = g_list_next(res)) != NULL);
     }
-    g_list_free(res);
+    g_list_free_full(res, &g_free);
   }
   else if(has_prefix(variable, "LABELS_COLORICONS") && g_strcmp0(params->jobcode, "infos") == 0)
   {
@@ -416,7 +416,7 @@ static char *get_base_value(dt_variables_params_t *params, char **variable)
         }
       } while((res = g_list_next(res)) != NULL);
     }
-    g_list_free(res);
+    g_list_free_full(res, &g_free);
   }
   else if(has_prefix(variable, "LABELS") || has_prefix(variable, "LABELS_ICONS") || has_prefix(variable, "LABELS_COLORICONS"))
   {

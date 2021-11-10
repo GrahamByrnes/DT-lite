@@ -95,12 +95,9 @@ void dt_get_printer_info(const char *printer_name, dt_printer_info_t *pinfo)
       ppd_attr_t *attr = ppdFindAttr(ppd, "ModelName", NULL);
 
       if (attr)
-      {
         pinfo->is_turboprint = strstr(attr->value, "TurboPrint") != NULL;
-      }
 
       // hardware margins
-
       attr = ppdFindAttr(ppd, "HWMargins", NULL);
 
       if (attr)
@@ -114,9 +111,7 @@ void dt_get_printer_info(const char *printer_name, dt_printer_info_t *pinfo)
         pinfo->hw_margin_right  = dt_pdf_point_to_mm (pinfo->hw_margin_right);
         pinfo->hw_margin_top    = dt_pdf_point_to_mm (pinfo->hw_margin_top);
       }
-
       // default resolution
-
       attr = ppdFindAttr(ppd, "DefaultResolution", NULL);
 
       if (attr)
@@ -146,7 +141,6 @@ static int _dest_cb(void *user_data, unsigned flags, cups_dest_t *dest)
 {
   const dt_prtctl_t *pctl = (dt_prtctl_t *)user_data;
   const char *psvalue = cupsGetOption("printer-state", dest->num_options, dest->options);
-
   // check that the printer is ready
   if (psvalue!=NULL && strtol(psvalue, NULL, 10) < IPP_PRINTER_STOPPED)
   {
@@ -204,7 +198,6 @@ void dt_printers_discovery(void (*cb)(dt_printer_info_t *pr, void *user_data), v
   if(job)
   {
     dt_prtctl_t *prtctl = g_malloc0(sizeof(dt_prtctl_t));
-
     prtctl->cb = cb;
     prtctl->user_data = user_data;
 
@@ -271,9 +264,7 @@ GList *dt_get_papers(const dt_printer_info_t *printer)
     cups_dest_t *dests;
     int num_dests = cupsGetDests(&dests);
     cups_dest_t *dest = cupsGetDest(printer_name, NULL, num_dests, dests);
-
     int cancel = 0; // important
-
     char resource[1024];
 
     if (dest)
@@ -363,9 +354,7 @@ GList *dt_get_media_type(const dt_printer_info_t *printer)
 {
   const char *printer_name = printer->name;
   GList *result = NULL;
-
   // check now PPD media type
-
   const char *PPDFile = cupsGetPPD(printer_name);
   ppd_file_t *ppd = ppdOpenFile(PPDFile);
 
@@ -426,13 +415,11 @@ void dt_print_file(const int32_t imgid, const char *filename, const char *job_ti
 
   cups_option_t *options = NULL;
   int num_options = 0;
-
   // for turboprint drived printer, use the turboprint dialog
   if (pinfo->printer.is_turboprint)
   {
     const char *tp_intent_name[] = { "perception_0", "colorimetric-relative_1", "saturation_1", "colorimetric-absolute_1" };
     char tmpfile[PATH_MAX] = { 0 };
-
     dt_loc_get_tmp_dir(tmpfile, sizeof(tmpfile));
     g_strlcat(tmpfile, "/dt_cups_opts_XXXXXX", sizeof(tmpfile));
 
@@ -444,10 +431,8 @@ void dt_print_file(const int32_t imgid, const char *filename, const char *job_ti
       return;
     }
     close(fd);
-
     // ensure that intent is in the range, may happen if at some point we add new intent in the list
     const int intent = (pinfo->printer.intent < 4) ? pinfo->printer.intent : 0;
-
     // spawn turboprint command
     gchar * argv[15] = { 0 };
 
@@ -487,12 +472,10 @@ void dt_print_file(const int32_t imgid, const char *filename, const char *job_ti
         char optname[100];
         char optvalue[100];
         const int ropt = fscanf(stream, "%*s %99[^= ]=%99s", optname, optvalue);
-
         // if we parsed an option name=value
         if (ropt==2)
         {
           char *v = optvalue;
-
           // remove possible single quote around value
           if (*v == '\'') v++;
           if (v[strlen(v)-1] == '\'') v[strlen(v)-1] = '\0';
@@ -526,27 +509,16 @@ void dt_print_file(const int32_t imgid, const char *filename, const char *job_ti
                                     num_options, &options);
 
     cupsFreeDests(num_dests, dests);
-
     // if we have a profile, disable cm on CUPS, this is important as dt does the cm
-
     num_options = cupsAddOption("cm-calibration", *pinfo->printer.profile ? "true" : "false", num_options, &options);
-
     // media to print on
-
     num_options = cupsAddOption("media", pinfo->paper.name, num_options, &options);
-
     // the media type to print on
-
     num_options = cupsAddOption("MediaType", pinfo->medium.name, num_options, &options);
-
     // never print two-side
-
     num_options = cupsAddOption("sides", "one-sided", num_options, &options);
-
     // and a single image per page
-
     num_options = cupsAddOption("number-up", "1", num_options, &options);
-
     // if the printer has no hardware margins activate the borderless mode
 
     if (pinfo->printer.hw_margin_top == 0 || pinfo->printer.hw_margin_bottom == 0
@@ -562,7 +534,6 @@ void dt_print_file(const int32_t imgid, const char *filename, const char *job_ti
   }
 
   // print lp options
-
   dt_print(DT_DEBUG_PRINT, "[print] printer options (%d)\n", num_options);
   for (int k=0; k<num_options; k++)
     dt_print(DT_DEBUG_PRINT, "[print]   %2d  %s=%s\n", k+1, options[k].name, options[k].value);
@@ -587,11 +558,11 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
   /* this is where the layout is done for the display and for the print too. So this routine is one
      of the most critical for the print circuitry. */
 
-  double width, height;
+  float width, height;
 
   // page w/h
-  double pg_width  = prt->paper.width;
-  double pg_height = prt->paper.height;
+  float pg_width  = prt->paper.width;
+  float pg_height = prt->paper.height;
 
   if (area_width==0)
     width = pg_width;
@@ -604,18 +575,16 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
     height = area_height;
 
   /* here, width and height correspond to the area for the picture */
-
   // non-printable
-  double np_top = prt->printer.hw_margin_top;
-  double np_left = prt->printer.hw_margin_left;
-  double np_right = prt->printer.hw_margin_right;
-  double np_bottom = prt->printer.hw_margin_bottom;
+  float np_top = prt->printer.hw_margin_top;
+  float np_left = prt->printer.hw_margin_left;
+  float np_right = prt->printer.hw_margin_right;
+  float np_bottom = prt->printer.hw_margin_bottom;
 
   /* do some arrangements for the landscape mode. */
-
   if (prt->page.landscape)
   {
-    double tmp = pg_width;
+    float tmp = pg_width;
     pg_width = pg_height;
     pg_height = tmp;
 
@@ -636,11 +605,9 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
   }
 
   // the image area aspect
-  const double a_aspect = (double)width / (double)height;
-
+  const float a_aspect = (float)width / (float)height;
   // page aspect
-  const double pg_aspect = pg_width / pg_height;
-
+  const float pg_aspect = pg_width / pg_height;
   // display page
   int32_t p_bottom, p_right;
 
@@ -666,10 +633,10 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
   // these margins are those set by the user from the GUI, and the top margin is *always*
   // at the top of the screen.
 
-  const double border_top = prt->page.margin_top;
-  const double border_left = prt->page.margin_left;
-  const double border_right = prt->page.margin_right;
-  const double border_bottom = prt->page.margin_bottom;
+  const float border_top = prt->page.margin_top;
+  const float border_left = prt->page.margin_left;
+  const float border_right = prt->page.margin_right;
+  const float border_bottom = prt->page.margin_bottom;
 
   // display picture area, that is removing the non printable areas and user's margins
 
@@ -692,28 +659,25 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
 
   // compute the scaling for the image to fit into the printable area
 
-  double scale;
-
+  float scale;
   *iwidth = *iwpix;
   *iheight = *ihpix;
 
   if (*iwidth > *awidth)
   {
-    scale =  (double)(*awidth) / (double)*iwidth;
+    scale =  (float)(*awidth) / (float)*iwidth;
     *iwidth = *awidth;
-    *iheight = (int32_t)(((double)*iheight + 0.5) * scale);
+    *iheight = (int32_t)(((float)*iheight + 0.5) * scale);
   }
 
   if (*iheight > *aheight)
   {
-    scale = (double)(*aheight) / (double)*iheight;
+    scale = (float)(*aheight) / (float)*iheight;
     *iheight = *aheight;
-    *iwidth = (int32_t)(((double)*iwidth + 0.5) * scale);
+    *iwidth = (int32_t)(((float)*iwidth + 0.5) * scale);
   }
-
   // now the image position (top-left corner coordinates) in the display area depending on the page
   // alignment set by the user.
-
   switch (prt->page.alignment)
   {
     case ALIGNMENT_TOP_LEFT:
