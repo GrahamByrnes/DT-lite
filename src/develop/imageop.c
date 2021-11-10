@@ -1326,7 +1326,6 @@ void dt_iop_request_focus(dt_iop_module_t *module)
   dt_iop_module_t *out_focus_module = darktable.develop->gui_module;
   
   if(darktable.gui->reset || (out_focus_module == module)) return;
- //                         || dt_iop_is_hidden(out_focus_module)) return;
 
   darktable.develop->focus_hash++;
   darktable.develop->gui_module = module;
@@ -1337,39 +1336,45 @@ void dt_iop_request_focus(dt_iop_module_t *module)
       out_focus_module->gui_focus(out_focus_module, FALSE);
 
     dt_iop_color_picker_reset(out_focus_module, TRUE);
-    gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(out_focus_module),
-                               GTK_STATE_FLAG_NORMAL, TRUE);
-    if(out_focus_module->operation_tags_filter())
-      dt_dev_invalidate_from_gui(darktable.develop);
-
     dt_accel_disconnect_locals_iop(out_focus_module);
     dt_masks_reset_form_gui();
     dt_iop_gui_blending_lose_focus(out_focus_module);
-    gtk_widget_queue_draw(out_focus_module->expander);
-    dt_control_hinter_message(darktable.control, "");
-    GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(out_focus_module));
-    GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
-    gtk_style_context_remove_class(context, "dt_module_focus");
+
+    if(out_focus_module->operation_tags_filter())
+      dt_dev_invalidate_from_gui(darktable.develop);
+    
+    if(!dt_iop_is_hidden(out_focus_module))
+    {
+      gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(out_focus_module),
+                                 GTK_STATE_FLAG_NORMAL, TRUE);
+      gtk_widget_queue_draw(out_focus_module->expander);
+      dt_control_hinter_message(darktable.control, "");
+      GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(out_focus_module));
+      GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
+      gtk_style_context_remove_class(context, "dt_module_focus");
+    }
   }
   // set the focus on module
   if(module)
   {
-    gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(module), GTK_STATE_FLAG_SELECTED, TRUE);
- 
-    if(module->operation_tags_filter())
-      dt_dev_invalidate_from_gui(darktable.develop);
-
     dt_accel_connect_locals_iop(module);
 
     if(module->gui_focus)
       module->gui_focus(module, TRUE);
 
-    gtk_widget_queue_draw(module->expander);
-    GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(/*darktable.develop->gui_*/module));
-    GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
-    gtk_style_context_add_class(context, "dt_module_focus");
+    if(module->operation_tags_filter())
+      dt_dev_invalidate_from_gui(darktable.develop);
+  
+    if(!dt_iop_is_hidden(module))
+    {
+      gtk_widget_set_state_flags(dt_iop_gui_get_pluginui(module), GTK_STATE_FLAG_SELECTED, TRUE);
+      gtk_widget_queue_draw(module->expander);
+      GtkWidget *iop_w = gtk_widget_get_parent(dt_iop_gui_get_pluginui(module));
+      GtkStyleContext *context = gtk_widget_get_style_context(iop_w);
+      gtk_style_context_add_class(context, "dt_module_focus");
+    }
   }
-  // update sticky accels window
+
   if(darktable.view_manager->accels_window.window && darktable.view_manager->accels_window.sticky)
     dt_view_accels_refresh(darktable.view_manager);
 
