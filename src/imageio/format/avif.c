@@ -103,7 +103,7 @@ static const struct
 
 static const char *avif_get_compression_string(enum avif_compression_type_e comp)
 {
-  switch (comp)
+  switch(comp)
   {
     case AVIF_COMP_LOSSLESS:
       return "lossless";
@@ -136,6 +136,15 @@ static int floor_log2(int i)
 
 void init(dt_imageio_module_format_t *self)
 {
+  const char *codecName = avifCodecName(AVIF_CODEC_CHOICE_AUTO,
+                                        AVIF_CODEC_FLAG_CAN_ENCODE);
+  if(codecName == NULL)
+  {
+    dt_print(DT_DEBUG_IMAGEIO,
+             "libavif doesn't offer encoding support!\n");
+    self->ready = FALSE;
+    return;
+  }
 }
 
 void cleanup(dt_imageio_module_format_t *self)
@@ -152,14 +161,14 @@ int write_image(struct dt_imageio_module_data_t *data,
                 int imgid,
                 int num,
                 int total,
-                struct dt_dev_pixelpipe_t *pipe)
+                struct dt_dev_pixelpipe_t *pipe,
+                const gboolean export_masks)
 {
   dt_imageio_avif_t *d = (dt_imageio_avif_t *)data;
 
   avifPixelFormat format = AVIF_PIXEL_FORMAT_NONE;
   avifImage *image = NULL;
-  avifRGBImage rgb = {
-      .format = AVIF_RGB_FORMAT_RGB, };
+  avifRGBImage rgb = { .format = AVIF_RGB_FORMAT_RGB, };
   avifEncoder *encoder = NULL;
   uint8_t *icc_profile_data = NULL;
   uint32_t icc_profile_len;
@@ -215,74 +224,16 @@ int write_image(struct dt_imageio_module_data_t *data,
            avif_get_compression_string(d->compression_type),
            d->quality);
 
-  avifRGBImageSetDefaults(&rgb, image);
-  rgb.format = AVIF_RGB_FORMAT_RGB;
-  avifRGBImageAllocatePixels(&rgb);
-  const float max_channel_f = (float)((1 << bit_depth) - 1);
-  const size_t rowbytes = rgb.rowBytes;
-  const float *const restrict in_data = (const float *)in;
-  uint8_t *const restrict out = (uint8_t *)rgb.pixels;
-
-  switch(bit_depth) {
-  case 12:
-  case 10: {
-#ifdef _OPENMP
-#pragma omp parallel for simd default(none) \
-  dt_omp_firstprivate(in_data, width, height, out, rowbytes, max_channel_f) \
-  schedule(simd:static) \
-  collapse(2)
-#endif
-    for (size_t y = 0; y < height; y++)
-    {
-      for (size_t x = 0; x < width; x++)
-      {
-          const float *in_pixel = &in_data[(size_t)4 * ((y * width) + x)];
-          uint16_t *out_pixel = (uint16_t *)&out[(y * rowbytes) + (3 * sizeof(uint16_t) * x)];
-
-          out_pixel[0] = (uint16_t)CLAMP(in_pixel[0] * max_channel_f, 0, max_channel_f);
-          out_pixel[1] = (uint16_t)CLAMP(in_pixel[1] * max_channel_f, 0, max_channel_f);
-          out_pixel[2] = (uint16_t)CLAMP(in_pixel[2] * max_channel_f, 0, max_channel_f);
-      }
-    }
-    break;
-  }
-  case 8: {
-#ifdef _OPENMP
-#pragma omp parallel for simd default(none) \
-  dt_omp_firstprivate(in_data, width, height, out, rowbytes, max_channel_f) \
-  schedule(simd:static) \
-  collapse(2)
-#endif
-    for (size_t y = 0; y < height; y++)
-    {
-      for (size_t x = 0; x < width; x++)
-      {
-          const float *in_pixel = &in_data[(size_t)4 * ((y * width) + x)];
-          uint8_t *out_pixel = (uint8_t *)&out[(y * rowbytes) + (3 * sizeof(uint8_t) * x)];
-
-          out_pixel[0] = (uint8_t)CLAMP(in_pixel[0] * max_channel_f, 0, max_channel_f);
-          out_pixel[1] = (uint8_t)CLAMP(in_pixel[1] * max_channel_f, 0, max_channel_f);
-          out_pixel[2] = (uint8_t)CLAMP(in_pixel[2] * max_channel_f, 0, max_channel_f);
-      }
-    }
-    break;
-  }
-  default:
-    dt_control_log(_("Invalid AVIF bit depth!"));
-    rc = 1;
-    goto out;
-  }
-
-  avifImageRGBToYUV(image, &rgb);
-
-  if (imgid > 0) {
+  if(imgid > 0)
+  {
     gboolean use_icc = FALSE;
 
-    switch (over_type) {
+    switch(over_type)
+    {
       case DT_COLORSPACE_SRGB:
           image->colorPrimaries = AVIF_COLOR_PRIMARIES_BT709;
           image->transferCharacteristics = AVIF_TRANSFER_CHARACTERISTICS_SRGB;
-          image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_BT709;
+          image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_BT470BG;
           break;
       case DT_COLORSPACE_REC709:
           image->colorPrimaries = AVIF_COLOR_PRIMARIES_BT709;
@@ -323,26 +274,26 @@ int write_image(struct dt_imageio_module_data_t *data,
         break;
     }
 
-    if (image->colorPrimaries == AVIF_COLOR_PRIMARIES_UNKNOWN) {
+    if(image->colorPrimaries == AVIF_COLOR_PRIMARIES_UNKNOWN)
       use_icc = TRUE;
-    }
 
     dt_print(DT_DEBUG_IMAGEIO, "[avif colorprofile profile: %s - %s]\n",
              dt_colorspaces_get_name(over_type, filename),
              use_icc ? "icc" : "nclx");
 
-    if (use_icc)
+    if(use_icc)
     {
       const dt_colorspaces_color_profile_t *cp =
               dt_colorspaces_get_output_profile(imgid, over_type, over_filename);
       cmsHPROFILE out_profile = cp->profile;
       cmsSaveProfileToMem(out_profile, 0, &icc_profile_len);
       
-      if (icc_profile_len > 0)
+      if(icc_profile_len > 0)
       {
-        icc_profile_data = malloc(icc_profile_len * sizeof(uint8_t));
+        icc_profile_data = malloc(sizeof(uint8_t) * icc_profile_len);
 
-        if (icc_profile_data == NULL) {
+        if(icc_profile_data == NULL)
+        {
           rc = 1;
           goto out;
         }
@@ -353,10 +304,79 @@ int write_image(struct dt_imageio_module_data_t *data,
     }
   }
 
-  avifImageSetMetadataExif(image, exif, exif_len);
+  image->yuvRange = AVIF_RANGE_FULL;
 
+  avifRGBImageSetDefaults(&rgb, image);
+  rgb.format = AVIF_RGB_FORMAT_RGB;
+
+  avifRGBImageAllocatePixels(&rgb);
+
+  const float max_channel_f = (float)((1 << bit_depth) - 1);
+
+  const size_t rowbytes = rgb.rowBytes;
+
+  const float *const restrict in_data = (const float *)in;
+  uint8_t *const restrict out = (uint8_t *)rgb.pixels;
+
+  switch(bit_depth)
+  {
+    case 12:
+    case 10:
+    {
+#ifdef _OPENMP
+#pragma omp parallel for simd default(none) \
+  dt_omp_firstprivate(in_data, width, height, out, rowbytes, max_channel_f) \
+  schedule(simd:static) \
+  collapse(2)
+#endif
+    for(size_t y = 0; y < height; y++)
+    {
+      for(size_t x = 0; x < width; x++)
+      {
+          const float *in_pixel = &in_data[(size_t)4 * ((y * width) + x)];
+          uint16_t *out_pixel = (uint16_t *)&out[(y * rowbytes) + (3 * sizeof(uint16_t) * x)];
+
+          out_pixel[0] = (uint16_t)roundf(CLAMP(in_pixel[0] * max_channel_f, 0, max_channel_f));
+          out_pixel[1] = (uint16_t)roundf(CLAMP(in_pixel[1] * max_channel_f, 0, max_channel_f));
+          out_pixel[2] = (uint16_t)roundf(CLAMP(in_pixel[2] * max_channel_f, 0, max_channel_f));
+      }
+    }
+
+    break;
+    }
+    case 8:
+    {
+#ifdef _OPENMP
+#pragma omp parallel for simd default(none) \
+  dt_omp_firstprivate(in_data, width, height, out, rowbytes, max_channel_f) \
+  schedule(simd:static) \
+  collapse(2)
+#endif
+    for(size_t y = 0; y < height; y++)
+    {
+      for(size_t x = 0; x < width; x++)
+      {
+          const float *in_pixel = &in_data[(size_t)4 * ((y * width) + x)];
+          uint8_t *out_pixel = (uint8_t *)&out[(y * rowbytes) + (3 * sizeof(uint8_t) * x)];
+
+          out_pixel[0] = (uint8_t)roundf(CLAMP(in_pixel[0] * max_channel_f, 0, max_channel_f));
+          out_pixel[1] = (uint8_t)roundf(CLAMP(in_pixel[1] * max_channel_f, 0, max_channel_f));
+          out_pixel[2] = (uint8_t)roundf(CLAMP(in_pixel[2] * max_channel_f, 0, max_channel_f));
+      }
+    }
+    break;
+    }
+    default:
+      dt_control_log(_("invalid AVIF bit depth!"));
+      rc = 1;
+      goto out;
+  }
+
+  avifImageRGBToYUV(image, &rgb);
+  avifImageSetMetadataExif(image, exif, exif_len);
   encoder = avifEncoderCreate();
-  if (encoder == NULL)
+
+  if(encoder == NULL)
   {
     dt_print(DT_DEBUG_IMAGEIO,
              "Failed to create AVIF encoder for image [%s]\n",
@@ -365,48 +385,61 @@ int write_image(struct dt_imageio_module_data_t *data,
     goto out;
   }
 
-  switch (d->compression_type)
+  switch(d->compression_type)
   {
-  case AVIF_COMP_LOSSLESS:
-    /* It isn't recommend to use the extremities */
-    encoder->speed = AVIF_SPEED_SLOWEST + 1;
-    encoder->minQuantizer = AVIF_QUANTIZER_LOSSLESS;
-    encoder->maxQuantizer = AVIF_QUANTIZER_LOSSLESS;
-    break;
-  case AVIF_COMP_LOSSY:
-    encoder->speed = AVIF_SPEED_DEFAULT;
-    encoder->maxQuantizer = 100 - d->quality;
-    encoder->maxQuantizer = CLAMP(encoder->maxQuantizer, 0, 63);
-    encoder->minQuantizer = 64 - d->quality;
-    encoder->minQuantizer = CLAMP(encoder->minQuantizer, 0, 63);
-    break;
-  }
+    case AVIF_COMP_LOSSLESS:
+      /* It isn't recommend to use the extremities */
+      encoder->speed = AVIF_SPEED_SLOWEST + 1;
+      encoder->minQuantizer = AVIF_QUANTIZER_LOSSLESS;
+      encoder->maxQuantizer = AVIF_QUANTIZER_LOSSLESS;
+      break;
+    case AVIF_COMP_LOSSY:
+      encoder->speed = AVIF_SPEED_DEFAULT;
+      encoder->maxQuantizer = 100 - d->quality;
+      encoder->maxQuantizer = CLAMP(encoder->maxQuantizer, 0, 63);
 
-  encoder->maxThreads = dt_get_num_threads();
+      encoder->minQuantizer = 64 - d->quality;
+      encoder->minQuantizer = CLAMP(encoder->minQuantizer, 0, 63);
+      break;
+  }
 
   /*
    * Tiling reduces the image quality but it has a negligible impact on
    * still images.
    *
-   * The minmum suggested size for a tile is 512x512.
+   * The minimum size for a tile is 512x512. We use a default tile size of
+   * 1024x1024.
    */
-  switch (d->tiling)
+  switch(d->tiling)
   {
-  case AVIF_TILING_ON: {
-    size_t width_tile_size  = AVIF_DEFAULT_TILE_SIZE;
-    size_t height_tile_size = AVIF_DEFAULT_TILE_SIZE;
+    case AVIF_TILING_ON:
+    {
+      size_t width_tile_size  = AVIF_DEFAULT_TILE_SIZE;
+      size_t height_tile_size = AVIF_DEFAULT_TILE_SIZE;
+      size_t max_threads;
 
-    if (width >= 4096)
+      if(width >= 6144)
+        width_tile_size = AVIF_MIN_TILE_SIZE * 4;
+      else if (width >= 8192) {
         width_tile_size = AVIF_MAX_TILE_SIZE;
 
-    if (height >= 4096)
+      if(height >= 6144)
+        height_tile_size = AVIF_MIN_TILE_SIZE * 4;
+      else if (height >= 8192) {
         height_tile_size = AVIF_MAX_TILE_SIZE;
 
-    encoder->tileColsLog2 = floor_log2(width / width_tile_size);
-    encoder->tileRowsLog2 = floor_log2(height / height_tile_size);
-  }
-  case AVIF_TILING_OFF:
-    break;
+      encoder->tileColsLog2 = floor_log2(width / width_tile_size) / 2;
+      encoder->tileRowsLog2 = floor_log2(height / height_tile_size) / 2;
+
+      /*
+       * This should be set to the final number of tiles, based on
+       * encoder->tileColsLog2 and encoder->tileRowsLog2.
+       */
+      max_threads = (1 << encoder->tileRowsLog2) * (1 << encoder->tileColsLog2);
+      encoder->maxThreads = MIN(max_threads, dt_get_num_threads());
+    }
+    case AVIF_TILING_OFF:
+      break;
   }
 
   dt_print(DT_DEBUG_IMAGEIO,
@@ -420,9 +453,9 @@ int write_image(struct dt_imageio_module_data_t *data,
            encoder->maxThreads);
 
   avifRWData output = AVIF_DATA_EMPTY;
-
   result = avifEncoderWrite(encoder, image, &output);
-  if (result != AVIF_RESULT_OK)
+
+  if(result != AVIF_RESULT_OK)
   {
     dt_print(DT_DEBUG_IMAGEIO,
              "Failed to encode AVIF image [%s]: %s\n",
@@ -431,7 +464,7 @@ int write_image(struct dt_imageio_module_data_t *data,
     goto out;
   }
 
-  if (output.size == 0 || output.data == NULL)
+  if(output.size == 0 || output.data == NULL)
   {
     dt_print(DT_DEBUG_IMAGEIO,
              "AVIF encoder returned empty data for [%s]\n",
@@ -447,7 +480,7 @@ int write_image(struct dt_imageio_module_data_t *data,
   size_t cnt = 0;
 
   f = g_fopen(filename, "wb");
-  if (f == NULL)
+  if(f == NULL)
   {
     rc = 1;
     goto out;
@@ -455,7 +488,7 @@ int write_image(struct dt_imageio_module_data_t *data,
 
   cnt = fwrite(output.data, 1, output.size, f);
   fclose(f);
-  if (cnt != output.size)
+  if(cnt != output.size)
   {
     g_unlink(filename);
     rc = 1;
@@ -483,33 +516,32 @@ void *get_params(dt_imageio_module_format_t *self)
 {
   dt_imageio_avif_t *d = (dt_imageio_avif_t *)calloc(1, sizeof(dt_imageio_avif_t));
 
-  if (d == NULL)
+  if(d == NULL)
     return NULL;
 
   d->bit_depth = dt_conf_get_int("plugins/imageio/format/avif/bit_depth");
 
-  if (d->bit_depth == 0 || d->bit_depth > 12)
+  if(d->bit_depth == 0 || d->bit_depth > 12)
     d->bit_depth = 8;
 
   d->color_mode = dt_conf_get_int("plugins/imageio/format/avif/color_mode");
   d->compression_type = dt_conf_get_int("plugins/imageio/format/avif/compression_type");
 
-  switch (d->compression_type)
+  switch(d->compression_type)
   {
-  case AVIF_COMP_LOSSLESS:
-    d->quality = 100;
-    break;
-  case AVIF_COMP_LOSSY:
-    d->quality = dt_conf_get_int("plugins/imageio/format/avif/quality");
+    case AVIF_COMP_LOSSLESS:
+      d->quality = 100;
+      break;
+    case AVIF_COMP_LOSSY:
+      d->quality = dt_conf_get_int("plugins/imageio/format/avif/quality");
 
-    if (d->quality > 100)
+      if (d->quality > 100)
         d->quality = 100;
 
     break;
   }
 
-  d->tiling = dt_conf_get_int("plugins/imageio/format/avif/tiling");
-
+  d->tiling = !dt_conf_get_bool("plugins/imageio/format/avif/tiling");
   return d;
 }
 
@@ -517,7 +549,7 @@ int set_params(dt_imageio_module_format_t *self,
                const void *params,
                const int size)
 {
-  if (size != self->params_size(self))
+  if(size != self->params_size(self))
     return 1;
 
   const dt_imageio_avif_t *d = (dt_imageio_avif_t *)params;
@@ -584,7 +616,7 @@ static void color_mode_changed(GtkWidget *widget, gpointer user_data)
 static void tiling_changed(GtkWidget *widget, gpointer user_data)
 {
   const enum avif_tiling_e tiling = dt_bauhaus_combobox_get(widget);
-  dt_conf_set_int("plugins/imageio/format/avif/tiling", tiling);
+  dt_conf_set_bool("plugins/imageio/format/avif/tiling", !tiling);
 }
 
 static void compression_type_changed(GtkWidget *widget, gpointer user_data)
@@ -595,14 +627,14 @@ static void compression_type_changed(GtkWidget *widget, gpointer user_data)
 
   dt_conf_set_int("plugins/imageio/format/avif/compression_type", compression_type);
 
-  switch (compression_type)
+  switch(compression_type)
   {
-  case AVIF_COMP_LOSSLESS:
-    gtk_widget_set_sensitive(gui->quality, FALSE);
-    break;
-  case AVIF_COMP_LOSSY:
-    gtk_widget_set_sensitive(gui->quality, TRUE);
-    break;
+    case AVIF_COMP_LOSSLESS:
+      gtk_widget_set_sensitive(gui->quality, FALSE);
+      break;
+    case AVIF_COMP_LOSSY:
+      gtk_widget_set_sensitive(gui->quality, TRUE);
+      break;
   }
 }
 
@@ -618,7 +650,7 @@ void gui_init(dt_imageio_module_format_t *self)
       (dt_imageio_avif_gui_t *)malloc(sizeof(dt_imageio_avif_gui_t));
   const uint32_t bit_depth = dt_conf_get_int("plugins/imageio/format/avif/bit_depth");
   const enum avif_color_mode_e color_mode = dt_conf_get_int("plugins/imageio/format/avif/color_mode");
-  const enum avif_tiling_e tiling = dt_conf_get_int("plugins/imageio/format/avif/tiling");
+  const enum avif_tiling_e tiling = !dt_conf_get_bool("plugins/imageio/format/avif/tiling");
   const enum avif_compression_type_e compression_type = dt_conf_get_int("plugins/imageio/format/avif/compression_type");
   const uint32_t quality = dt_conf_get_int("plugins/imageio/format/avif/quality");
 
@@ -634,7 +666,7 @@ void gui_init(dt_imageio_module_format_t *self)
   {
     dt_bauhaus_combobox_add(gui->bit_depth,  _(avif_bit_depth[i].name));
 
-    if (avif_bit_depth[i].bit_depth == bit_depth)
+    if(avif_bit_depth[i].bit_depth == bit_depth)
       idx = i;
   }
   dt_bauhaus_combobox_set(gui->bit_depth, idx);
@@ -687,21 +719,21 @@ void gui_init(dt_imageio_module_format_t *self)
             "pixelformat based on quality:\n"
             "\n"
             "    91% - 100% -> YUV444\n"
-            "    81% -  90% => YUV422\n"
-            "     5% -  80% => YUV420\n"));
+            "    81% -  90% -> YUV422\n"
+            "     5% -  80% -> YUV420\n"));
 
-  if (quality > 0 && quality <= 100)
+  if(quality > 0 && quality <= 100)
       dt_bauhaus_slider_set(gui->quality, quality);
 
   gtk_box_pack_start(GTK_BOX(self->widget), gui->quality, TRUE, TRUE, 0);
 
-  switch (compression_type)
+  switch(compression_type)
   {
-  case AVIF_COMP_LOSSLESS:
-    gtk_widget_set_sensitive(gui->quality, FALSE);
-    break;
-  case AVIF_COMP_LOSSY:
-    break;
+    case AVIF_COMP_LOSSLESS:
+      gtk_widget_set_sensitive(gui->quality, FALSE);
+      break;
+    case AVIF_COMP_LOSSY:
+      break;
   }
 
   g_signal_connect(G_OBJECT(gui->bit_depth),
@@ -734,6 +766,17 @@ void gui_cleanup(dt_imageio_module_format_t *self)
 void gui_reset(dt_imageio_module_format_t *self)
 {
   dt_imageio_avif_gui_t *gui = (dt_imageio_avif_gui_t *)self->gui_data;
+  const enum avif_color_mode_e color_mode = dt_confgen_get_int("plugins/imageio/format/avif/color_mode", DT_DEFAULT);
+  const enum avif_tiling_e tiling = !dt_confgen_get_bool("plugins/imageio/format/avif/tiling", DT_DEFAULT);
+  const enum avif_compression_type_e compression_type = dt_confgen_get_int("plugins/imageio/format/avif/compression_type", DT_DEFAULT);
+  const uint32_t quality = dt_confgen_get_int("plugins/imageio/format/avif/quality", DT_DEFAULT);
+
+  dt_bauhaus_combobox_set(gui->bit_depth, 0); //8bpp
+  dt_bauhaus_combobox_set(gui->color_mode, color_mode);
+  dt_bauhaus_combobox_set(gui->tiling, tiling);
+  dt_bauhaus_combobox_set(gui->compression_type, compression_type);
+  dt_bauhaus_slider_set(gui->quality, quality);
+
   compression_type_changed(GTK_WIDGET(gui->compression_type), self);
   quality_changed(GTK_WIDGET(gui->quality), self);
   bit_depth_changed(GTK_WIDGET(gui->bit_depth), self);
