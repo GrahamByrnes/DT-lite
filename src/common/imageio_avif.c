@@ -50,7 +50,8 @@ dt_imageio_retval_t dt_imageio_open_avif(dt_image_t *img,
   avifResult result;
 
   decoder = avifDecoderCreate();
-  if (decoder == NULL) {
+  if (decoder == NULL)
+  {
     dt_print(DT_DEBUG_IMAGEIO,
              "Failed to create AVIF decoder for image [%s]\n",
              filename);
@@ -59,24 +60,24 @@ dt_imageio_retval_t dt_imageio_open_avif(dt_image_t *img,
   }
 
   result = avifDecoderReadFile(decoder, &avif_image, filename);
-  if (result != AVIF_RESULT_OK) {
+
+  if(result != AVIF_RESULT_OK)
+  {
     dt_print(DT_DEBUG_IMAGEIO,
              "Failed to parse AVIF image [%s]: %s\n",
              filename, avifResultToString(result));
     ret = DT_IMAGEIO_FILE_CORRUPTED;
     goto out;
   }
-  avif = &avif_image;
 
+  avif = &avif_image;
   /* This will set the depth from the avif */
   avifRGBImageSetDefaults(&rgb, avif);
-
   rgb.format = AVIF_RGB_FORMAT_RGB;
-
   avifRGBImageAllocatePixels(&rgb);
-
   result = avifImageYUVToRGB(avif, &rgb);
-  if (result != AVIF_RESULT_OK) {
+
+  if(result != AVIF_RESULT_OK) {
     dt_print(DT_DEBUG_IMAGEIO,
              "Failed to convert AVIF image [%s] from YUV to RGB: %s\n",
              filename, avifResultToString(result));
@@ -98,7 +99,8 @@ dt_imageio_retval_t dt_imageio_open_avif(dt_image_t *img,
   img->buf_dsc.cst = iop_cs_rgb;
 
   float *mipbuf = (float *)dt_mipmap_cache_alloc(mbuf, img);
-  if (mipbuf == NULL) {
+  if(mipbuf == NULL)
+  {
     dt_print(DT_DEBUG_IMAGEIO,
              "Failed to allocate mipmap buffer for AVIF image [%s]\n",
              filename);
@@ -111,9 +113,7 @@ dt_imageio_retval_t dt_imageio_open_avif(dt_image_t *img,
   img->flags |= DT_IMAGE_HDR;
 
   const float max_channel_f = (float)((1 << bit_depth) - 1);
-
   const size_t rowbytes = rgb.rowBytes;
-
   const uint8_t *const restrict in = (const uint8_t *)rgb.pixels;
 
   switch (bit_depth) {
@@ -172,6 +172,7 @@ dt_imageio_retval_t dt_imageio_open_avif(dt_image_t *img,
     goto out;
   }
 
+  img->loader = LOADER_AVIF;
   ret = DT_IMAGEIO_OK;
 out:
   avifRGBImageFreePixels(&rgb);

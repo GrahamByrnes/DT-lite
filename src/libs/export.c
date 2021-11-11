@@ -169,14 +169,10 @@ static void _update(dt_lib_module_t *self)
   const GList *imgs = dt_view_get_images_to_act_on(TRUE, FALSE);
   const gboolean has_act_on = imgs != NULL;
 
-  char *format_name = dt_conf_get_string(CONFIG_PREFIX "format_name");
-  char *storage_name = dt_conf_get_string(CONFIG_PREFIX "storage_name");
+  const char *format_name = dt_conf_get_string_const(CONFIG_PREFIX "format_name");
+  const char *storage_name = dt_conf_get_string_const(CONFIG_PREFIX "storage_name");
   const int format_index = dt_imageio_get_index_of_format(dt_imageio_get_format_by_name(format_name));
   const int storage_index = dt_imageio_get_index_of_storage(dt_imageio_get_storage_by_name(storage_name));
-
-  g_free(format_name);
-  g_free(storage_name);
-
   gtk_widget_set_sensitive(GTK_WIDGET(d->export_button), has_act_on && format_index != -1 && storage_index != -1);
 }
 
@@ -204,13 +200,10 @@ static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
   const uint32_t max_height = dt_conf_get_int(CONFIG_PREFIX "height");
   // get the format_name and storage_name settings which are plug-ins name and not necessary what is displayed on the combobox.
   // note that we cannot take directly the combobox entry index as depending on the storage some format are not listed.
-  char *format_name = dt_conf_get_string(CONFIG_PREFIX "format_name");
-  char *storage_name = dt_conf_get_string(CONFIG_PREFIX "storage_name");
+  const char *format_name = dt_conf_get_string_const(CONFIG_PREFIX "format_name");
+  const char *storage_name = dt_conf_get_string_const(CONFIG_PREFIX "storage_name");
   const int format_index = dt_imageio_get_index_of_format(dt_imageio_get_format_by_name(format_name));
   const int storage_index = dt_imageio_get_index_of_storage(dt_imageio_get_storage_by_name(storage_name));
-
-  g_free(format_name);
-  g_free(storage_name);
 
   if(format_index == -1)
   {
@@ -253,9 +246,9 @@ static void _export_button_clicked(GtkWidget *widget, dt_lib_export_t *d)
   gboolean upscale = dt_conf_get_bool(CONFIG_PREFIX "upscale");
   gboolean high_quality = dt_conf_get_bool(CONFIG_PREFIX "high_quality_processing");
 
-  dt_colorspaces_color_profile_type_t icc_type = dt_conf_get_int(CONFIG_PREFIX "icctype");
+  const dt_colorspaces_color_profile_type_t icc_type = dt_conf_get_int(CONFIG_PREFIX "icctype");
   gchar *icc_filename = dt_conf_get_string(CONFIG_PREFIX "iccprofile");
-  dt_iop_color_intent_t icc_intent = dt_conf_get_int(CONFIG_PREFIX "iccintent");
+  const dt_iop_color_intent_t icc_intent = dt_conf_get_int(CONFIG_PREFIX "iccintent");
 
   GList *list = g_list_copy((GList *)dt_view_get_images_to_act_on(TRUE, TRUE));
   dt_control_export(list, max_width, max_height, format_index, storage_index, high_quality, upscale,
@@ -332,7 +325,7 @@ void gui_reset(dt_lib_module_t *self)
   {
     for(GList *profiles = darktable.color_profiles->profiles; profiles; profiles = g_list_next(profiles))
     {
-      dt_colorspaces_color_profile_t *pp = (dt_colorspaces_color_profile_t *)profiles->data;
+      const dt_colorspaces_color_profile_t *pp = (dt_colorspaces_color_profile_t *)profiles->data;
 
       if(pp->out_pos > -1 &&
          icctype == pp->type && (icctype != DT_COLORSPACE_FILE || !strcmp(iccfilename, pp->filename)))
@@ -404,12 +397,10 @@ static void _format_changed(GtkWidget *widget, dt_lib_export_t *d)
 
 static void _get_max_output_dimension(dt_lib_export_t *d, uint32_t *width, uint32_t *height)
 {
-  gchar *storage_name = dt_conf_get_string(CONFIG_PREFIX "storage_name");
+  const char *storage_name = dt_conf_get_string_const(CONFIG_PREFIX "storage_name");
   dt_imageio_module_storage_t *storage = dt_imageio_get_storage_by_name(storage_name);
-  g_free(storage_name);
-  char *format_name = dt_conf_get_string(CONFIG_PREFIX "format_name");
+  const char *format_name = dt_conf_get_string_const(CONFIG_PREFIX "format_name");
   dt_imageio_module_format_t *format = dt_imageio_get_format_by_name(format_name);
-  g_free(format_name);
 
   if(storage && format)
   {
@@ -504,9 +495,8 @@ static void set_storage_by_name(dt_lib_export_t *d, const char *name)
   // Let's update formats combobox with supported formats of selected storage module...
   _update_formats_combobox(d);
   // Lets try to set selected format if fail select first in list..
-  gchar *format_name = dt_conf_get_string(CONFIG_PREFIX "format_name");
-  dt_imageio_module_format_t *format = dt_imageio_get_format_by_name(format_name);
-  g_free(format_name);
+  const char *format_name = dt_conf_get_string_const(CONFIG_PREFIX "format_name");
+  const dt_imageio_module_format_t *format = dt_imageio_get_format_by_name(format_name);
   
   if(format == NULL || dt_bauhaus_combobox_set_from_text(d->format, format->name()) == FALSE)
     dt_bauhaus_combobox_set(d->format, 0);
@@ -533,7 +523,7 @@ static void _profile_changed(GtkWidget *widget, dt_lib_export_t *d)
 
     for(GList *profiles = darktable.color_profiles->profiles; profiles; profiles = g_list_next(profiles))
     {
-      dt_colorspaces_color_profile_t *pp = (dt_colorspaces_color_profile_t *)profiles->data;
+      const dt_colorspaces_color_profile_t *pp = (dt_colorspaces_color_profile_t *)profiles->data;
 
       if(pp->out_pos == pos)
       {
@@ -618,7 +608,7 @@ static void _width_changed(GtkEditable *entry, gpointer user_data)
 {
   if(darktable.gui->reset) return;
 
-  dt_lib_export_t *d = (dt_lib_export_t *)user_data;
+  const dt_lib_export_t *d = (dt_lib_export_t *)user_data;
   const uint32_t width = atoi(gtk_entry_get_text(GTK_ENTRY(d->width)));
   dt_conf_set_int(CONFIG_PREFIX "width", width);
 }
@@ -644,7 +634,7 @@ static void _height_changed(GtkEditable *entry, gpointer user_data)
 {
   if(darktable.gui->reset) return;
 
-  dt_lib_export_t *d = (dt_lib_export_t *)user_data;
+  const dt_lib_export_t *d = (dt_lib_export_t *)user_data;
   const uint32_t height = atoi(gtk_entry_get_text(GTK_ENTRY(d->height)));
   dt_conf_set_int(CONFIG_PREFIX "height", height);
 }
@@ -686,7 +676,7 @@ static void _callback_bool(GtkWidget *widget, gpointer user_data)
 
 static void _intent_changed(GtkWidget *widget, dt_lib_export_t *d)
 {
-  int pos = dt_bauhaus_combobox_get(widget);
+  const int pos = dt_bauhaus_combobox_get(widget);
   dt_conf_set_int(CONFIG_PREFIX "iccintent", pos - 1);
 }
 
@@ -701,14 +691,13 @@ static void _update_formats_combobox(dt_lib_export_t *d)
   dt_bauhaus_combobox_clear(d->format);
 
   // Get current selected storage
-  gchar *storage_name = dt_conf_get_string(CONFIG_PREFIX "storage_name");
+  const char *storage_name = dt_conf_get_string_const(CONFIG_PREFIX "storage_name");
   dt_imageio_module_storage_t *storage = dt_imageio_get_storage_by_name(storage_name);
-  g_free(storage_name);
 
   // Add supported formats to combobox
-  GList *it = darktable.imageio->plugins_format;
   gboolean empty = TRUE;
-  while(it)
+
+  for(const GList *it = darktable.imageio->plugins_format; it; it = g_list_next(it))
   {
     dt_imageio_module_format_t *format = (dt_imageio_module_format_t *)it->data;
     if(storage->supported(storage, format))
@@ -716,8 +705,6 @@ static void _update_formats_combobox(dt_lib_export_t *d)
       dt_bauhaus_combobox_add(d->format, format->name());
       empty = FALSE;
     }
-
-    it = g_list_next(it);
   }
 
   gtk_widget_set_sensitive(d->format, !empty);
@@ -737,16 +724,14 @@ static void _on_storage_list_changed(gpointer instance, dt_lib_module_t *self)
   g_list_free(children);
 
 
-  GList *it = darktable.imageio->plugins_storage;
-  if(it != NULL) do
+  for(const GList *it = darktable.imageio->plugins_storage; it; it = g_list_next(it))
   {
-    dt_imageio_module_storage_t *module = (dt_imageio_module_storage_t *)it->data;
+    const dt_imageio_module_storage_t *module = (dt_imageio_module_storage_t *)it->data;
     dt_bauhaus_combobox_add(d->storage, module->name(module));
+
     if(module->widget)
-    {
       gtk_container_add(GTK_CONTAINER(d->storage_extra_container), module->widget);
-    }
-  } while((it = g_list_next(it)));
+  }
   dt_bauhaus_combobox_set(d->storage, dt_imageio_get_index_of_storage(storage));
 }
 
@@ -771,17 +756,15 @@ void gui_init(dt_lib_module_t *self)
   d->storage_extra_container = gtk_stack_new();
   gtk_stack_set_homogeneous(GTK_STACK(d->storage_extra_container),FALSE);
   gtk_box_pack_start(GTK_BOX(self->widget), d->storage_extra_container, FALSE, TRUE, 0);
-  GList *it = g_list_first(darktable.imageio->plugins_storage);
 
-  if(it != NULL) do
+  for(const GList *it = darktable.imageio->plugins_storage; it; it = g_list_next(it))
   {
-    dt_imageio_module_storage_t *module = (dt_imageio_module_storage_t *)it->data;
+    const dt_imageio_module_storage_t *module = (dt_imageio_module_storage_t *)it->data;
     dt_bauhaus_combobox_add(d->storage, module->name(module));
     
     if(module->widget)
       gtk_container_add(GTK_CONTAINER(d->storage_extra_container), module->widget);
-      
-  } while((it = g_list_next(it)));
+  }
 
   // postponed so we can do the two steps in one loop
   DT_DEBUG_CONTROL_SIGNAL_CONNECT(darktable.signals, DT_SIGNAL_IMAGEIO_STORAGE_CHANGE,
@@ -800,16 +783,14 @@ void gui_init(dt_lib_module_t *self)
   d->format_extra_container = gtk_stack_new();
   gtk_stack_set_homogeneous(GTK_STACK(d->format_extra_container),FALSE);
   gtk_box_pack_start(GTK_BOX(self->widget), d->format_extra_container, FALSE, TRUE, 0);
-  it = g_list_first(darktable.imageio->plugins_format);
 
-  if(it != NULL) do
+  for(const GList *it = darktable.imageio->plugins_format; it; it = g_list_next(it))
   {
-    dt_imageio_module_format_t *module = (dt_imageio_module_format_t *)it->data;
+    const dt_imageio_module_format_t *module = (dt_imageio_module_format_t *)it->data;
 
     if(module->widget)
       gtk_container_add(GTK_CONTAINER(d->format_extra_container), module->widget);
-
-  } while((it = g_list_next(it)));
+  }
 
   label = dt_ui_section_label_new(_("global options"));
   gtk_box_pack_start(GTK_BOX(self->widget), label, FALSE, TRUE, 0);
@@ -831,9 +812,8 @@ void gui_init(dt_lib_module_t *self)
   d->print_dpi = gtk_entry_new();
   gtk_widget_set_tooltip_text(d->print_dpi, _("resolution in dot per inch"));
   gtk_entry_set_width_chars(GTK_ENTRY(d->print_dpi), 4);
-  char *dpi = dt_conf_get_string(CONFIG_PREFIX "print_dpi");
+  const char *dpi = dt_conf_get_string_const(CONFIG_PREFIX "print_dpi");
   gtk_entry_set_text(GTK_ENTRY(d->print_dpi), dpi);
-  g_free(dpi);
 
   dt_gui_key_accel_block_on_focus_connect(d->print_width);
   dt_gui_key_accel_block_on_focus_connect(d->print_height);
@@ -982,22 +962,19 @@ void gui_cleanup(dt_lib_module_t *self)
   DT_DEBUG_CONTROL_SIGNAL_DISCONNECT(darktable.signals, G_CALLBACK(_mouse_over_image_callback), self);
   DT_DEBUG_CONTROL_SIGNAL_DISCONNECT(darktable.signals, G_CALLBACK(_collection_updated_callback), self);
 
-  GList *it = g_list_first(darktable.imageio->plugins_storage);
-  if(it != NULL) do
+  for(const GList *it = darktable.imageio->plugins_storage; it; it = g_list_next(it))
   {
     dt_imageio_module_storage_t *module = (dt_imageio_module_storage_t *)it->data;
     if(module->widget) gtk_container_remove(GTK_CONTAINER(d->storage_extra_container), module->widget);
-  } while((it = g_list_next(it)));
+  }
 
-  it = g_list_first(darktable.imageio->plugins_format);
-  if(it != NULL) do
+  for(const GList *it = darktable.imageio->plugins_format; it; it = g_list_next(it))
   {
     dt_imageio_module_format_t *module = (dt_imageio_module_format_t *)it->data;
     if(module->widget) gtk_container_remove(GTK_CONTAINER(d->format_extra_container), module->widget);
-  } while((it = g_list_next(it)));
+  }
 
   g_free(d->metadata_export);
-
   free(self->data);
   self->data = NULL;
 }
@@ -1025,10 +1002,10 @@ void init_presets(dt_lib_module_t *self)
       "SELECT rowid, op_version, op_params, name FROM data.presets WHERE operation='export'", -1, &stmt, NULL);
   while(sqlite3_step(stmt) == SQLITE_ROW)
   {
-    int rowid = sqlite3_column_int(stmt, 0);
-    int op_version = sqlite3_column_int(stmt, 1);
-    void *op_params = (void *)sqlite3_column_blob(stmt, 2);
-    size_t op_params_size = sqlite3_column_bytes(stmt, 2);
+    const int rowid = sqlite3_column_int(stmt, 0);
+    const int op_version = sqlite3_column_int(stmt, 1);
+    const void *op_params = (void *)sqlite3_column_blob(stmt, 2);
+    const size_t op_params_size = sqlite3_column_bytes(stmt, 2);
     const char *name = (char *)sqlite3_column_text(stmt, 3);
 
     if(op_version != version)
@@ -1085,7 +1062,7 @@ void init_presets(dt_lib_module_t *self)
 
       void *new_fdata = NULL, *new_sdata = NULL;
       size_t new_fsize = fsize, new_ssize = ssize;
-      int32_t new_fversion = fmod->version(), new_sversion = smod->version();
+      const int32_t new_fversion = fmod->version(), new_sversion = smod->version();
 
       if(fversion < new_fversion)
       {
@@ -1106,7 +1083,7 @@ void init_presets(dt_lib_module_t *self)
       if(new_fdata || new_sdata)
       {
         // we got an updated blob -> reassemble the parts and update the preset
-        size_t new_params_size = op_params_size - (fsize + ssize) + (new_fsize + new_ssize);
+        const size_t new_params_size = op_params_size - (fsize + ssize) + (new_fsize + new_ssize);
         void *new_params = malloc(new_params_size);
         memcpy(new_params, op_params, copy_over_part);
         // next we have fversion, sversion, fsize, ssize, fdata, sdata which is the stuff that might change
@@ -1318,7 +1295,7 @@ int set_params(dt_lib_module_t *self, const void *params, int size)
   {
     for(GList *iter = darktable.color_profiles->profiles; iter; iter = g_list_next(iter))
     {
-      dt_colorspaces_color_profile_t *pp = (dt_colorspaces_color_profile_t *)iter->data;
+      const dt_colorspaces_color_profile_t *pp = (dt_colorspaces_color_profile_t *)iter->data;
 
       if(pp->out_pos > -1 && icctype == pp->type
          && (icctype != DT_COLORSPACE_FILE || !strcmp(iccfilename, pp->filename)))
