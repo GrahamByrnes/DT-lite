@@ -75,7 +75,7 @@ static void compress_button_clicked(GtkWidget *widget, gpointer user_data)
   const GtkWidget *win = dt_ui_main_window(darktable.gui->ui);
   const GList *imgs = dt_view_get_images_to_act_on(TRUE, TRUE);
 
-  if(g_list_length((GList *)imgs) < 1) return;
+  if(!imgs) return;
 
   const int missing = dt_history_compress_on_list(imgs);
   dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD,
@@ -102,12 +102,11 @@ static void discard_button_clicked(GtkWidget *widget, gpointer user_data)
 {
   gint res = GTK_RESPONSE_YES;
   const GList *imgs = dt_view_get_images_to_act_on(TRUE, TRUE);
-  GList *imgs_copy = g_list_copy((GList *)imgs);
 
   if(dt_conf_get_bool("ask_before_discard"))
   {
     const GtkWidget *win = dt_ui_main_window(darktable.gui->ui);
-    const int number = g_list_length((GList *)imgs_copy);
+    const int number = g_list_length((GList *)imgs);
 
     if (number == 0) return;
 
@@ -125,13 +124,13 @@ static void discard_button_clicked(GtkWidget *widget, gpointer user_data)
 
   if(res == GTK_RESPONSE_YES)
   {
-    dt_history_delete_on_list(imgs_copy, TRUE);
+    dt_history_delete_on_list(imgs, TRUE);
+    GList *imgs_copy = g_list_copy((GList *)imgs);
     dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_RELOAD,
-                               g_list_copy((GList *)imgs_copy));
+                               imgs_copy);
     dt_control_queue_redraw_center();
   }
 
-  g_list_free(imgs_copy);
 }
 
 static void _image_selection_changed_callback(gpointer instance, dt_lib_module_t *self)
