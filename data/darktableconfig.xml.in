@@ -331,8 +331,8 @@
     <name>plugins/collect/descending</name>
     <type>bool</type>
     <default>true</default>
-    <shortdescription>sort collection recent to older</shortdescription>
-    <longdescription>changes the default collections-list order for folders, times and dates to run from recent to older</longdescription>
+    <shortdescription>sort collection older at top</shortdescription>
+    <longdescription>changes the default collections-list order for folders, times and dates to run from older to recent</longdescription>
   </dtconfig>
   <dtconfig prefs="lighttable">
     <name>plugins/lighttable/thumbnail_hq_min_level</name>
