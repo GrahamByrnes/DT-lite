@@ -101,11 +101,11 @@ void dt_print_file(const int32_t imgid, const char *filename, const char *job_ti
 //  - the printable area (ax, ay, awidth and aheight), the area without the borders
 //  - the image position (ix, iy, iwidth, iheight)
 // there is no unit, every returned values are based on the area size.
-void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt, const int32_t area_width, const int32_t area_height,
-                         int32_t *iwpix, int32_t *ihpix,
-                         int32_t *px,    int32_t *py,    int32_t *pwidth, int32_t *pheight,
-                         int32_t *ax,    int32_t *ay,    int32_t *awidth, int32_t *aheight,
-                         int32_t *ix,    int32_t *iy,    int32_t *iwidth, int32_t *iheight);
+void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
+                         const int32_t area_width, const int32_t area_height,
+                         float *px, float *py, float *pwidth, float *pheight,
+                         float *ax, float *ay, float *awidth, float *aheight,
+                         gboolean *borderless);
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent

@@ -217,7 +217,7 @@ static gboolean paper_exists(GList *papers, const char *name)
     if (!strcmp(pi->name,name) || !strcmp(pi->common_name,name))
       return TRUE;
   }
-  return TRUE;
+  return FALSE;
 }
 
 dt_paper_info_t *dt_get_paper(GList *papers, const char *name)
@@ -544,29 +544,16 @@ void dt_print_file(const int32_t imgid, const char *filename, const char *job_ti
 
 void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
                          const int32_t area_width, const int32_t area_height,
-                         int32_t *iwpix, int32_t *ihpix,
-                         int32_t *px,    int32_t *py,    int32_t *pwidth, int32_t *pheight,
-                         int32_t *ax,    int32_t *ay,    int32_t *awidth, int32_t *aheight,
-                         int32_t *ix,    int32_t *iy,    int32_t *iwidth, int32_t *iheight)
+                         float *px, float *py, float *pwidth, float *pheight,
+                         float *ax, float *ay, float *awidth, float *aheight,
+                         gboolean *borderless)
 {
   /* this is where the layout is done for the display and for the print too. So this routine is one
      of the most critical for the print circuitry. */
 
-  float width, height;
-
   // page w/h
   float pg_width  = prt->paper.width;
   float pg_height = prt->paper.height;
-
-  if (area_width==0)
-    width = pg_width;
-  else
-    width = area_width;
-
-  if (area_height==0)
-    height = pg_height;
-  else
-    height = area_height;
 
   /* here, width and height correspond to the area for the picture */
   // non-printable
@@ -582,14 +569,6 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
     pg_width = pg_height;
     pg_height = tmp;
 
-    //  only invert if we did not get a specific area
-    if(area_width == 0 && area_height == 0)
-    {
-      tmp = width;
-      width = height;
-      height = tmp;
-    }
-
     // rotate the non-printable margins
     tmp       = np_top;
     np_top    = np_right;
@@ -599,25 +578,25 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
   }
 
   // the image area aspect
-  const float a_aspect = (float)width / (float)height;
+  const float a_aspect = (float)area_width / (float)area_height;
   // page aspect
   const float pg_aspect = pg_width / pg_height;
   // display page
-  int32_t p_bottom, p_right;
+  float p_bottom, p_right;
 
   if(a_aspect > pg_aspect)
   {
-    *px = (width - (height * pg_aspect)) / 2;
-    *py = 0;
-    p_bottom = height;
-    p_right = width - *px;
+    *px = (area_width - (area_height * pg_aspect)) / 2.0f;
+    *py = 0.0f;
+    p_bottom = area_height;
+    p_right = area_width - *px;
   }
   else
   {
-    *px = 0;
-    *py = (height - (width / pg_aspect)) / 2;
-    p_right = width;
-    p_bottom = height - *py;
+    *px = 0.0f;
+    *py = (area_height - (area_width / pg_aspect)) / 2.0f;
+    p_right = area_width;
+    p_bottom = area_height - *py;
   }
 
   *pwidth = p_right - *px;
@@ -634,10 +613,15 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
 
   // display picture area, that is removing the non printable areas and user's margins
 
-  const int32_t bx = *px + ((np_left + border_left) / pg_width) * (*pwidth);
-  const int32_t by = *py + ((np_top + border_top)/ pg_height) * (*pheight);
-  const int32_t bb = p_bottom - ((np_bottom + border_bottom) / pg_height) * (*pheight);
-  const int32_t br = p_right - ((np_right + border_right) / pg_width) * (*pwidth);
+  const float bx = *px + (border_left / pg_width) * (*pwidth);
+  const float by = *py + (border_top / pg_height) * (*pheight);
+  const float bb = p_bottom - (border_bottom / pg_height) * (*pheight);
+  const float br = p_right - (border_right / pg_width) * (*pwidth);
+
+  *borderless = border_left   < np_left
+             || border_right  < np_right
+             || border_top    < np_top
+             || border_bottom < np_bottom;
 
   // now we have the printable area (ax, ay) -> (ax + awidth, ay + aheight)
 
@@ -645,72 +629,6 @@ void dt_get_print_layout(const int32_t imgid, const dt_print_info_t *prt,
   *ay      = by;
   *awidth  = br - bx;
   *aheight = bb - by;
-
-  // get the image dimensions if needed
-
-  if (*iwpix <= 0 || *ihpix <= 0)
-    dt_image_get_final_size(imgid, iwpix, ihpix);
-
-  // compute the scaling for the image to fit into the printable area
-
-  float scale;
-  *iwidth = *iwpix;
-  *iheight = *ihpix;
-
-  if (*iwidth > *awidth)
-  {
-    scale =  (float)(*awidth) / (float)*iwidth;
-    *iwidth = *awidth;
-    *iheight = (int32_t)(((float)*iheight + 0.5) * scale);
-  }
-
-  if (*iheight > *aheight)
-  {
-    scale = (float)(*aheight) / (float)*iheight;
-    *iheight = *aheight;
-    *iwidth = (int32_t)(((float)*iwidth + 0.5) * scale);
-  }
-  // now the image position (top-left corner coordinates) in the display area depending on the page
-  // alignment set by the user.
-  switch (prt->page.alignment)
-  {
-    case ALIGNMENT_TOP_LEFT:
-      *ix = bx;
-      *iy = by;
-      break;
-    case ALIGNMENT_TOP:
-      *ix = bx + (*awidth - *iwidth) / 2;
-      *iy = by;
-      break;
-    case ALIGNMENT_TOP_RIGHT:
-      *ix = br - *iwidth;
-      *iy = by;
-      break;
-    case ALIGNMENT_LEFT:
-      *ix = bx;
-      *iy = by + (*aheight - *iheight) / 2;
-      break;
-    case ALIGNMENT_CENTER:
-      *ix = bx + (*awidth - *iwidth) / 2;
-      *iy = by + (*aheight - *iheight) / 2;
-      break;
-    case ALIGNMENT_RIGHT:
-      *ix = br - *iwidth;
-      *iy = by + (*aheight - *iheight) / 2;
-      break;
-    case ALIGNMENT_BOTTOM_LEFT:
-      *ix = bx;
-      *iy = bb - *iheight;
-      break;
-    case ALIGNMENT_BOTTOM:
-      *ix = bx + (*awidth - *iwidth) / 2;
-      *iy = bb - *iheight;
-      break;
-    case ALIGNMENT_BOTTOM_RIGHT:
-      *ix = br - *iwidth;
-      *iy = bb - *iheight;
-      break;
-  }
 }
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh

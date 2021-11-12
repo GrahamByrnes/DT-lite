@@ -250,21 +250,19 @@ static int _print_job_run(dt_job_t *job)
   // after exporting we know the real size of the image, compute the layout
 
   // compute print-area (in inches)
-  int32_t px=0, py=0, pwidth=0, pheight=0;
-  int32_t ax=0, ay=0, awidth=0, aheight=0;
-  int32_t ix=0, iy=0, iwidth=0, iheight=0;
-  int32_t iwpix=dat.head.width, ihpix=dat.head.height;
+  float px=0.0f, py=0.0f, pwidth=0.0f, pheight=0.0f;
+  float ax=0.0f, ay=0.0f, awidth=0.0f, aheight=0.0f;
+  gboolean borderless = FALSE;
 
-  dt_get_print_layout (params->imgid, &params->prt, width_pix, height_pix,
-                       &iwpix, &ihpix,
+  dt_get_print_layout(params->imgid, &params->prt, width_pix, height_pix,
                        &px, &py, &pwidth, &pheight,
                        &ax, &ay, &awidth, &aheight,
-                       &ix, &iy, &iwidth, &iheight);
+                       borderless);
 
-  const int margin_top    = iy;
-  const int margin_left   = ix;
-  const int margin_right  = pwidth - iwidth - ix;
-  const int margin_bottom = pheight - iheight - iy;
+  const float margin_top    = prt->printer.hw_margin_top;
+  const float margin_left   = prt->printer.hw_margin_left;
+  const float margin_right  = prt->printer.hw_margin_right;
+  const float margin_bottom = prt->printer.hw_margin_bottom;
 
   dt_print(DT_DEBUG_PRINT, "[print] margins top %d ; bottom %d ; left %d ; right %d\n",
            margin_top, margin_bottom, margin_left, margin_right);
