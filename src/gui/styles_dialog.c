@@ -122,7 +122,7 @@ void _gui_styles_get_active_items(dt_gui_styles_dialog_t *sd, GList **enabled, G
         *enabled = g_list_append(*enabled, GINT_TO_POINTER(num));
         if(update != NULL)
         {
-          if(uactive || num == -1)
+          if(uactive)
             *update = g_list_append(*update, GINT_TO_POINTER(update_num));
           else
             *update = g_list_append(*update, GINT_TO_POINTER(-1));
@@ -470,15 +470,14 @@ static void _gui_styles_dialog_run(gboolean edit, const char *name, int imgid)
     gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
                        DT_STYLE_ITEMS_COL_ENABLED, dt_styles_has_module_order(name),
                        DT_STYLE_ITEMS_COL_NAME, _("modules order"),
-                       DT_STYLE_ITEMS_COL_NUM, -1,
-                       -1);
+                       DT_STYLE_ITEMS_COL_NUM, -1, -1);
     /* get history items for named style and populate the items list */
     GList *items = dt_styles_get_item_list(name, FALSE, imgid);
     if(items)
     {
-      do
+      for(const GList *items_iter = items; items_iter; items_iter = g_list_next(items_iter))
       {
-        dt_style_item_t *item = (dt_style_item_t *)items->data;
+        dt_style_item_t *item = (dt_style_item_t *)items_iter->data;
 
         if(item->num != -1 && item->selimg_num != -1) // defined in style and image
         {
@@ -500,37 +499,35 @@ static void _gui_styles_dialog_run(gboolean edit, const char *name, int imgid)
                              DT_STYLE_ITEMS_COL_ENABLED, item->num != -1 ? TRUE : FALSE,
                              DT_STYLE_ITEMS_COL_NAME, item->name,
                              DT_STYLE_ITEMS_COL_NUM, item->num,
-                             DT_STYLE_ITEMS_COL_UPDATE_NUM, item->selimg_num,
-                             -1);
+                             DT_STYLE_ITEMS_COL_UPDATE_NUM, item->selimg_num, -1);
           has_new_item = TRUE;
         }
-      } while((items = g_list_next(items)));
+      }
       g_list_free_full(items, dt_style_item_free);
     }
   }
   else
   {
     const dt_iop_order_t order = dt_ioppr_get_iop_order_version(imgid);
-    char *label = g_strdup_printf("%s (%s)", _("modules order"), dt_iop_order_string(order));
+    char *label = g_strdup_printf("%s (%s)", _("module order"), dt_iop_order_string(order));
     gtk_list_store_append(GTK_LIST_STORE(liststore), &iter);
     gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
                        DT_STYLE_ITEMS_COL_ENABLED, TRUE,
                        DT_STYLE_ITEMS_COL_NAME, label,
-                       DT_STYLE_ITEMS_COL_NUM, -1,
-                       -1);
+                       DT_STYLE_ITEMS_COL_NUM, -1, -1);
     g_free(label);
 
     GList *items = dt_history_get_items(imgid, FALSE);
     if(items)
     {
-      do
+      for(const GList *items_iter = items; items_iter; items_iter = g_list_next(items_iter))
       {
-        dt_history_item_t *item = (dt_history_item_t *)items->data;
+        dt_history_item_t *item = (dt_history_item_t *)items_iter->data;
 
-        /* lookup history item module */
+        // lookup history item module
         gboolean enabled = TRUE;
         dt_iop_module_t *module = NULL;
-        GList *modules = g_list_first(darktable.develop->iop);
+        GList *modules = darktable.develop->iop;
         if(modules)
         {
           GList *result = g_list_find_custom(
@@ -549,12 +546,9 @@ static void _gui_styles_dialog_run(gboolean edit, const char *name, int imgid)
         gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
                            DT_STYLE_ITEMS_COL_ENABLED, enabled,
                            DT_STYLE_ITEMS_COL_NAME, iname,
-                           DT_STYLE_ITEMS_COL_NUM, item->num,
-                           -1);
-
+                           DT_STYLE_ITEMS_COL_NUM, item->num, -1);
         has_item = TRUE;
-
-      } while((items = g_list_next(items)));
+      }
       g_list_free_full(items, dt_history_item_free);
     }
     else
@@ -568,7 +562,7 @@ static void _gui_styles_dialog_run(gboolean edit, const char *name, int imgid)
 
   if(has_new_item) gtk_box_pack_start(sbox, GTK_WIDGET(sd->items_new), TRUE, TRUE, 0);
 
-  if(edit) gtk_box_pack_start(GTK_BOX(content_area), GTK_WIDGET(sd->duplicate), TRUE, TRUE, 0);
+  if(edit) gtk_box_pack_start(GTK_BOX(content_area), GTK_WIDGET(sd->duplicate), FALSE, TRUE, 0);
 
   g_object_unref(liststore);
   g_object_unref(liststore_new);

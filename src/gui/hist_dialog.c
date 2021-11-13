@@ -45,10 +45,18 @@ static gboolean _gui_hist_is_copy_module_order_set(dt_history_copy_item_t *d)
   GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(d->items));
 
   gboolean active = FALSE;
+  gboolean module_order_was_copied = FALSE;
   gint num = 0;
-  if(gtk_tree_model_get_iter_first(model, &iter))
-    gtk_tree_model_get(model, &iter, DT_HIST_ITEMS_COL_ENABLED, &active, DT_HIST_ITEMS_COL_NUM, &num, -1);
-  return active && (num == -1);
+
+  gtk_tree_model_get_iter_first(model, &iter);
+  do
+  {
+      gtk_tree_model_get(model, &iter, DT_HIST_ITEMS_COL_ENABLED, &active, DT_HIST_ITEMS_COL_NUM, &num, -1);
+      if(active && (num == -1)) module_order_was_copied = TRUE;
+  }
+  while(gtk_tree_model_iter_next(model, &iter));
+
+  return module_order_was_copied;
 }
 
 static GList *_gui_hist_get_active_items(dt_history_copy_item_t *d)
@@ -65,11 +73,12 @@ static GList *_gui_hist_get_active_items(dt_history_copy_item_t *d)
       gboolean active = FALSE;
       gint num = 0;
       gtk_tree_model_get(model, &iter, DT_HIST_ITEMS_COL_ENABLED, &active, DT_HIST_ITEMS_COL_NUM, &num, -1);
-      if(active && num >= 0) result = g_list_append(result, GINT_TO_POINTER(num));
+      if(active && num >= 0)
+        result = g_list_prepend(result, GINT_TO_POINTER(num));
 
     } while(gtk_tree_model_iter_next(model, &iter));
   }
-  return result;
+  return g_list_reverse(result);
 }
 
 static void _gui_hist_set_items(dt_history_copy_item_t *d, gboolean active)
@@ -128,19 +137,15 @@ static void _gui_hist_item_toggled(GtkCellRendererToggle *cell, gchar *path_str,
 
 static gboolean _gui_is_set(GList *selops, unsigned int num)
 {
-  GList *l = selops;
+  if(!selops) return TRUE;
 
-  /* nothing to filter */
-  if(!l) return TRUE;
-
-  while(l)
+  for(GList *l = selops; l; l = g_list_next(l))
   {
     if(l->data)
     {
       unsigned int lnum = GPOINTER_TO_UINT(l->data);
       if(lnum == num) return TRUE;
     }
-    l = g_list_next(l);
   }
   return FALSE;
 }
@@ -218,41 +223,44 @@ int dt_gui_hist_dialog_new(dt_history_copy_item_t *d, int imgid, gboolean iscopy
   gtk_tree_selection_set_mode(gtk_tree_view_get_selection(GTK_TREE_VIEW(d->items)), GTK_SELECTION_SINGLE);
   gtk_tree_view_set_model(GTK_TREE_VIEW(d->items), GTK_TREE_MODEL(liststore));
 
-  /* fill list with history items */
+  // fill list with history items
   GList *items = dt_history_get_items(imgid, FALSE);
   if(items)
   {
     GtkTreeIter iter;
 
-    /* first item is for copying the module order, or if paste and was selected */
-    if(iscopy || d->copy_iop_order)
+    for(const GList *items_iter = items; items_iter; items_iter = g_list_next(items_iter))
     {
-      const dt_iop_order_t order = dt_ioppr_get_iop_order_version(imgid);
-      char *label = g_strdup_printf("%s (%s)", _("modules order"), dt_iop_order_string(order));
-      gtk_list_store_append(GTK_LIST_STORE(liststore), &iter);
-      gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
-                         DT_HIST_ITEMS_COL_ENABLED, TRUE,
-                         DT_HIST_ITEMS_COL_NAME, label,
-                         DT_HIST_ITEMS_COL_NUM, -1,
-                         -1);
-      g_free(label);
-    }
+      const dt_history_item_t *item = (dt_history_item_t *)items_iter->data;
+      const int flags = get_module_flags(item->op);
 
-    do
-    {
-      const dt_history_item_t *item = (dt_history_item_t *)items->data;
-
-      if(!(get_module_flags(item->op) & IOP_FLAGS_HIDDEN))
+      if(!(flags & IOP_FLAGS_HIDDEN))
       {
+        const gboolean is_safe = !dt_history_module_skip_copy(flags);
+
         gtk_list_store_append(GTK_LIST_STORE(liststore), &iter);
         gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
-                           DT_HIST_ITEMS_COL_ENABLED, iscopy ? TRUE : _gui_is_set(d->selops, item->num),
+                           DT_HIST_ITEMS_COL_ENABLED, iscopy ? is_safe : _gui_is_set(d->selops, item->num),
                            DT_HIST_ITEMS_COL_NAME, item->name,
                            DT_HIST_ITEMS_COL_NUM, (gint)item->num,
                            -1);
       }
-    } while((items = g_list_next(items)));
+    }
     g_list_free_full(items, dt_history_item_free);
+
+    // last item is for copying the module order, or if paste and was selected
+	if(iscopy || d->copy_iop_order)
+	{
+	  const dt_iop_order_t order = dt_ioppr_get_iop_order_version(imgid);
+	  char *label = g_strdup_printf("%s (%s)", _("module order"), dt_iop_order_string(order));
+	  gtk_list_store_append(GTK_LIST_STORE(liststore), &iter);
+	  gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
+						 DT_HIST_ITEMS_COL_ENABLED, TRUE,
+						 DT_HIST_ITEMS_COL_NAME, label,
+						 DT_HIST_ITEMS_COL_NUM, -1,
+						 -1);
+	  g_free(label);
+	}
   }
   else
   {
