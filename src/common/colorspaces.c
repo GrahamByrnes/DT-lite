@@ -371,7 +371,7 @@ static double _HLG_fct(double x)
 
 static cmsToneCurve* _colorspaces_create_transfer(int32_t size, double (*fct)(double))
 {
-  float *values = g_malloc(size * sizeof(float));
+  float *values = g_malloc(sizeof(float) * size);
 
   for (int32_t i = 0; i < size; ++i)
   {
@@ -555,19 +555,18 @@ static cmsHPROFILE dt_colorspaces_create_linear_infrared_profile(void)
 const dt_colorspaces_color_profile_t *dt_colorspaces_get_work_profile(const int imgid)
 {
   // find the colorin module -- the pointer stays valid until darktable shuts down
-  static dt_iop_module_so_t *colorin = NULL;
+  static const dt_iop_module_so_t *colorin = NULL;
   if(colorin == NULL)
   {
-    GList *modules = g_list_first(darktable.iop);
-    while(modules)
+    for(const GList *modules = darktable.iop; modules; modules = g_list_next(modules))
+                  
     {
-      dt_iop_module_so_t *module = (dt_iop_module_so_t *)(modules->data);
+      const dt_iop_module_so_t *module = (const dt_iop_module_so_t *)(modules->data);
       if(!strcmp(module->op, "colorin"))
       {
         colorin = module;
         break;
       }
-      modules = g_list_next(modules);
     }
   }
 
@@ -607,13 +606,12 @@ const dt_colorspaces_color_profile_t *dt_colorspaces_get_output_profile(const in
                                                                         const char *over_filename)
 {
   // find the colorout module -- the pointer stays valid until darktable shuts down
-  static dt_iop_module_so_t *colorout = NULL;
+  static const dt_iop_module_so_t *colorout = NULL;
   if(colorout == NULL)
   {
-    GList *modules = g_list_first(darktable.iop);
-    while(modules)
+    for(const GList *modules = darktable.iop; modules; modules = g_list_next(modules))
     {
-      dt_iop_module_so_t *module = (dt_iop_module_so_t *)(modules->data);
+      const dt_iop_module_so_t *module = (const dt_iop_module_so_t *)(modules->data);
       if(!strcmp(module->op, "colorout"))
       {
         colorout = module;
@@ -679,7 +677,7 @@ static void dt_colorspaces_create_cmatrix(float cmatrix[4][3], float mat[3][3])
 }
 #endif
 
-static cmsHPROFILE dt_colorspaces_create_xyzmatrix_profile(float mat[3][3])
+static cmsHPROFILE dt_colorspaces_create_xyzmatrix_profile(const float mat[3][3])
 {
   // mat: cam -> xyz
   float x[3], y[3];
@@ -1038,7 +1036,7 @@ static GList *load_profile_from_dir(const char *subdir)
         char *icc_content = dt_read_file(filename, &end);
         if(!icc_content) goto icc_loading_done;
         // TODO: add support for grayscale profiles, then remove _ensure_rgb_profile() from here
-        cmsHPROFILE tmpprof = _ensure_rgb_profile(cmsOpenProfileFromMem(icc_content, end * sizeof(char)));
+        cmsHPROFILE tmpprof = _ensure_rgb_profile(cmsOpenProfileFromMem(icc_content, sizeof(char) * end));
         if(tmpprof)
         {
           dt_colorspaces_color_profile_t *prof = (dt_colorspaces_color_profile_t *)calloc(1, sizeof(dt_colorspaces_color_profile_t));
@@ -1124,7 +1122,7 @@ dt_colorspaces_t *dt_colorspaces_init()
                                      ++work_pos, ++display2_pos));
 
   res->profiles = g_list_append(res->profiles, _create_profile(DT_COLORSPACE_REC709, dt_colorspaces_create_gamma_rec709_rgb_profile(),
-                                     _("gamma Rec709 RGB"), ++in_pos, ++out_pos, -1, -1,
+                                     _("Rec709 RGB"), ++in_pos, ++out_pos, -1, -1,
                                      ++work_pos, -1));
 
   res->profiles = g_list_append(
@@ -1154,7 +1152,7 @@ dt_colorspaces_t *dt_colorspaces_init()
 
   res->profiles = g_list_append(
      res->profiles, _create_profile(DT_COLORSPACE_PROPHOTO_RGB, dt_colorspaces_create_linear_prophoto_rgb_profile(),
-                                    _("linear prophoto RGB"), ++in_pos, ++out_pos, ++display_pos, ++category_pos,
+                                    _("linear Prophoto RGB"), ++in_pos, ++out_pos, ++display_pos, ++category_pos,
                                     ++work_pos, ++display2_pos));
 
   res->profiles = g_list_append(
@@ -1308,7 +1306,8 @@ void dt_colorspaces_cleanup(dt_colorspaces_t *self)
 const char *dt_colorspaces_get_name(dt_colorspaces_color_profile_type_t type,
                                     const char *filename)
 {
-  switch (type) {
+  switch (type)
+  {
   case DT_COLORSPACE_NONE:
     return NULL;
   case DT_COLORSPACE_FILE:
@@ -1568,7 +1567,6 @@ dt_colorspaces_color_profile_type_t dt_colorspaces_cicp_to_type(const dt_colorsp
             case DT_CICP_MATRIX_COEFFICIENTS_IDENTITY: /* support RGB (4:4:4 or lossless) */
             case DT_CICP_MATRIX_COEFFICIENTS_SYCC:
             case DT_CICP_MATRIX_COEFFICIENTS_REC601: /* support equivalents just in case of mistagging */
-            case DT_CICP_MATRIX_COEFFICIENTS_REC709: /* support incorrectly tagged legacy AVIFs exported before dt 3.8 */
             case DT_CICP_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL: /* support incorrectly tagged files */
             case DT_CICP_MATRIX_COEFFICIENTS_UNSPECIFIED:
               return DT_COLORSPACE_SRGB;
@@ -1583,7 +1581,6 @@ dt_colorspaces_color_profile_type_t dt_colorspaces_cicp_to_type(const dt_colorsp
         case DT_CICP_TRANSFER_CHARACTERISTICS_REC601:      /* support equivalents just in case of mistagging */
         case DT_CICP_TRANSFER_CHARACTERISTICS_REC2020_10B: /* support equivalents just in case of mistagging */
         case DT_CICP_TRANSFER_CHARACTERISTICS_REC2020_12B: /* support equivalents just in case of mistagging */
-        case DT_CICP_TRANSFER_CHARACTERISTICS_GAMMA22: /* support incorrectly tagged legacy AVIFs exported before dt 3.6 (gamma 2.2) */
 
           switch(cicp->matrix_coefficients)
           {
