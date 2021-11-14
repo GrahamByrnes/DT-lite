@@ -21,9 +21,9 @@
 #include "common/darktable.h"
 #include "common/debug.h"
 #include "common/history.h"
+#include "common/iop_order.h"
 #include "common/styles.h"
 #include "control/control.h"
-#include "develop/imageop.h"
 #include "gui/gtk.h"
 #include "gui/styles.h"
 #ifdef GDK_WINDOWING_QUARTZ
@@ -459,19 +459,12 @@ static void _gui_styles_dialog_run(gboolean edit, const char *name, int imgid)
 
   gtk_tree_selection_set_mode(gtk_tree_view_get_selection(GTK_TREE_VIEW(sd->items_new)), GTK_SELECTION_SINGLE);
   gtk_tree_view_set_model(GTK_TREE_VIEW(sd->items_new), GTK_TREE_MODEL(liststore_new));
-
   gboolean has_new_item = FALSE, has_item = FALSE;
 
   /* fill list with history items */
   GtkTreeIter iter;
   if(edit)
   {
-    gtk_list_store_append(GTK_LIST_STORE(liststore), &iter);
-    gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
-                       DT_STYLE_ITEMS_COL_ENABLED, dt_styles_has_module_order(name),
-                       DT_STYLE_ITEMS_COL_NAME, _("modules order"),
-                       DT_STYLE_ITEMS_COL_NUM, -1, -1);
-    /* get history items for named style and populate the items list */
     GList *items = dt_styles_get_item_list(name, FALSE, imgid);
     if(items)
     {
@@ -508,22 +501,12 @@ static void _gui_styles_dialog_run(gboolean edit, const char *name, int imgid)
   }
   else
   {
-    const dt_iop_order_t order = dt_ioppr_get_iop_order_version(imgid);
-    char *label = g_strdup_printf("%s (%s)", _("module order"), dt_iop_order_string(order));
-    gtk_list_store_append(GTK_LIST_STORE(liststore), &iter);
-    gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
-                       DT_STYLE_ITEMS_COL_ENABLED, TRUE,
-                       DT_STYLE_ITEMS_COL_NAME, label,
-                       DT_STYLE_ITEMS_COL_NUM, -1, -1);
-    g_free(label);
-
     GList *items = dt_history_get_items(imgid, FALSE);
     if(items)
     {
       for(const GList *items_iter = items; items_iter; items_iter = g_list_next(items_iter))
       {
         dt_history_item_t *item = (dt_history_item_t *)items_iter->data;
-
         // lookup history item module
         gboolean enabled = TRUE;
         dt_iop_module_t *module = NULL;
@@ -531,7 +514,8 @@ static void _gui_styles_dialog_run(gboolean edit, const char *name, int imgid)
         if(modules)
         {
           GList *result = g_list_find_custom(
-              modules, item->op, _g_list_find_module_by_name); // (dt_iop_module_t *)(modules->data);
+              modules, item->op, _g_list_find_module_by_name);
+
           if(result)
           {
             module = (dt_iop_module_t *)(result->data);
@@ -541,7 +525,6 @@ static void _gui_styles_dialog_run(gboolean edit, const char *name, int imgid)
 
         gchar iname[256] = { 0 };
         g_strlcpy(iname, item->name, sizeof(iname));
-
         gtk_list_store_append(GTK_LIST_STORE(liststore), &iter);
         gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
                            DT_STYLE_ITEMS_COL_ENABLED, enabled,

@@ -218,8 +218,6 @@ int dt_gui_hist_dialog_new(dt_history_copy_item_t *d, int imgid, gboolean iscopy
   g_object_set(renderer, "xalign", 0.0, (gchar *)0);
   gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(d->items), -1, _("item"), renderer, "text",
                                               DT_HIST_ITEMS_COL_NAME, NULL);
-
-
   gtk_tree_selection_set_mode(gtk_tree_view_get_selection(GTK_TREE_VIEW(d->items)), GTK_SELECTION_SINGLE);
   gtk_tree_view_set_model(GTK_TREE_VIEW(d->items), GTK_TREE_MODEL(liststore));
 
@@ -237,7 +235,6 @@ int dt_gui_hist_dialog_new(dt_history_copy_item_t *d, int imgid, gboolean iscopy
       if(!(flags & IOP_FLAGS_HIDDEN))
       {
         const gboolean is_safe = !dt_history_module_skip_copy(flags);
-
         gtk_list_store_append(GTK_LIST_STORE(liststore), &iter);
         gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
                            DT_HIST_ITEMS_COL_ENABLED, iscopy ? is_safe : _gui_is_set(d->selops, item->num),
@@ -247,20 +244,6 @@ int dt_gui_hist_dialog_new(dt_history_copy_item_t *d, int imgid, gboolean iscopy
       }
     }
     g_list_free_full(items, dt_history_item_free);
-
-    // last item is for copying the module order, or if paste and was selected
-	if(iscopy || d->copy_iop_order)
-	{
-	  const dt_iop_order_t order = dt_ioppr_get_iop_order_version(imgid);
-	  char *label = g_strdup_printf("%s (%s)", _("module order"), dt_iop_order_string(order));
-	  gtk_list_store_append(GTK_LIST_STORE(liststore), &iter);
-	  gtk_list_store_set(GTK_LIST_STORE(liststore), &iter,
-						 DT_HIST_ITEMS_COL_ENABLED, TRUE,
-						 DT_HIST_ITEMS_COL_NAME, label,
-						 DT_HIST_ITEMS_COL_NUM, -1,
-						 -1);
-	  g_free(label);
-	}
   }
   else
   {
@@ -270,7 +253,6 @@ int dt_gui_hist_dialog_new(dt_history_copy_item_t *d, int imgid, gboolean iscopy
 
   g_signal_connect(GTK_TREE_VIEW(d->items), "row-activated", (GCallback) tree_on_row_activated, GTK_WIDGET(dialog));
   g_object_unref(liststore);
-
   g_signal_connect(dialog, "response", G_CALLBACK(_gui_hist_copy_response), d);
 
   gtk_widget_show_all(GTK_WIDGET(dialog));
