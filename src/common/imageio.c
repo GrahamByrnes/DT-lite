@@ -956,13 +956,8 @@ int dt_imageio_export_with_flags(const int32_t imgid, const char *filename,
     float *buff = (float *)outbuf;
     uint16_t *buf16 = (uint16_t *)outbuf;
     const size_t K = processed_width * processed_height;
-/*
-#ifdef _OPENMP
-#pragma omp parallel for default(none) \
-  dt_omp_firstprivate(buf16, buff, K, bch) \
-  schedule(static)
-#endif*/
-// would need to get rid of the overwriting of floats by ints
+
+// would need to get rid of the overwriting of floats by ints to make OPENMP work here
     for(size_t k = 0; k < (size_t)4 * K; k += 4)
     {
       // convert in place

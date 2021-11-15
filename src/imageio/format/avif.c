@@ -161,8 +161,7 @@ int write_image(struct dt_imageio_module_data_t *data,
                 int imgid,
                 int num,
                 int total,
-                struct dt_dev_pixelpipe_t *pipe,
-                const gboolean export_masks)
+                struct dt_dev_pixelpipe_t *pipe)
 {
   dt_imageio_avif_t *d = (dt_imageio_avif_t *)data;
 
@@ -305,16 +304,12 @@ int write_image(struct dt_imageio_module_data_t *data,
   }
 
   image->yuvRange = AVIF_RANGE_FULL;
-
   avifRGBImageSetDefaults(&rgb, image);
   rgb.format = AVIF_RGB_FORMAT_RGB;
-
   avifRGBImageAllocatePixels(&rgb);
 
   const float max_channel_f = (float)((1 << bit_depth) - 1);
-
   const size_t rowbytes = rgb.rowBytes;
-
   const float *const restrict in_data = (const float *)in;
   uint8_t *const restrict out = (uint8_t *)rgb.pixels;
 
