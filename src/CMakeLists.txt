@@ -539,10 +539,6 @@ string(REPLACE ";" "\", \"" DT_SUPPORTED_EXTENSIONS_STRING "${DT_SUPPORTED_EXTEN
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.h" "${CMAKE_CURRENT_BINARY_DIR}/config.h" @ONLY)
 
 
-#
-# Build external deps
-#
-
 message(STATUS "Lua support: Disabled")
 
 find_package(Pugixml 1.2 REQUIRED)
@@ -558,6 +554,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL
   add_definitions("-Wno-error=pass-failed")
 endif()
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  # do not error out on "loop not vectorized" clang OpenMP warnings
+  add_definitions("-Wno-error=pass-failed")
+endif()
 # libcolord-gtk:
 if(USE_COLORD)
   find_package(Colord)

@@ -114,11 +114,12 @@ static const char *avif_get_compression_string(enum avif_compression_type_e comp
   return "unknown";
 }
 
-/* Lookup table for tiling choices */
+// Lookup table for tiling choices
+
 static int floor_log2(int i)
 {
   static const int floor_log2_table[] =
-    /* 0   1,  2,  3,  4,  5,  6,  7,  8,  9 */
+    // 0   1,  2,  3,  4,  5,  6,  7,  8,  9 
     {  0,  0,  2,  2,  4,  4,  4,  4,  8,  8,
        8,  8,  8,  8,  8,  8, 16, 16, 16, 16,
       16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
@@ -126,7 +127,7 @@ static int floor_log2(int i)
       32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
       32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
       32, 32, 32, 32 };
-    /* 0   1,  2,  3,  4,  5,  6,  7,  8,  9 */
+    // 0   1,  2,  3,  4,  5,  6,  7,  8,  9 
 
   if(i >= 64)
     return 64;
@@ -151,16 +152,9 @@ void cleanup(dt_imageio_module_format_t *self)
 {
 }
 
-int write_image(struct dt_imageio_module_data_t *data,
-                const char *filename,
-                const void *in,
-                dt_colorspaces_color_profile_type_t over_type,
-                const char *over_filename,
-                void *exif,
-                int exif_len,
-                int imgid,
-                int num,
-                int total,
+int write_image(struct dt_imageio_module_data_t *data,  const char *filename,  const void *in,
+                dt_colorspaces_color_profile_type_t over_type,  const char *over_filename,
+                void *exif,  int exif_len,  int imgid, int num,  int total,
                 struct dt_dev_pixelpipe_t *pipe)
 {
   dt_imageio_avif_t *d = (dt_imageio_avif_t *)data;
@@ -204,11 +198,11 @@ int write_image(struct dt_imageio_module_data_t *data,
   }
 
   image = avifImageCreate(width, height, bit_depth, format);
+
   if(image == NULL)
   {
     dt_print(DT_DEBUG_IMAGEIO,
-             "Failed to create AVIF image for writing [%s]\n",
-             filename);
+             "Failed to create AVIF image for writing [%s]\n", filename);
     rc = 1;
     goto out;
   }
@@ -216,12 +210,8 @@ int write_image(struct dt_imageio_module_data_t *data,
   dt_print(DT_DEBUG_IMAGEIO,
            "Exporting AVIF image [%s] "
            "[width: %zu, height: %zu, bit depth: %zu, comp: %s, quality: %u]\n",
-           filename,
-           width,
-           height,
-           bit_depth,
-           avif_get_compression_string(d->compression_type),
-           d->quality);
+           filename,  width,  height,  bit_depth,
+           avif_get_compression_string(d->compression_type),  d->quality);
 
   if(imgid > 0)
   {
@@ -324,21 +314,22 @@ int write_image(struct dt_imageio_module_data_t *data,
   schedule(simd:static) \
   collapse(2)
 #endif
-    for(size_t y = 0; y < height; y++)
-    {
-      for(size_t x = 0; x < width; x++)
+      for(size_t y = 0; y < height; y++)
       {
+        for(size_t x = 0; x < width; x++)
+        {
           const float *in_pixel = &in_data[(size_t)4 * ((y * width) + x)];
           uint16_t *out_pixel = (uint16_t *)&out[(y * rowbytes) + (3 * sizeof(uint16_t) * x)];
 
           out_pixel[0] = (uint16_t)roundf(CLAMP(in_pixel[0] * max_channel_f, 0, max_channel_f));
           out_pixel[1] = (uint16_t)roundf(CLAMP(in_pixel[1] * max_channel_f, 0, max_channel_f));
           out_pixel[2] = (uint16_t)roundf(CLAMP(in_pixel[2] * max_channel_f, 0, max_channel_f));
+        }
       }
+
+      break;
     }
 
-    break;
-    }
     case 8:
     {
 #ifdef _OPENMP
@@ -347,20 +338,21 @@ int write_image(struct dt_imageio_module_data_t *data,
   schedule(simd:static) \
   collapse(2)
 #endif
-    for(size_t y = 0; y < height; y++)
-    {
-      for(size_t x = 0; x < width; x++)
+      for(size_t y = 0; y < height; y++)
       {
+        for(size_t x = 0; x < width; x++)
+        {
           const float *in_pixel = &in_data[(size_t)4 * ((y * width) + x)];
           uint8_t *out_pixel = (uint8_t *)&out[(y * rowbytes) + (3 * sizeof(uint8_t) * x)];
 
           out_pixel[0] = (uint8_t)roundf(CLAMP(in_pixel[0] * max_channel_f, 0, max_channel_f));
           out_pixel[1] = (uint8_t)roundf(CLAMP(in_pixel[1] * max_channel_f, 0, max_channel_f));
           out_pixel[2] = (uint8_t)roundf(CLAMP(in_pixel[2] * max_channel_f, 0, max_channel_f));
+        }
       }
+      break;
     }
-    break;
-    }
+
     default:
       dt_control_log(_("invalid AVIF bit depth!"));
       rc = 1;
@@ -383,11 +375,12 @@ int write_image(struct dt_imageio_module_data_t *data,
   switch(d->compression_type)
   {
     case AVIF_COMP_LOSSLESS:
-      /* It isn't recommend to use the extremities */
+      // It isn't recommend to use the extremities
       encoder->speed = AVIF_SPEED_SLOWEST + 1;
       encoder->minQuantizer = AVIF_QUANTIZER_LOSSLESS;
       encoder->maxQuantizer = AVIF_QUANTIZER_LOSSLESS;
       break;
+
     case AVIF_COMP_LOSSY:
       encoder->speed = AVIF_SPEED_DEFAULT;
       encoder->maxQuantizer = 100 - d->quality;
@@ -398,13 +391,10 @@ int write_image(struct dt_imageio_module_data_t *data,
       break;
   }
 
-  /*
-   * Tiling reduces the image quality but it has a negligible impact on
-   * still images.
-   *
-   * The minimum size for a tile is 512x512. We use a default tile size of
-   * 1024x1024.
-   */
+   // Tiling reduces the image quality but it has a negligible impact on
+   // still images.
+   // The minimum size for a tile is 512x512. We use a default tile size of
+   // 1024x1024.
   switch(d->tiling)
   {
     case AVIF_TILING_ON:
@@ -415,23 +405,21 @@ int write_image(struct dt_imageio_module_data_t *data,
 
       if(width >= 6144)
         width_tile_size = AVIF_MIN_TILE_SIZE * 4;
-      else if (width >= 8192) {
+      else if (width >= 8192)
         width_tile_size = AVIF_MAX_TILE_SIZE;
 
       if(height >= 6144)
         height_tile_size = AVIF_MIN_TILE_SIZE * 4;
-      else if (height >= 8192) {
+      else if (height >= 8192)
         height_tile_size = AVIF_MAX_TILE_SIZE;
 
       encoder->tileColsLog2 = floor_log2(width / width_tile_size) / 2;
       encoder->tileRowsLog2 = floor_log2(height / height_tile_size) / 2;
-
-      /*
-       * This should be set to the final number of tiles, based on
-       * encoder->tileColsLog2 and encoder->tileRowsLog2.
-       */
+       // This should be set to the final number of tiles, based on
+       // encoder->tileColsLog2 and encoder->tileRowsLog2.
       max_threads = (1 << encoder->tileRowsLog2) * (1 << encoder->tileColsLog2);
       encoder->maxThreads = MIN(max_threads, dt_get_num_threads());
+      break;
     }
     case AVIF_TILING_OFF:
       break;
@@ -467,14 +455,11 @@ int write_image(struct dt_imageio_module_data_t *data,
     rc = 1;
     goto out;
   }
-
-  /*
-   * Write image to disk
-   */
+   // Write image to disk
   FILE *f = NULL;
   size_t cnt = 0;
-
   f = g_fopen(filename, "wb");
+
   if(f == NULL)
   {
     rc = 1;
@@ -483,6 +468,7 @@ int write_image(struct dt_imageio_module_data_t *data,
 
   cnt = fwrite(output.data, 1, output.size, f);
   fclose(f);
+
   if(cnt != output.size)
   {
     g_unlink(filename);
@@ -490,7 +476,8 @@ int write_image(struct dt_imageio_module_data_t *data,
     goto out;
   }
 
-  rc = 0; /* success */
+  rc = 0; // success
+  
 out:
   avifRGBImageFreePixels(&rgb);
   avifImageDestroy(image);
@@ -500,7 +487,6 @@ out:
 
   return rc;
 }
-
 
 size_t params_size(dt_imageio_module_format_t *self)
 {
@@ -540,9 +526,7 @@ void *get_params(dt_imageio_module_format_t *self)
   return d;
 }
 
-int set_params(dt_imageio_module_format_t *self,
-               const void *params,
-               const int size)
+int set_params(dt_imageio_module_format_t *self, const void *params, const int size)
 {
   if(size != self->params_size(self))
     return 1;
@@ -568,7 +552,7 @@ void free_params(dt_imageio_module_format_t *self,
 
 int bpp(struct dt_imageio_module_data_t *data)
 {
-  return 32; /* always request float */
+  return 32; // always request float
 }
 
 int levels(struct dt_imageio_module_data_t *data)
@@ -761,10 +745,10 @@ void gui_cleanup(dt_imageio_module_format_t *self)
 void gui_reset(dt_imageio_module_format_t *self)
 {
   dt_imageio_avif_gui_t *gui = (dt_imageio_avif_gui_t *)self->gui_data;
-  const enum avif_color_mode_e color_mode = dt_confgen_get_int("plugins/imageio/format/avif/color_mode", DT_DEFAULT);
-  const enum avif_tiling_e tiling = !dt_confgen_get_bool("plugins/imageio/format/avif/tiling", DT_DEFAULT);
-  const enum avif_compression_type_e compression_type = dt_confgen_get_int("plugins/imageio/format/avif/compression_type", DT_DEFAULT);
-  const uint32_t quality = dt_confgen_get_int("plugins/imageio/format/avif/quality", DT_DEFAULT);
+  const enum avif_color_mode_e color_mode = dt_conf_get_int("plugins/imageio/format/avif/color_mode");
+  const enum avif_tiling_e tiling = !dt_conf_get_bool("plugins/imageio/format/avif/tiling");
+  const enum avif_compression_type_e compression_type = dt_conf_get_int("plugins/imageio/format/avif/compression_type");
+  const uint32_t quality = dt_conf_get_int("plugins/imageio/format/avif/quality");
 
   dt_bauhaus_combobox_set(gui->bit_depth, 0); //8bpp
   dt_bauhaus_combobox_set(gui->color_mode, color_mode);
