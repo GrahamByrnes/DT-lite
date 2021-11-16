@@ -68,7 +68,6 @@ const char *name(dt_lib_module_t *self)
   return _("import");
 }
 
-
 const char **views(dt_lib_module_t *self)
 {
   static const char *v[] = {"lighttable", NULL};
@@ -152,7 +151,6 @@ static void _lib_import_evaluate_extra_widget(dt_lib_import_t *d, dt_import_meta
   dt_import_metadata_evaluate(metadata);
 }
 
-// maybe this should be (partly) in common/imageio.[c|h]?
 static void _lib_import_update_preview(GtkFileChooser *file_chooser, gpointer data)
 {
   GtkWidget *preview;
@@ -177,7 +175,7 @@ static void _lib_import_update_preview(GtkFileChooser *file_chooser, gpointer da
   if(!have_preview && !no_preview_fallback)
   {
     uint8_t *buffer = NULL;
-    size_t size;
+    size_t size = 0;
     char *mime_type = NULL;
 
     if(!dt_exif_get_thumbnail(filename, &buffer, &size, &mime_type))
@@ -196,8 +194,9 @@ static void _lib_import_update_preview(GtkFileChooser *file_chooser, gpointer da
       if (!(tmp = gdk_pixbuf_loader_get_pixbuf(loader)))
         goto cleanup;
 
-      float ratio = 1.0 * gdk_pixbuf_get_height(tmp) / gdk_pixbuf_get_width(tmp);
-      int width = 128, height = 128 * ratio;
+      const float ratio = 1.0 * gdk_pixbuf_get_height(tmp) / gdk_pixbuf_get_width(tmp);
+      const int width = 128;
+      const int height = 128 * ratio;
       pixbuf = gdk_pixbuf_scale_simple(tmp, width, height, GDK_INTERP_BILINEAR);
       have_preview = TRUE;
 
@@ -250,11 +249,10 @@ static void _lib_import_update_preview(GtkFileChooser *file_chooser, gpointer da
     if(surface)
     {
       guint8 *image_buffer = cairo_image_surface_get_data(surface);
-      int image_width = cairo_image_surface_get_width(surface);
-      int image_height = cairo_image_surface_get_height(surface);
+      const int image_width = cairo_image_surface_get_width(surface);
+      const int image_height = cairo_image_surface_get_height(surface);
 
       pixbuf = gdk_pixbuf_get_from_surface(surface, 0, 0, image_width, image_height);
-
       cairo_surface_destroy(surface);
       free(image_buffer);
       have_preview = TRUE;

@@ -147,6 +147,9 @@ typedef enum dt_image_loader_t
   LOADER_PNM = 10,
   LOADER_AVIF = 11,
   LOADER_IM = 12,
+  LOADER_HEIF = 13,
+  LOADER_LIBRAW   = 14,
+  LOADER_COUNT    = 15, // keep last
 } dt_image_loader_t;
 
 typedef struct dt_image_geoloc_t
@@ -181,7 +184,6 @@ typedef struct dt_image_t
   char filename[DT_MAX_FILENAME_LEN];
 
   // common stuff
-
   // to understand this, look at comment for dt_histogram_roi_t
   int32_t width, height, verified_size, final_width, final_height, p_width, p_height;
   int32_t crop_x, crop_y, crop_width, crop_height;

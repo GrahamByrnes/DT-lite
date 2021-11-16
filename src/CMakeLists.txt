@@ -312,6 +312,40 @@ if (USE_AVIF)
     endif()
 endif()
 
+if(USE_HEIF)
+  find_package(libheif 1.9.0 CONFIG)
+  if(TARGET heif)
+    list(APPEND LIBS heif)
+  else()
+    find_package(libheif 1.9.0)
+    if(TARGET libheif::libheif)
+      list(APPEND LIBS libheif::libheif)
+    endif()
+  endif()
+  if(libheif_FOUND)
+    add_definitions(-DHAVE_LIBHEIF=1)
+    list(APPEND SOURCES "common/imageio_heif.c")
+    set(DT_SUPPORTED_EXTENSIONS ${DT_SUPPORTED_EXTENSIONS} heif heic hif CACHE INTERNAL "")
+    if(NOT TARGET avif)
+      # libheif can handle avif, too
+      set(DT_SUPPORTED_EXTENSIONS ${DT_SUPPORTED_EXTENSIONS} avif CACHE INTERNAL "")
+    endif()
+  endif()
+endif()
+
+#  For now we use the LibRaw submodule
+if (USE_LIBRAW)
+#    find_package(libraw 0.20.2)
+#    if (libraw_FOUND)
+#        list(APPEND LIBS ${libraw_LIBRARY})
+#        add_definitions(-DHAVE_LIBRAW=1)
+#        list(APPEND SOURCES "common/imageio_libraw.c")
+#        set(DT_SUPPORTED_EXTENSIONS ${DT_SUPPORTED_EXTENSIONS} libraw CACHE INTERNAL "")
+#    endif()
+   add_definitions(-DHAVE_LIBRAW=1)
+   list(APPEND SOURCES "common/imageio_libraw.c")
+endif()
+
 if(USE_LENSFUN)
   find_package(LensFun)
   if(LensFun_FOUND)
@@ -339,8 +373,8 @@ foreach(lib ${OUR_LIBS} GIO GThread GModule PangoCairo Rsvg2 LibXml2 CURL PNG JP
   add_definitions(${${lib}_DEFINITIONS})
 endforeach(lib)
 
-# Require exiv2 >= 0.24 to make sure everything we need is available
-find_package(Exiv2 0.24 REQUIRED)
+# Require exiv2 >= 0.27 to make sure everything we need is available
+find_package(Exiv2 0.27 REQUIRED)
 include_directories(SYSTEM ${Exiv2_INCLUDE_DIRS})
 list(APPEND LIBS ${Exiv2_LIBRARIES})
 add_definitions(${Exiv2_DEFINITIONS})
@@ -738,3 +772,14 @@ InstallDependencyFiles()
 
 # Tell CPack about the components and group the data components together (CPACK_COMPONENT_${COMPONENT_NAME_ALL_CAPS}_GROUP).
 set(CPACK_COMPONENTS_ALL DTApplication DTDebugSymbols DTDocuments)
+
+
+if (USE_LIBRAW)
+  set(LIBRAW_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/LibRaw" CACHE STRING "Relative path to libraw directory (default=CMAKE_CURRENT_SOURCE_DIR)")
+  set(ENABLE_EXAMPLES OFF CACHE BOOLEAN "")
+  set(DT_SUPPORTED_EXTENSIONS ${DT_SUPPORTED_EXTENSIONS} libraw CACHE INTERNAL "")
+
+  # LibRaw sub-module
+  add_subdirectory(external/LibRaw-cmake)
+  target_link_libraries(lib_darktable PRIVATE libraw::libraw)
+endif()

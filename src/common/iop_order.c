@@ -100,43 +100,6 @@ const dt_iop_order_entry_t v30_order[] = {
 
 static void *_dup_iop_order_entry(const void *src, gpointer data);
 
-static GList *_insert_before(GList *iop_order_list, const char *module, const char *new_module)
-{
-  gboolean exists = FALSE;
-  // first check that new module is missing
-  for(const GList *l = iop_order_list; l; l = g_list_next(l))
-  {
-    const dt_iop_order_entry_t *const restrict entry = (dt_iop_order_entry_t *)l->data;
-    if(!strcmp(entry->operation, new_module))
-    {
-      exists = TRUE;
-      break;
-    }
-  }
-  // the insert it if needed
-  if(!exists)
-  {
-    for(GList *l = iop_order_list; l; l = g_list_next(l))
-    {
-      const dt_iop_order_entry_t *const restrict entry = (dt_iop_order_entry_t *)l->data;
-
-      if(!strcmp(entry->operation, module))
-      {
-        dt_iop_order_entry_t *new_entry = (dt_iop_order_entry_t *)malloc(sizeof(dt_iop_order_entry_t));
-
-        g_strlcpy(new_entry->operation, new_module, sizeof(new_entry->operation));
-        new_entry->instance = 0;
-        new_entry->o.iop_order = 0;
-
-        iop_order_list = g_list_insert_before(iop_order_list, l, new_entry);
-        break;
-      }
-    }
-  }
-
-  return iop_order_list;
-}
-
 dt_iop_order_t dt_ioppr_get_iop_order_version(const int32_t imgid)
 {
   dt_iop_order_t iop_order_version = DT_IOP_ORDER_V30;
@@ -417,10 +380,6 @@ GList *dt_ioppr_get_iop_order_list(int32_t imgid, gboolean sorted)
         if(!iop_order_list)
           // preset not found, fall back to last built-in version, will be loaded below
           fprintf(stderr, "[dt_ioppr_get_iop_order_list] error building iop_order_list imgid %d\n", imgid);
-        else
-          // @@_NEW_MOUDLE: For new module it is required to insert the new module name in the iop-order list here.
-          //                The insertion can be done depending on the current iop-order list kind.
-          _insert_before(iop_order_list, "nlmeans", "negadoctor");
       }
       else if(version == DT_IOP_ORDER_V30)
         iop_order_list = _table_to_list(v30_order);
