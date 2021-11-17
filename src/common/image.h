@@ -147,9 +147,7 @@ typedef enum dt_image_loader_t
   LOADER_PNM = 10,
   LOADER_AVIF = 11,
   LOADER_IM = 12,
-  LOADER_HEIF = 13,
-  LOADER_LIBRAW   = 14,
-  LOADER_COUNT    = 15, // keep last
+  LOADER_COUNT    = 13, // keep last
 } dt_image_loader_t;
 
 typedef struct dt_image_geoloc_t

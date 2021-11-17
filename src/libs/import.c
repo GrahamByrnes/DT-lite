@@ -325,13 +325,12 @@ static void _lib_import_single_image_callback(GtkWidget *widget, dt_lib_import_t
     char *filename = NULL;
     dt_film_t film;
     GSList *list = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(filechooser));
-    GSList *it = list;
     int id = 0;
     int filmid = 0;
-    /* reset filter so that view isn't empty */
+    // reset filter so that view isn't empty
     dt_view_filter_reset(darktable.view_manager, TRUE);
 
-    while(it)
+    for(const GSList *it = list; it; g_slist_next(it))
     {
       filename = (char *)it->data;
       gchar *directory = g_path_get_dirname((const gchar *)filename);
@@ -343,7 +342,6 @@ static void _lib_import_single_image_callback(GtkWidget *widget, dt_lib_import_t
 
       g_free(filename);
       g_free(directory);
-      it = g_slist_next(it);
     }
 
     if(id)
@@ -401,13 +399,13 @@ static void _lib_import_folder_callback(GtkWidget *widget, dt_lib_module_t* self
     g_free(folder);
     _lib_import_evaluate_extra_widget(d, &metadata, TRUE);
 
-    char *filename = NULL, *first_filename = NULL;
+    char *first_filename = NULL;
+    char *filename = NULL;
     GSList *list = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(filechooser));
-    GSList *it = list;
-    /* reset filter so that view isn't empty */
+    // reset filter so that view isn't empty
     dt_view_filter_reset(darktable.view_manager, TRUE);
-    /* for each selected folder add import job */
-    while(it)
+    // for each selected folder add import job
+    for(GSList *it = list; it; g_slist_next(it))
     {
       filename = (char *)it->data;
       dt_film_import(filename);
@@ -421,9 +419,8 @@ static void _lib_import_folder_callback(GtkWidget *widget, dt_lib_module_t* self
       }
 
       g_free(filename);
-      it = g_slist_next(it);
     }
-    /* update collection to view import */
+    // update collection to view import
     if(first_filename)
     {
       dt_conf_set_int("plugins/lighttable/collect/num_rules", 1);
