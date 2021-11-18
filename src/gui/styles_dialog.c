@@ -24,6 +24,7 @@
 #include "common/iop_order.h"
 #include "common/styles.h"
 #include "control/control.h"
+#include "develop/imageop.h"
 #include "gui/gtk.h"
 #include "gui/styles.h"
 #ifdef GDK_WINDOWING_QUARTZ

@@ -322,26 +322,21 @@ static void _lib_import_single_image_callback(GtkWidget *widget, dt_lib_import_t
     g_free(folder);
     _lib_import_evaluate_extra_widget(d, &metadata, FALSE);
 
-    char *filename = NULL;
     dt_film_t film;
-    GSList *list = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(filechooser));
+    const GSList *list = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(filechooser));
     int id = 0;
     int filmid = 0;
-    // reset filter so that view isn't empty
     dt_view_filter_reset(darktable.view_manager, TRUE);
 
-    for(const GSList *it = list; it; g_slist_next(it))
+    for(const GSList *it = list; it; it = g_slist_next(it))
     {
-      filename = (char *)it->data;
-      gchar *directory = g_path_get_dirname((const gchar *)filename);
+      const char *filename = (char *)it->data;
+      const gchar *directory = g_path_get_dirname((const gchar *)filename);
       filmid = dt_film_new(&film, directory);
       id = dt_image_import(filmid, filename, TRUE);
 
       if(!id)
         dt_control_log(_("error loading file `%s'"), filename);
-
-      g_free(filename);
-      g_free(directory);
     }
 
     if(id)
@@ -400,14 +395,13 @@ static void _lib_import_folder_callback(GtkWidget *widget, dt_lib_module_t* self
     _lib_import_evaluate_extra_widget(d, &metadata, TRUE);
 
     char *first_filename = NULL;
-    char *filename = NULL;
-    GSList *list = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(filechooser));
+    const GSList *list = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(filechooser));
     // reset filter so that view isn't empty
     dt_view_filter_reset(darktable.view_manager, TRUE);
     // for each selected folder add import job
-    for(GSList *it = list; it; g_slist_next(it))
+    for(const GSList *it = list; it; it = g_slist_next(it))
     {
-      filename = (char *)it->data;
+      const char *filename = (char *)it->data;
       dt_film_import(filename);
 
       if(!first_filename)
@@ -417,8 +411,6 @@ static void _lib_import_folder_callback(GtkWidget *widget, dt_lib_module_t* self
         if(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->recursive)))
           first_filename = dt_util_dstrcat(first_filename, "%%");
       }
-
-      g_free(filename);
     }
     // update collection to view import
     if(first_filename)
@@ -429,8 +421,6 @@ static void _lib_import_folder_callback(GtkWidget *widget, dt_lib_module_t* self
       dt_collection_update_query(darktable.collection, DT_COLLECTION_CHANGE_NEW_QUERY, NULL);
       g_free(first_filename);
     }
-
-    g_slist_free(list);
   }
 
   gtk_widget_destroy(d->frame);
