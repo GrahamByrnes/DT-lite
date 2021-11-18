@@ -1348,8 +1348,6 @@ static gboolean _dev_auto_apply_presets(dt_develop_t *dev)
 
   // select all presets from one of the following table and add them into memory.history. Note that
   // this is appended to possibly already present default modules.
-  const char *preset_table[2] = { "data.presets", "main.legacy_presets" };
-  const int legacy = (image->flags & DT_IMAGE_NO_LEGACY_PRESETS) ? 0 : 1;
   char query[1024];
   snprintf(query, sizeof(query),
            "INSERT INTO memory.history"
@@ -1365,7 +1363,7 @@ static gboolean _dev_auto_apply_presets(dt_develop_t *dev)
            "       AND operation NOT IN ('ioporder', 'metadata', 'export', 'tagging', 'collect')"
            " OR (name = ?13)"
            " ORDER BY writeprotect DESC, LENGTH(model), LENGTH(maker), LENGTH(lens)",
-           preset_table[legacy]);
+           "data.presets");
   // query for all modules at once:
   sqlite3_stmt *stmt;
   int iformat = 0;
@@ -1723,9 +1721,6 @@ void dt_dev_read_history_ext(dt_develop_t *dev, const int imgid, gboolean no_ima
     if(blendop_params && (blendop_version == dt_develop_blend_version())
                       && (bl_length == sizeof(dt_develop_blend_params_t)))
       memcpy(hist->blend_params, blendop_params, sizeof(dt_develop_blend_params_t));
-    else if(blendop_params && dt_develop_blend_legacy_params(hist->module, blendop_params, blendop_version,
-                                              hist->blend_params, dt_develop_blend_version(), bl_length) == 0)
-      legacy_params = TRUE;
     else
       memcpy(hist->blend_params, hist->module->default_blendop_params, sizeof(dt_develop_blend_params_t));
 

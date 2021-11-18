@@ -29,7 +29,6 @@
 #include "common/history.h"
 #include "control/conf.h"
 #include "control/control.h"
-#include "gui/legacy_presets.h"
 
 #include <gio/gio.h>
 #include <glib.h>
@@ -1408,8 +1407,6 @@ start:
   }
   // create the in-memory tables
   _create_memory_schema(db);
-  // create a table legacy_presets with all the presets from pre-auto-apply-cleanup darktable.
-  dt_legacy_presets_create(db);
   // drop table settings -- we don't want old versions of dt to drop our tables
   sqlite3_exec(db->handle, "drop table main.settings", NULL, NULL, NULL);
   // take care of potential bad data in the db.
