@@ -1114,6 +1114,20 @@ dt_imageio_retval_t dt_imageio_open(dt_image_t *img,               // non-const 
   return ret;
 }
 
+gboolean dt_imageio_lookup_makermodel(const char *maker, const char *model,
+                                      char *mk, int mk_len, char *md, int md_len,
+                                      char *al, int al_len)
+{
+  // At this stage, we can't tell which loader is used to open the image.
+  gboolean found = dt_rawspeed_lookup_makermodel(maker, model, mk, mk_len,
+                                                 md, md_len, al, al_len);
+  if(found == FALSE)
+  {
+//    call to different loader would be here
+  }
+  return found;
+}
+
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent
 // kate: tab-indents: off; indent-width 2; replace-tabs on; indent-mode cstyle; remove-trailing-spaces modified;

@@ -19,6 +19,7 @@
 #include "common/collection.h"
 #include "common/debug.h"
 #include "common/image.h"
+#include "common/imageio.h"
 #include "common/imageio_rawspeed.h"
 #include "common/metadata.h"
 #include "common/utility.h"
@@ -1425,10 +1426,10 @@ gchar *dt_collection_get_makermodel(const char *exif_maker, const char *exif_mod
   char model[64];
   char alias[64];
   maker[0] = model[0] = alias[0] = '\0';
-  dt_rawspeed_lookup_makermodel(exif_maker, exif_model,
-                               maker, sizeof(maker),
-                               model, sizeof(model),
-                               alias, sizeof(alias));
+  dt_imageio_lookup_makermodel(exif_maker, exif_model,
+                                maker, sizeof(maker),
+                                model, sizeof(model),
+                                alias, sizeof(alias));
 
   // Create the makermodel by concatenation
 
