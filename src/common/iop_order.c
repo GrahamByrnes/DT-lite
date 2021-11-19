@@ -74,27 +74,26 @@ const dt_iop_order_entry_t v30_order[] = {
   { { 7.0f }, "scalepixels", 0},
   { { 8.0f }, "lens", 0},
   { { 9.0f }, "hazeremoval", 0},
-  { {10.0f }, "ashift", 0},
-  { {11.0f }, "flip", 0},
-  { {12.0f }, "clipping", 0},
-  { {13.0f }, "spots", 0},
-  { {14.0f }, "exposure", 0},
-  { {15.0f }, "mask_manager", 0},
-  { {16.0f }, "negadoctor", 0},
-  { {17.0f }, "colorin", 0},
-  { {18.0f }, "channelmixer", 0},    // user defined RGB to RGB matrix conversion
-  { {19.0f }, "basecurve", 0},
-  { {20.0f }, "tonecurve", 0},
-  { {21.0f }, "colorcorrection", 0},
-  { {22.0f }, "vibrance", 0},        // gray remains fixed, extra color is added
-  { {23.0f }, "grain", 0},
-  { {24.0f }, "splittoning", 0},
-  { {25.0f }, "vignette", 0},
-  { {26.0f }, "colorout", 0},
-  { {27.0f }, "finalscale", 0},
-  { {28.0f }, "overexposed", 0},
-  { {29.0f }, "borders", 0},
-  { {30.0f }, "gamma", 0},
+  { {10.0f }, "flip", 0},
+  { {11.0f }, "clipping", 0},
+  { {12.0f }, "spots", 0},
+  { {13.0f }, "exposure", 0},
+  { {14.0f }, "mask_manager", 0},
+  { {15.0f }, "negadoctor", 0},
+  { {16.0f }, "colorin", 0},
+  { {17.0f }, "channelmixer", 0},    // user defined RGB to RGB matrix conversion
+  { {18.0f }, "basecurve", 0},
+  { {19.0f }, "tonecurve", 0},
+  { {20.0f }, "colorcorrection", 0},
+  { {21.0f }, "vibrance", 0},        // gray remains fixed, extra color is added
+  { {22.0f }, "grain", 0},
+  { {23.0f }, "splittoning", 0},
+  { {24.0f }, "vignette", 0},
+  { {25.0f }, "colorout", 0},
+  { {26.0f }, "finalscale", 0},
+  { {27.0f }, "overexposed", 0},
+  { {28.0f }, "borders", 0},
+  { {29.0f }, "gamma", 0},
   { { 0.0f }, "", 0 }
 };
 
@@ -229,7 +228,6 @@ dt_iop_order_t dt_ioppr_get_iop_order_list_kind(GList *iop_order_list)
   while(l)
   {
     const dt_iop_order_entry_t *const restrict entry = (dt_iop_order_entry_t *)l->data;
-
     if(strcmp(v30_order[k].operation, entry->operation))
     {
       ok = FALSE;

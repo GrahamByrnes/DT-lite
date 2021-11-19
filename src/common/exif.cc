@@ -61,11 +61,11 @@ extern "C" {
 #include "common/imageio.h"
 #include "common/exif.h"
 #include "common/imageio_jpeg.h"
+#include "common/iop_order.h"
 #include "common/math.h"
 #include "common/metadata.h"
 #include "common/ratings.h"
 #include "common/tags.h"
-#include "common/iop_order.h"
 #include "common/variables.h"
 #include "common/utility.h"
 #include "common/history.h"
@@ -2900,8 +2900,16 @@ static void _exif_xmp_read_data(Exiv2::XmpData &xmpData, const int imgid)
     datetime_taken = (gchar *)sqlite3_column_text(stmt, 7);
   }
   // get iop-order list
-  const dt_iop_order_t iop_order_version = dt_ioppr_get_iop_order_version(imgid);
+  dt_iop_order_t iop_order_version = dt_ioppr_get_iop_order_version(imgid);
   GList *iop_list = dt_ioppr_get_iop_order_list(imgid, TRUE);
+
+  if(iop_order_version == DT_IOP_ORDER_CUSTOM)
+  {
+    const dt_iop_order_t iop_order_version_check = dt_ioppr_get_iop_order_list_kind(iop_list);
+
+    if(iop_order_version_check != DT_IOP_ORDER_CUSTOM)
+      iop_order_version = iop_order_version_check;
+  }
 
   if(iop_order_version == DT_IOP_ORDER_CUSTOM || dt_ioppr_has_multiple_instances(iop_list))
     iop_order_list = dt_ioppr_serialize_text_iop_order_list(iop_list);
@@ -2912,12 +2920,14 @@ static void _exif_xmp_read_data(Exiv2::XmpData &xmpData, const int imgid)
   // We have to erase the old ratings first as exiv2 seems to not change it otherwise.
   Exiv2::XmpData::iterator pos = xmpData.findKey(Exiv2::XmpKey("Xmp.xmp.Rating"));
 
-  if(pos != xmpData.end()) xmpData.erase(pos);
+  if(pos != xmpData.end())
+    xmpData.erase(pos);
 
   xmpData["Xmp.xmp.Rating"] = dt_image_get_xmp_rating_from_flags(stars);
 
   // The original file name
-  if(filename) xmpData["Xmp.xmpMM.DerivedFrom"] = filename;
+  if(filename)
+    xmpData["Xmp.xmpMM.DerivedFrom"] = filename;
   // timestamps
   set_xmp_timestamps(xmpData, imgid);
   // GPS data
@@ -2952,11 +2962,13 @@ static void _exif_xmp_read_data(Exiv2::XmpData &xmpData, const int imgid)
     xmpData["Xmp.darktable.auto_presets_applied"] = 1;
   else
     xmpData["Xmp.darktable.auto_presets_applied"] = 0;
+
   dt_set_xmp_dt_history(xmpData, imgid, history_end);
 
   // we need to read the iop-order list
   xmpData["Xmp.darktable.iop_order_version"] = iop_order_version;
-  if(iop_order_list) xmpData["Xmp.darktable.iop_order_list"] = iop_order_list;
+  if(iop_order_list)
+    xmpData["Xmp.darktable.iop_order_list"] = iop_order_list;
 
   sqlite3_finalize(stmt);
   g_free(iop_order_list);
