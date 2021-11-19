@@ -258,12 +258,11 @@ dt_iop_order_t dt_ioppr_get_iop_order_list_kind(GList *iop_order_list)
 gboolean dt_ioppr_has_multiple_instances(GList *iop_order_list)
 {
   GList *l = iop_order_list;
-
   while(l)
   {
     GList *next = g_list_next(l);
     if(next && (strcmp(((dt_iop_order_entry_t *)(l->data))->operation,
-                  ((dt_iop_order_entry_t *)(next->data))->operation) == 0))
+                ((dt_iop_order_entry_t *)(next->data))->operation) == 0))
       return TRUE;
 
     l = next;
@@ -696,7 +695,7 @@ static void _ioppr_check_rules(GList *iop_list, const int imgid, const char *msg
 
     if(mod->iop_order == INT_MAX)
       continue;
-    // we have a module, now check each rule
+     // we have a module, now check each rule
     for(const GList *rules = darktable.iop_order_rules; rules; rules = g_list_next(rules))
     {
       const dt_iop_order_rule_t *const restrict rule = (dt_iop_order_rule_t *)rules->data;
@@ -869,7 +868,7 @@ void *dt_ioppr_serialize_iop_order_list(GList *iop_order_list, size_t *size)
   int pos = 0;
 
   for(const GList *l = iop_order_list; l; l = g_list_next(l))
-   {
+  {
     const dt_iop_order_entry_t *const restrict entry = (dt_iop_order_entry_t *)l->data;
     // write the len of the module name
     const int32_t len = strlen(entry->operation);
@@ -902,6 +901,22 @@ char *dt_ioppr_serialize_text_iop_order_list(GList *iop_order_list)
   return text;
 }
 
+static gboolean _ioppr_sanity_check_iop_order(GList *list)
+{
+  gboolean ok = TRUE;
+  // First check that first module is rawprepare (even for a jpeg, we
+  // are speaking of the module ordering not the activated modules.
+  GList *first = g_list_first(list);
+  dt_iop_order_entry_t *entry_first = (dt_iop_order_entry_t *)first->data;
+  ok = ok && (g_strcmp0(entry_first->operation, "rawprepare") == 0);
+  // Then check that last module is gamma
+  GList *last = g_list_last(list);
+  dt_iop_order_entry_t *entry_last = (dt_iop_order_entry_t *)last->data;
+  ok = ok && (g_strcmp0(entry_last->operation, "gamma") == 0);
+
+  return ok;
+}
+
 GList *dt_ioppr_deserialize_text_iop_order_list(const char *buf)
 {
   GList *iop_order_list = NULL;
@@ -914,20 +929,24 @@ GList *dt_ioppr_deserialize_text_iop_order_list(const char *buf)
     // first operation name
     g_strlcpy(entry->operation, (char *)l->data, sizeof(entry->operation));
     // then operation instance
+    l = g_list_next(l);
 
-    if(!l)
-      goto error;
+    if(!l) goto error;
 
     const char *data = (char *)l->data;
     int inst = 0;
     sscanf(data, "%d", &inst);
     entry->instance = inst;
-    // append to the list
+    // prepend to the list
     iop_order_list = g_list_prepend(iop_order_list, entry);
   }
+
   iop_order_list = g_list_reverse(iop_order_list);
   g_list_free_full(list, g_free);
   _ioppr_reset_iop_order(iop_order_list);
+
+  if(!_ioppr_sanity_check_iop_order(iop_order_list))
+    goto error;
 
   return iop_order_list;
 
