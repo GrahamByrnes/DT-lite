@@ -59,11 +59,6 @@ typedef struct dt_iop_colorcorrection_data_t
   float a_scale, a_base, b_scale, b_base, saturation;
 } dt_iop_colorcorrection_data_t;
 
-typedef struct dt_iop_colorcorrection_global_data_t
-{
-  int kernel_colorcorrection;
-} dt_iop_colorcorrection_global_data_t;
-
 const char *name()
 {
   return _("color correction");
