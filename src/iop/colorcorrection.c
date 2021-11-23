@@ -20,6 +20,7 @@
 #endif
 #include "bauhaus/bauhaus.h"
 #include "common/colorspaces.h"
+#include "common/math.h"
 #include "control/control.h"
 #include "develop/develop.h"
 #include "develop/imageop.h"
@@ -120,6 +121,7 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
   piece->colors = 4;
   const int height = roi_out->height;
   const int width = roi_out->width;
+  const size_t npixel = (size_t)4 * width * height;
   const float saturation = d->saturation;
   const float ascale = d->a_scale + d->a_curve;
   const float bscale = d->b_scale + d->b_curve;
@@ -129,10 +131,10 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
   const float bcurve = d->b_curve;
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
-  dt_omp_firstprivate(ch, width, height, ivoid, ovoid, saturation, abase, ascale, acurve, bbase, bscale, bcurve) \
+  dt_omp_firstprivate(ch, npixel, ivoid, ovoid, saturation, abase, ascale, acurve, bbase, bscale, bcurve) \
   schedule(static)
 #endif
-  for(int k = 0; k < (size_t)4 * width * height; k += 4)
+  for(int k = 0; k < npixel; k += 4)
   {
     float *in = ((float *)ivoid) + k;
     float *out = ((float *)ovoid) + k;
@@ -196,9 +198,6 @@ static gboolean dt_iop_colorcorrection_button_press(GtkWidget *widget, GdkEventB
 static gboolean dt_iop_colorcorrection_leave_notify(GtkWidget *widget, GdkEventCrossing *event,
                                                      gpointer user_data);
 
-static gboolean dt_iop_colorcorrection_scrolled(GtkWidget *widget, GdkEventScroll *event,
-                                                     gpointer user_data);
-
 static gboolean dt_iop_colorcorrection_key_press(GtkWidget *widget, GdkEventKey *event,
                                                      gpointer user_data);
 
@@ -226,7 +225,6 @@ void gui_init(struct dt_iop_module_t *self)
                    self);
   g_signal_connect(G_OBJECT(g->area), "leave-notify-event", G_CALLBACK(dt_iop_colorcorrection_leave_notify),
                    self);
-  g_signal_connect(G_OBJECT(g->area), "scroll-event", G_CALLBACK(dt_iop_colorcorrection_scrolled), self);
   g_signal_connect(G_OBJECT(g->area), "key-press-event", G_CALLBACK(dt_iop_colorcorrection_key_press), self);
 
   g->slider = dt_bauhaus_slider_from_params(self, N_("saturation"));
@@ -290,10 +288,10 @@ static gboolean dt_iop_colorcorrection_draw(GtkWidget *widget, cairo_t *crf, gpo
   float loa, hia, qua, lob, hib, qub;
   loa = .5f * (width + width * p->loa / (float)DT_COLORCORRECTION_MAX);
   hia = .5f * (width + width * p->hia / (float)DT_COLORCORRECTION_MAX);
-  qua = .5f * (width + width * 0.25f * p->qua / (float)DT_COLORCORRECTION_MAX);
+  qua = .5f * (width + width * (0.25f * p->qua + 0.5 * (p->loa + p->hia)) / (float)DT_COLORCORRECTION_MAX);
   lob = .5f * (height + height * p->lob / (float)DT_COLORCORRECTION_MAX);
   hib = .5f * (height + height * p->hib / (float)DT_COLORCORRECTION_MAX);
-  qub = .5f * (height + height * 0.25f * p->qub / (float)DT_COLORCORRECTION_MAX);
+  qub = .5f * (height + height * (0.25f * (p->qub) + 0.5 * (p->lob + p->hib)) / (float)DT_COLORCORRECTION_MAX);
   cairo_set_line_width(cr, DT_PIXEL_APPLY_DPI(2.));
   cairo_set_source_rgb(cr, 0.6, 0.6, 0.6);
   cairo_move_to(cr, loa, lob);
@@ -364,8 +362,8 @@ static gboolean dt_iop_colorcorrection_motion_notify(GtkWidget *widget, GdkEvent
     }
     else if(g->selected == 3)
     {
-      p->qua = 4.0f * ma;
-      p->qub = 4.0f * mb;
+      p->qua = 4.0f * (ma - 0.5f * (p->loa + p->hia));
+      p->qub = 4.0f * (mb - 0.5f * (p->lob + p->hib));
       dt_dev_add_history_item(darktable.develop, self, TRUE);
     }
   }
@@ -373,10 +371,10 @@ static gboolean dt_iop_colorcorrection_motion_notify(GtkWidget *widget, GdkEvent
   {
     g->selected = 0;
     const float thrs = DT_PIXEL_APPLY_DPI(5.0f);
-    const float distlo = (p->loa - ma) * (p->loa - ma) + (p->lob - mb) * (p->lob - mb);
-    const float disthi = (p->hia - ma) * (p->hia - ma) + (p->hib - mb) * (p->hib - mb);
-    const float distqu = (p->qua / 4.0f - ma) * (p->qua / 4.0f - ma)
-                         + (p->qub / 4.0f - mb) * (p->qub / 4.0f - mb);
+    const float distlo = sqf(p->loa - ma) + sqf(p->lob - mb);
+    const float disthi = sqf(p->hia - ma) + sqf(p->hib - mb);
+    const float distqu = sqf(p->qua / 4.0f  + 0.5f * (p->loa + p->hia) - ma) + 
+                         sqf(p->qub / 4.0f + 0.5f * (p->loa + p->hia) - mb);
 
     if(disthi < thrs * thrs)
       g->selected = 2;
@@ -437,25 +435,6 @@ static gboolean dt_iop_colorcorrection_leave_notify(GtkWidget *widget, GdkEventC
   return TRUE;
 }
 
-static gboolean dt_iop_colorcorrection_scrolled(GtkWidget *widget, GdkEventScroll *event, gpointer user_data)
-{
-  dt_iop_module_t *self = (dt_iop_module_t *)user_data;
-  dt_iop_colorcorrection_gui_data_t *g = (dt_iop_colorcorrection_gui_data_t *)self->gui_data;
-  dt_iop_colorcorrection_params_t *p = (dt_iop_colorcorrection_params_t *)self->params;
-
-  if(dt_gui_ignore_scroll(event)) return FALSE;
-
-  gdouble delta_y;
-  if(dt_gui_get_scroll_deltas(event, NULL, &delta_y))
-  {
-     p->saturation = CLAMP(p->saturation - 0.1 * delta_y, -3.0, 3.0);
-     dt_bauhaus_slider_set(g->slider, p->saturation);
-     gtk_widget_queue_draw(widget);
-  }
-
-  return TRUE;
-}
-
 #define COLORCORRECTION_DEFAULT_STEP (0.5f)
 
 static gboolean dt_iop_colorcorrection_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data)
@@ -463,10 +442,12 @@ static gboolean dt_iop_colorcorrection_key_press(GtkWidget *widget, GdkEventKey 
   dt_iop_module_t *self = (dt_iop_module_t *)user_data;
   dt_iop_colorcorrection_gui_data_t *g = (dt_iop_colorcorrection_gui_data_t *)self->gui_data;
   dt_iop_colorcorrection_params_t *p = (dt_iop_colorcorrection_params_t *)self->params;
+
   if(g->selected < 1) return FALSE;
 
   int handled = 0;
   float dx = 0.0f, dy = 0.0f;
+
   if(event->keyval == GDK_KEY_Up || event->keyval == GDK_KEY_KP_Up)
   {
     handled = 1;
@@ -514,8 +495,8 @@ static gboolean dt_iop_colorcorrection_key_press(GtkWidget *widget, GdkEventKey 
       p->hib = CLAMP(p->hib + dy, -DT_COLORCORRECTION_MAX, DT_COLORCORRECTION_MAX);
       break;
     case 3: // only set qu
-      p->qua = 4.0f * CLAMP(p->qua / 4.0f + dx, -DT_COLORCORRECTION_MAX, DT_COLORCORRECTION_MAX);
-      p->qub = 4.0f * CLAMP(p->qub / 4.0f + dy, -DT_COLORCORRECTION_MAX, DT_COLORCORRECTION_MAX);
+      p->qua = CLAMP(0.25f * p->qua + dx, -DT_COLORCORRECTION_MAX, DT_COLORCORRECTION_MAX);
+      p->qub = CLAMP(0.25f * p->qub + dy, -DT_COLORCORRECTION_MAX, DT_COLORCORRECTION_MAX);
       break;
   }
 
