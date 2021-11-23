@@ -42,8 +42,8 @@ DT_MODULE_INTROSPECTION(1, dt_iop_colorcorrection_params_t)
 
 typedef struct dt_iop_colorcorrection_params_t
 {
-  float hia, hib, loa, lob;  // directly manipulated from gui; don't follow normal gui_update etc
-  float saturation;          // $MIN: -3.0 $MAX: 3.0 $DEFAULT: 1.0
+  float hia, hib, loa, lob, qua, qub;  // directly manipulated from gui; don't follow normal gui_update etc
+  float saturation;          // $MIN: 0.0 $MAX: 4.0 $DEFAULT: 1.0
 } dt_iop_colorcorrection_params_t;
 
 typedef struct dt_iop_colorcorrection_gui_data_t
@@ -56,7 +56,7 @@ typedef struct dt_iop_colorcorrection_gui_data_t
 
 typedef struct dt_iop_colorcorrection_data_t
 {
-  float a_scale, a_base, b_scale, b_base, saturation;
+  float a_scale, a_base, a_curve, b_scale, b_base, b_curve, saturation;
 } dt_iop_colorcorrection_data_t;
 
 const char *name()
@@ -82,6 +82,8 @@ void init_presets(dt_iop_module_so_t *self)
   p.lob = 0.0f;
   p.hia = 0.0f;
   p.hib = 3.0f;
+  p.qua = 0.0f;
+  p.qub = 0.0f;
   p.saturation = 1.0f;
   dt_gui_presets_add_generic(_("warm tone"), self->op, self->version(), &p, sizeof(p), 1);
 
@@ -89,6 +91,8 @@ void init_presets(dt_iop_module_so_t *self)
   p.lob = 0.0f;
   p.hia = -0.95f;
   p.hib = 4.5f;
+  p.qua = 0.0f;
+  p.qub = 0.0f;
   p.saturation = 1.0f;
   dt_gui_presets_add_generic(_("warming filter"), self->op, self->version(), &p, sizeof(p), 1);
 
@@ -96,9 +100,17 @@ void init_presets(dt_iop_module_so_t *self)
   p.lob = -0.0f;
   p.hia = 0.95f;
   p.hib = -4.5f;
+  p.qua = 1.0f;
+  p.qub = -1.0f;
   p.saturation = 1.0f;
   dt_gui_presets_add_generic(_("cooling filter"), self->op, self->version(), &p, sizeof(p), 1);
 }
+
+static inline float _curve_func(float lum, float base, float scale, float curve)
+{
+  return base + lum * (scale - lum * curve / 100.0f);
+}
+  
 
 void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const void *const ivoid,
              void *const ovoid, const dt_iop_roi_t *const roi_in, const dt_iop_roi_t *const roi_out)
@@ -108,14 +120,16 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
   piece->colors = 4;
   const int height = roi_out->height;
   const int width = roi_out->width;
-  const float saturation = d-> saturation;
-  const float ascale = d-> a_scale;
-  const float bscale = d-> b_scale;
-  const float abase = d-> a_base;
-  const float bbase = d-> b_base;
+  const float saturation = d->saturation;
+  const float ascale = d->a_scale + d->a_curve;
+  const float bscale = d->b_scale + d->b_curve;
+  const float abase = d->a_base;
+  const float bbase = d->b_base;
+  const float acurve = d->a_curve;
+  const float bcurve = d->b_curve;
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
-  dt_omp_firstprivate(ch, width, height, ivoid, ovoid, saturation, abase, ascale, bbase, bscale) \
+  dt_omp_firstprivate(ch, width, height, ivoid, ovoid, saturation, abase, ascale, acurve, bbase, bscale, bcurve) \
   schedule(static)
 #endif
   for(int k = 0; k < (size_t)4 * width * height; k += 4)
@@ -123,8 +137,8 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
     float *in = ((float *)ivoid) + k;
     float *out = ((float *)ovoid) + k;
     out[0] = in[0];
-    out[1] = saturation * (in[0] * ascale + abase);
-    out[2] = saturation * (in[0] * bscale + bbase);
+    out[1] = saturation * _curve_func(in[0], abase, ascale, acurve);
+    out[2] = saturation * _curve_func(in[0], bbase, bscale, bcurve);
 
     if(ch > 1)
     {
@@ -142,8 +156,10 @@ void commit_params(struct dt_iop_module_t *self, dt_iop_params_t *p1, dt_dev_pix
   dt_iop_colorcorrection_data_t *d = (dt_iop_colorcorrection_data_t *)piece->data;
   d->a_scale = (p->hia - p->loa) / 100.0f;
   d->a_base = p->loa;
+  d->a_curve = p->qua / 100.0f;
   d->b_scale = (p->hib - p->lob) / 100.0f;
   d->b_base = p->lob;
+  d->b_curve = p->qub / 100.0f;
   d->saturation = p->saturation;
 }
 
@@ -168,15 +184,23 @@ void gui_update(struct dt_iop_module_t *self)
   gtk_widget_queue_draw(self->widget);
 }
 
-static gboolean dt_iop_colorcorrection_draw(GtkWidget *widget, cairo_t *cr, gpointer user_data);
+static gboolean dt_iop_colorcorrection_draw(GtkWidget *widget, cairo_t *cr,
+                                                     gpointer user_data);
+
 static gboolean dt_iop_colorcorrection_motion_notify(GtkWidget *widget, GdkEventMotion *event,
                                                      gpointer user_data);
+
 static gboolean dt_iop_colorcorrection_button_press(GtkWidget *widget, GdkEventButton *event,
-                                                    gpointer user_data);
+                                                     gpointer user_data);
+
 static gboolean dt_iop_colorcorrection_leave_notify(GtkWidget *widget, GdkEventCrossing *event,
-                                                    gpointer user_data);
-static gboolean dt_iop_colorcorrection_scrolled(GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
-static gboolean dt_iop_colorcorrection_key_press(GtkWidget *widget, GdkEventKey *event, gpointer user_data);
+                                                     gpointer user_data);
+
+static gboolean dt_iop_colorcorrection_scrolled(GtkWidget *widget, GdkEventScroll *event,
+                                                     gpointer user_data);
+
+static gboolean dt_iop_colorcorrection_key_press(GtkWidget *widget, GdkEventKey *event,
+                                                     gpointer user_data);
 
 void gui_init(struct dt_iop_module_t *self)
 {
@@ -188,15 +212,13 @@ void gui_init(struct dt_iop_module_t *self)
 
   g->area = GTK_DRAWING_AREA(dtgtk_drawing_area_new_with_aspect_ratio(1.0));
   gtk_box_pack_start(GTK_BOX(self->widget), GTK_WIDGET(g->area), TRUE, TRUE, 0);
-  gtk_widget_set_tooltip_text(GTK_WIDGET(g->area), _("drag the line for split-toning. "
-                                                     "bright means highlights, dark means shadows. "
-                                                     "use mouse wheel to change saturation."));
 
   gtk_widget_add_events(GTK_WIDGET(g->area), GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK
                                                  | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK
                                                  | GDK_LEAVE_NOTIFY_MASK | GDK_SCROLL_MASK
                                                  | darktable.gui->scroll_mask);
   gtk_widget_set_can_focus(GTK_WIDGET(g->area), TRUE);
+
   g_signal_connect(G_OBJECT(g->area), "draw", G_CALLBACK(dt_iop_colorcorrection_draw), self);
   g_signal_connect(G_OBJECT(g->area), "button-press-event", G_CALLBACK(dt_iop_colorcorrection_button_press),
                    self);
@@ -263,32 +285,44 @@ static gboolean dt_iop_colorcorrection_draw(GtkWidget *widget, cairo_t *crf, gpo
                       height / (float)cells - DT_PIXEL_APPLY_DPI(1));
       cairo_fill(cr);
     }
+
   cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
-  float loa, hia, lob, hib;
+  float loa, hia, qua, lob, hib, qub;
   loa = .5f * (width + width * p->loa / (float)DT_COLORCORRECTION_MAX);
   hia = .5f * (width + width * p->hia / (float)DT_COLORCORRECTION_MAX);
+  qua = .5f * (width + width * 0.25f * p->qua / (float)DT_COLORCORRECTION_MAX);
   lob = .5f * (height + height * p->lob / (float)DT_COLORCORRECTION_MAX);
   hib = .5f * (height + height * p->hib / (float)DT_COLORCORRECTION_MAX);
+  qub = .5f * (height + height * 0.25f * p->qub / (float)DT_COLORCORRECTION_MAX);
   cairo_set_line_width(cr, DT_PIXEL_APPLY_DPI(2.));
   cairo_set_source_rgb(cr, 0.6, 0.6, 0.6);
   cairo_move_to(cr, loa, lob);
+  cairo_line_to(cr, qua, qub);
   cairo_line_to(cr, hia, hib);
   cairo_stroke(cr);
 
   cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
   
   if(g->selected == 1)
-    cairo_arc(cr, loa, lob, DT_PIXEL_APPLY_DPI(5), 0, 2. * M_PI);
+    cairo_arc(cr, loa, lob, DT_PIXEL_APPLY_DPI(5), 0, 2.0 * M_PI);
   else
-    cairo_arc(cr, loa, lob, DT_PIXEL_APPLY_DPI(3), 0, 2. * M_PI);
+    cairo_arc(cr, loa, lob, DT_PIXEL_APPLY_DPI(3), 0, 2.0 * M_PI);
     
   cairo_fill(cr);
   cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
   
   if(g->selected == 2)
-    cairo_arc(cr, hia, hib, DT_PIXEL_APPLY_DPI(5), 0, 2. * M_PI);
+    cairo_arc(cr, hia, hib, DT_PIXEL_APPLY_DPI(5), 0, 2.0 * M_PI);
   else
-    cairo_arc(cr, hia, hib, DT_PIXEL_APPLY_DPI(3), 0, 2. * M_PI);
+    cairo_arc(cr, hia, hib, DT_PIXEL_APPLY_DPI(3), 0, 2.0 * M_PI);
+
+  cairo_fill(cr);
+  cairo_set_source_rgb(cr, 0.9, 0.0, 0.0);
+  
+  if(g->selected == 3)
+    cairo_arc(cr, qua, qub, DT_PIXEL_APPLY_DPI(5), 0, 2.0 * M_PI);
+  else
+    cairo_arc(cr, qua, qub, DT_PIXEL_APPLY_DPI(3), 0, 2.0 * M_PI);
     
   cairo_fill(cr);
   cairo_destroy(cr);
@@ -304,6 +338,7 @@ static gboolean dt_iop_colorcorrection_motion_notify(GtkWidget *widget, GdkEvent
   dt_iop_module_t *self = (dt_iop_module_t *)user_data;
   dt_iop_colorcorrection_gui_data_t *g = (dt_iop_colorcorrection_gui_data_t *)self->gui_data;
   dt_iop_colorcorrection_params_t *p = (dt_iop_colorcorrection_params_t *)self->params;
+
   const int inset = DT_COLORCORRECTION_INSET;
   GtkAllocation allocation;
   gtk_widget_get_allocation(widget, &allocation);
@@ -312,6 +347,7 @@ static gboolean dt_iop_colorcorrection_motion_notify(GtkWidget *widget, GdkEvent
   const float mouse_y = CLAMP(height - 1 - event->y + inset, 0, height);
   const float ma = (2.0 * mouse_x - width) * DT_COLORCORRECTION_MAX / (float)width;
   const float mb = (2.0 * mouse_y - height) * DT_COLORCORRECTION_MAX / (float)height;
+
   if(event->state & GDK_BUTTON1_MASK)
   {
     if(g->selected == 1)
@@ -326,6 +362,12 @@ static gboolean dt_iop_colorcorrection_motion_notify(GtkWidget *widget, GdkEvent
       p->hib = mb;
       dt_dev_add_history_item(darktable.develop, self, TRUE);
     }
+    else if(g->selected == 3)
+    {
+      p->qua = 4.0f * ma;
+      p->qub = 4.0f * mb;
+      dt_dev_add_history_item(darktable.develop, self, TRUE);
+    }
   }
   else
   {
@@ -333,12 +375,20 @@ static gboolean dt_iop_colorcorrection_motion_notify(GtkWidget *widget, GdkEvent
     const float thrs = DT_PIXEL_APPLY_DPI(5.0f);
     const float distlo = (p->loa - ma) * (p->loa - ma) + (p->lob - mb) * (p->lob - mb);
     const float disthi = (p->hia - ma) * (p->hia - ma) + (p->hib - mb) * (p->hib - mb);
-    if(distlo < thrs * thrs && distlo < disthi)
-      g->selected = 1;
-    else if(disthi < thrs * thrs && disthi <= distlo)
+    const float distqu = (p->qua / 4.0f - ma) * (p->qua / 4.0f - ma)
+                         + (p->qub / 4.0f - mb) * (p->qub / 4.0f - mb);
+
+    if(disthi < thrs * thrs)
       g->selected = 2;
+    else if(distlo < thrs * thrs && distlo <= disthi)
+      g->selected = 1;
+    else if(distqu < thrs * thrs && distqu <= distlo && distqu < disthi)
+      g->selected = 3;
   }
-  if(g->selected > 0) gtk_widget_grab_focus(widget);
+
+  if(g->selected > 0)
+    gtk_widget_grab_focus(widget);
+
   gtk_widget_queue_draw(self->widget);
   return TRUE;
 }
@@ -352,6 +402,7 @@ static gboolean dt_iop_colorcorrection_button_press(GtkWidget *widget, GdkEventB
     dt_iop_module_t *self = (dt_iop_module_t *)user_data;
     dt_iop_colorcorrection_gui_data_t *g = (dt_iop_colorcorrection_gui_data_t *)self->gui_data;
     dt_iop_colorcorrection_params_t *p = (dt_iop_colorcorrection_params_t *)self->params;
+
     switch(g->selected)
     {
       case 1: // only reset lo
@@ -360,6 +411,10 @@ static gboolean dt_iop_colorcorrection_button_press(GtkWidget *widget, GdkEventB
         break;
       case 2: // only reset hi
         p->hia = p->hib = 0.0;
+        dt_dev_add_history_item(darktable.develop, self, TRUE);
+        break;
+      case 3: // only reset qu
+        p->qua = p->qub = 0.0;
         dt_dev_add_history_item(darktable.develop, self, TRUE);
         break;
       default: // reset everything
@@ -436,8 +491,8 @@ static gboolean dt_iop_colorcorrection_key_press(GtkWidget *widget, GdkEventKey 
   if(!handled) return TRUE;
 
   float multiplier;
-
   GdkModifierType modifiers = gtk_accelerator_get_default_mod_mask();
+
   if((event->state & modifiers) == GDK_SHIFT_MASK)
     multiplier = dt_conf_get_float("darkroom/ui/scale_rough_step_multiplier");
   else if((event->state & modifiers) == GDK_CONTROL_MASK)
@@ -457,6 +512,10 @@ static gboolean dt_iop_colorcorrection_key_press(GtkWidget *widget, GdkEventKey 
     case 2: // only set hi
       p->hia = CLAMP(p->hia + dx, -DT_COLORCORRECTION_MAX, DT_COLORCORRECTION_MAX);
       p->hib = CLAMP(p->hib + dy, -DT_COLORCORRECTION_MAX, DT_COLORCORRECTION_MAX);
+      break;
+    case 3: // only set qu
+      p->qua = 4.0f * CLAMP(p->qua / 4.0f + dx, -DT_COLORCORRECTION_MAX, DT_COLORCORRECTION_MAX);
+      p->qub = 4.0f * CLAMP(p->qub / 4.0f + dy, -DT_COLORCORRECTION_MAX, DT_COLORCORRECTION_MAX);
       break;
   }
 
