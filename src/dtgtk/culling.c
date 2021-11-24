@@ -339,7 +339,7 @@ static gboolean _thumbs_zoom_add(dt_culling_t *table, float val, double posx, do
   {
     // CULLING with multiple images
     // if shift+ctrl, we only change the current image
-    if((state & GDK_SHIFT_MASK) == GDK_SHIFT_MASK)
+    if(dt_modifiers_include(state, GDK_SHIFT_MASK))
     {
       const int mouseid = dt_control_get_mouse_over_id();
       l = table->list;
@@ -431,7 +431,7 @@ static gboolean _event_scroll(GtkWidget *widget, GdkEvent *event, gpointer user_
 
   if(dt_gui_get_scroll_unit_delta(e, &delta))
   {
-    if((e->state & GDK_CONTROL_MASK) == GDK_CONTROL_MASK)
+    if(dt_modifiers_include(e->state, GDK_CONTROL_MASK))
     {
       int x = 0;
       int y = 0;
@@ -445,13 +445,9 @@ static gboolean _event_scroll(GtkWidget *widget, GdkEvent *event, gpointer user_
 
       // zooming
       if(delta < 0)
-      {
         _thumbs_zoom_add(table, 0.5f, x, y, e->state);
-      }
       else
-      {
         _thumbs_zoom_add(table, -0.5f, x, y, e->state);
-      }
     }
     else
     {
