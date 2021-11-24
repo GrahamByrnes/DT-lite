@@ -101,7 +101,7 @@ void init_presets(dt_iop_module_so_t *self)
   p.lob = -0.0f;
   p.hia = 0.95f;
   p.hib = -4.5f;
-  p.qua = 1.0f;
+  p.qua = 0.0f;
   p.qub = -1.0f;
   p.saturation = 1.0f;
   dt_gui_presets_add_generic(_("cooling filter"), self->op, self->version(), &p, sizeof(p), 1);
@@ -111,7 +111,6 @@ static inline float _curve_func(float lum, float base, float scale, float curve)
 {
   return base + lum * (scale - lum * curve / 100.0f);
 }
-  
 
 void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const void *const ivoid,
              void *const ovoid, const dt_iop_roi_t *const roi_in, const dt_iop_roi_t *const roi_out)
@@ -217,6 +216,7 @@ void gui_init(struct dt_iop_module_t *self)
                                                  | GDK_LEAVE_NOTIFY_MASK | GDK_SCROLL_MASK
                                                  | darktable.gui->scroll_mask);
   gtk_widget_set_can_focus(GTK_WIDGET(g->area), TRUE);
+  gtk_widget_set_tooltip_text(GTK_WIDGET(g->area), _("double-click to reset"));
 
   g_signal_connect(G_OBJECT(g->area), "draw", G_CALLBACK(dt_iop_colorcorrection_draw), self);
   g_signal_connect(G_OBJECT(g->area), "button-press-event", G_CALLBACK(dt_iop_colorcorrection_button_press),
@@ -267,6 +267,7 @@ static gboolean dt_iop_colorcorrection_draw(GtkWidget *widget, cairo_t *crf, gpo
   cairo_translate(cr, 0, height);
   cairo_scale(cr, 1., -1.);
   const int cells = 8;
+
   for(int j = 0; j < cells; j++)
     for(int i = 0; i < cells; i++)
     {
@@ -279,8 +280,7 @@ static gboolean dt_iop_colorcorrection_draw(GtkWidget *widget, cairo_t *crf, gpo
       cmsDoTransform(g->xform, &Lab, rgb, 1);
       cairo_set_source_rgb(cr, rgb[0], rgb[1], rgb[2]);
       cairo_rectangle(cr, width * i / (float)cells, height * j / (float)cells,
-                      width / (float)cells - DT_PIXEL_APPLY_DPI(1),
-                      height / (float)cells - DT_PIXEL_APPLY_DPI(1));
+                      width / (float)cells - DT_PIXEL_APPLY_DPI(1), height / (float)cells - DT_PIXEL_APPLY_DPI(1));
       cairo_fill(cr);
     }
 
@@ -370,17 +370,17 @@ static gboolean dt_iop_colorcorrection_motion_notify(GtkWidget *widget, GdkEvent
   else
   {
     g->selected = 0;
-    const float thrs = DT_PIXEL_APPLY_DPI(5.0f);
+    const float thrs = sqf(DT_PIXEL_APPLY_DPI(5.0f));
     const float distlo = sqf(p->loa - ma) + sqf(p->lob - mb);
     const float disthi = sqf(p->hia - ma) + sqf(p->hib - mb);
     const float distqu = sqf(p->qua / 4.0f  + 0.5f * (p->loa + p->hia) - ma) + 
-                         sqf(p->qub / 4.0f + 0.5f * (p->loa + p->hia) - mb);
+                         sqf(p->qub / 4.0f + 0.5f * (p->lob + p->hib) - mb);
 
-    if(disthi < thrs * thrs)
+    if(disthi < thrs)
       g->selected = 2;
-    else if(distlo < thrs * thrs && distlo <= disthi)
+    else if(distlo < thrs && distlo <= disthi)
       g->selected = 1;
-    else if(distqu < thrs * thrs && distqu <= distlo && distqu < disthi)
+    else if(distqu < thrs && distqu <= distlo && distqu < disthi)
       g->selected = 3;
   }
 
@@ -471,16 +471,7 @@ static gboolean dt_iop_colorcorrection_key_press(GtkWidget *widget, GdkEventKey 
 
   if(!handled) return TRUE;
 
-  float multiplier;
-  GdkModifierType modifiers = gtk_accelerator_get_default_mod_mask();
-
-  if((event->state & modifiers) == GDK_SHIFT_MASK)
-    multiplier = dt_conf_get_float("darkroom/ui/scale_rough_step_multiplier");
-  else if((event->state & modifiers) == GDK_CONTROL_MASK)
-    multiplier = dt_conf_get_float("darkroom/ui/scale_precise_step_multiplier");
-  else
-    multiplier = dt_conf_get_float("darkroom/ui/scale_step_multiplier");
-
+  const float multiplier = dt_conf_get_float("darkroom/ui/scale_step_multiplier");
   dx *= multiplier;
   dy *= multiplier;
 
