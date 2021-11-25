@@ -378,7 +378,6 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
 
   vm->current_view = new_view;
   dt_ui_restore_panels(darktable.gui->ui);
-  // lets add plugins related to new view into panels.
   // this has to be done in reverse order to have the lowest position at the bottom!
   for(GList *iter = g_list_last(darktable.lib->plugins); iter; iter = g_list_previous(iter))
   {
@@ -395,7 +394,6 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
       dt_ui_container_add_widget(darktable.gui->ui, plugin->container(plugin), w);
     }
   }
-  // hide/show modules as last config
   for(GList *iter = darktable.lib->plugins; iter; iter = g_list_next(iter))
   {
     dt_lib_module_t *plugin = (dt_lib_module_t *)(iter->data);
@@ -415,7 +413,6 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
       }
       else
       {
-        // show/hide plugin widget depending on expanded flag or if plugin is expandeable()
         if(visible)
           gtk_widget_show_all(plugin->widget);
         else
@@ -434,11 +431,8 @@ int dt_view_manager_switch_by_view(dt_view_manager_t *vm, const dt_view_t *nv)
 
   if(vm->accels_window.window && vm->accels_window.sticky)
     dt_view_accels_refresh(vm);
-  // raise view changed signal
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_VIEWMANAGER_VIEW_CHANGED, old_view, new_view);
-  // update log visibility
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_LOG_REDRAW);
-  // update toast visibility
   dt_control_signal_raise(darktable.signals, DT_SIGNAL_CONTROL_TOAST_REDRAW);
   return 0;
 }
@@ -469,7 +463,6 @@ void dt_view_manager_expose(dt_view_manager_t *vm, cairo_t *cr, int32_t width, i
 
   if(vm->current_view->expose)
   {
-    /* expose the view */
     cairo_rectangle(cr, 0, 0, vm->current_view->width, vm->current_view->height);
     cairo_clip(cr);
     cairo_new_path(cr);
@@ -488,7 +481,6 @@ void dt_view_manager_expose(dt_view_manager_t *vm, cairo_t *cr, int32_t width, i
     {
       dt_lib_module_t *plugin = (dt_lib_module_t *)(plugins->data);
 
-      /* does this module belong to current view ?*/
       if(plugin->gui_post_expose
          && dt_lib_is_visible_in_view(plugin, vm->current_view))
         plugin->gui_post_expose(plugin, cr, vm->current_view->width,
@@ -1014,7 +1006,6 @@ void dt_view_set_selection(int imgid, int value)
   /* clear and reset statement */
   DT_DEBUG_SQLITE3_CLEAR_BINDINGS(darktable.view_manager->statements.is_selected);
   DT_DEBUG_SQLITE3_RESET(darktable.view_manager->statements.is_selected);
-  /* setup statement and iterate over rows */
   DT_DEBUG_SQLITE3_BIND_INT(darktable.view_manager->statements.is_selected, 1, imgid);
 
   if(sqlite3_step(darktable.view_manager->statements.is_selected) == SQLITE_ROW)
@@ -1025,7 +1016,6 @@ void dt_view_set_selection(int imgid, int value)
       /* clear and reset statement */
       DT_DEBUG_SQLITE3_CLEAR_BINDINGS(darktable.view_manager->statements.delete_from_selected);
       DT_DEBUG_SQLITE3_RESET(darktable.view_manager->statements.delete_from_selected);
-      /* setup statement and execute */
       DT_DEBUG_SQLITE3_BIND_INT(darktable.view_manager->statements.delete_from_selected, 1, imgid);
       sqlite3_step(darktable.view_manager->statements.delete_from_selected);
     }
@@ -1036,7 +1026,6 @@ void dt_view_set_selection(int imgid, int value)
     /* clear and reset statement */
     DT_DEBUG_SQLITE3_CLEAR_BINDINGS(darktable.view_manager->statements.make_selected);
     DT_DEBUG_SQLITE3_RESET(darktable.view_manager->statements.make_selected);
-    /* setup statement and execute */
     DT_DEBUG_SQLITE3_BIND_INT(darktable.view_manager->statements.make_selected, 1, imgid);
     sqlite3_step(darktable.view_manager->statements.make_selected);
   }
@@ -1141,38 +1130,9 @@ gint dt_view_lighttable_get_zoom(dt_view_manager_t *vm)
     return 10;
 }
 
-dt_lighttable_culling_zoom_mode_t dt_view_lighttable_get_culling_zoom_mode(dt_view_manager_t *vm)
-{
-  if(vm->proxy.lighttable.module)
-    return vm->proxy.lighttable.get_zoom_mode(vm->proxy.lighttable.module);
-  else
-    return DT_LIGHTTABLE_ZOOM_FIXED;
-}
-
-void dt_view_lighttable_culling_init_mode(dt_view_manager_t *vm)
-{
-  if(vm->proxy.lighttable.module)
-    vm->proxy.lighttable.culling_init_mode(vm->proxy.lighttable.view);
-}
-
-void dt_view_lighttable_culling_preview_refresh(dt_view_manager_t *vm)
-{
-  if(vm->proxy.lighttable.module)
-    vm->proxy.lighttable.culling_preview_refresh(vm->proxy.lighttable.view);
-}
-
-void dt_view_lighttable_culling_preview_reload_overlays(dt_view_manager_t *vm)
-{
-  if(vm->proxy.lighttable.module)
-    vm->proxy.lighttable.culling_preview_reload_overlays(vm->proxy.lighttable.view);
-}
-
 dt_lighttable_layout_t dt_view_lighttable_get_layout(dt_view_manager_t *vm)
 {
-  if(vm->proxy.lighttable.module)
-    return vm->proxy.lighttable.get_layout(vm->proxy.lighttable.module);
-  else
-    return DT_LIGHTTABLE_LAYOUT_FILEMANAGER;
+  return DT_LIGHTTABLE_LAYOUT_FILEMANAGER;
 }
 
 gboolean dt_view_lighttable_preview_state(dt_view_manager_t *vm)
@@ -1181,12 +1141,6 @@ gboolean dt_view_lighttable_preview_state(dt_view_manager_t *vm)
     return vm->proxy.lighttable.get_preview_state(vm->proxy.lighttable.view);
   else
     return FALSE;
-}
-
-void dt_view_lighttable_change_offset(dt_view_manager_t *vm, gboolean reset, gint imgid)
-{
-  if(vm->proxy.lighttable.module)
-    vm->proxy.lighttable.change_offset(vm->proxy.lighttable.view, reset, imgid);
 }
 
 void dt_view_collection_update(const dt_view_manager_t *vm)

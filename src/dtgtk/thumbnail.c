@@ -318,11 +318,7 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
       image_h = thumb->height - h;
       gtk_widget_get_size_request(thumb->w_altered, &w, &h);
 
-      if (!thumb->zoomable) 
-        image_h -= h + gtk_widget_get_margin_top(thumb->w_altered);
-      else
-        image_h -= thumb->img_margin->bottom;
-
+      image_h -= thumb->img_margin->bottom;
       image_h -= thumb->img_margin->top;
     }
     else if(thumb->over == DT_THUMBNAIL_OVERLAYS_MIXED)
@@ -394,14 +390,14 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
       gboolean res = FALSE;
       cairo_surface_t *img_surf = NULL;
 
-      if(thumb->zoomable)
+/*      if(thumb->zoomable)
       {
        if(thumb->zoom > 1.0f)
          thumb->zoom = MIN(thumb->zoom, dt_thumbnail_get_zoom100(thumb));
 
        res = dt_view_image_get_surface(thumb->imgid, image_w * thumb->zoom, image_h * thumb->zoom, &img_surf, FALSE);
       }
-      else
+      else*/
         res = dt_view_image_get_surface(thumb->imgid, image_w, image_h, &img_surf, FALSE);
 
       if(res)
@@ -441,13 +437,13 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
       posx = thumb->img_margin->left + (image_w - imgbox_w) / 2;
       int w = 0, h = 0;
 
-      if(!thumb->zoomable)
+//      if(!thumb->zoomable)
       {
         gtk_widget_get_size_request(thumb->w_altered, &w, &h);
         posy = h + gtk_widget_get_margin_top(thumb->w_altered);
       }
-      else
-        posy = 0;
+//      else
+//        posy = 0;
 
       gtk_widget_get_size_request(thumb->w_bottom_eb, &w, &h);
       posy += thumb->img_margin->top + (image_h - imgbox_h) / 2;
@@ -473,7 +469,7 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
     if(thumb->over == DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK)
       _thumb_resize_overlays(thumb);
     // and we can also set the zooming level if needed
-    if(thumb->zoomable && thumb->over == DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK)
+/*    if(thumb->zoomable && thumb->over == DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK)
     {
       if(thumb->zoom_100 < 1.0 || thumb->zoom <= 1.0f)
         gtk_label_set_text(GTK_LABEL(thumb->w_zoom), _("fit"));
@@ -483,7 +479,7 @@ static gboolean _event_image_draw(GtkWidget *widget, cairo_t *cr, gpointer user_
         gtk_label_set_text(GTK_LABEL(thumb->w_zoom), z);
         g_free(z);
       }
-    }
+    }*/
     // let's sanitize and apply panning values as we are sure the zoomed image is loaded now
     thumb->zoomx = CLAMP(thumb->zoomx,
         (imgbox_w * darktable.gui->ppd_thb - thumb->img_width) / darktable.gui->ppd_thb, 0);
@@ -503,7 +499,7 @@ static void _thumb_update_icons(dt_thumbnail_t *thumb)
   gtk_widget_set_visible(thumb->w_altered, thumb->is_altered);
   gtk_widget_set_visible(thumb->w_group, thumb->is_grouped);
   gtk_widget_set_visible(thumb->w_color, thumb->colorlabels != 0);
-  gtk_widget_set_visible(thumb->w_zoom_eb, (thumb->zoomable && thumb->over == DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK));
+//  gtk_widget_set_visible(thumb->w_zoom_eb, (thumb->zoomable && thumb->over == DT_THUMBNAIL_OVERLAYS_HOVER_BLOCK));
   gtk_widget_show(thumb->w_bottom_eb);
   gtk_widget_show(thumb->w_reject);
   gtk_widget_show(thumb->w_ext);
@@ -738,19 +734,17 @@ static gboolean _event_grouping_release(GtkWidget *widget, GdkEventButton *event
 // this is called each time the images info change
 static void _dt_image_info_changed_callback(gpointer instance, gpointer imgs, gpointer user_data)
 {
-  if(!user_data || !imgs)
-    return;
+  if(!user_data || !imgs) return;
 
   dt_thumbnail_t *thumb = (dt_thumbnail_t *)user_data;
-  const GList *i = imgs;
-  while(i)
+  
+  for(const GList *i = imgs; i; i = g_list_next(i))
   {
     if(GPOINTER_TO_INT(i->data) == thumb->imgid)
     {
       dt_thumbnail_update_infos(thumb);
       break;
     }
-    i = g_list_next(i);
   }
 }
 
@@ -763,16 +757,13 @@ static void _dt_collection_changed_callback(gpointer instance, dt_collection_cha
 
   dt_thumbnail_t *thumb = (dt_thumbnail_t *)user_data;
 
-  const GList *i = imgs;
-  while(i)
+  for(const GList *i = imgs; i; i = g_list_next(i))
   {
     if(GPOINTER_TO_INT(i->data) == thumb->imgid)
     {
       dt_thumbnail_update_infos(thumb);
       break;
     }
-
-    i = g_list_next(i);
   }
 }
 
@@ -1207,7 +1198,7 @@ dt_thumbnail_t *dt_thumbnail_new(int width, int height, int imgid, int rowid, dt
   thumb->imgid = imgid;
   thumb->rowid = rowid;
   thumb->over = over;
-  thumb->zoomable = zoomable;
+//  thumb->zoomable = zoomable;
   thumb->zoom = 1.0f;
   thumb->overlay_timeout_duration = dt_conf_get_int("plugins/lighttable/overlay_timeout");
   thumb->tooltip = tooltip;

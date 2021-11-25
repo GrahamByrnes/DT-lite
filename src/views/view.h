@@ -73,13 +73,6 @@ typedef enum dt_darkroom_layout_t
   DT_DARKROOM_LAYOUT_LAST = 3
 } dt_darkroom_layout_t;
 
-// flags for culling zoom mode
-typedef enum dt_lighttable_culling_zoom_mode_t
-{
-  DT_LIGHTTABLE_ZOOM_FIXED = 0,
-  DT_LIGHTTABLE_ZOOM_DYNAMIC = 1
-} dt_lighttable_culling_zoom_mode_t;
-
 // mouse actions struct
 typedef enum dt_mouse_action_type_t
 {
@@ -201,7 +194,6 @@ typedef struct dt_view_manager_t
   dt_view_t *current_view;
   // images currently active in the main view (there can be more than 1 in culling)
   GSList *active_images;
-  // copy/paste history structure
   dt_history_copy_item_t copy_paste;
 
   struct
@@ -222,10 +214,7 @@ typedef struct dt_view_manager_t
     GSList *active_imgs;
   } act_on;
 
-  /* reusable db statements
-   * TODO: reconsider creating a common/database helper API
-   *       instead of having this spread around in sources..
-   */
+  // reusable db statements
   struct
   {
     /* select num from history where imgid = ?1*/
@@ -287,12 +276,6 @@ typedef struct dt_view_manager_t
       struct dt_view_t *view;
       void (*set_zoom)(struct dt_lib_module_t *module, gint zoom);
       gint (*get_zoom)(struct dt_lib_module_t *module);
-      dt_lighttable_layout_t (*get_layout)(struct dt_lib_module_t *module);
-      void (*set_layout)(struct dt_lib_module_t *module, dt_lighttable_layout_t layout);
-      void (*culling_init_mode)(struct dt_view_t *view);
-      void (*culling_preview_refresh)(struct dt_view_t *view);
-      void (*culling_preview_reload_overlays)(struct dt_view_t *view);
-      dt_lighttable_culling_zoom_mode_t (*get_zoom_mode)(struct dt_lib_module_t *module);
       gboolean (*get_preview_state)(struct dt_view_t *view);
       void (*change_offset)(struct dt_view_t *view, gboolean reset, gint imgid);
     } lighttable;
@@ -386,25 +369,14 @@ gboolean dt_view_lighttable_preview_state(dt_view_manager_t *vm);
 void dt_view_lighttable_set_zoom(dt_view_manager_t *vm, gint zoom);
 /** gets the lighttable image in row zoom */
 gint dt_view_lighttable_get_zoom(dt_view_manager_t *vm);
-/** gets the culling zoom mode */
-dt_lighttable_culling_zoom_mode_t dt_view_lighttable_get_culling_zoom_mode(dt_view_manager_t *vm);
-/** reinit culling for new mode */
-void dt_view_lighttable_culling_init_mode(dt_view_manager_t *vm);
-/** force refresh of culling and/or preview */
-void dt_view_lighttable_culling_preview_refresh(dt_view_manager_t *vm);
-/** force refresh of culling and/or preview overlays */
-void dt_view_lighttable_culling_preview_reload_overlays(dt_view_manager_t *vm);
-/** sets the offset image (for culling and full preview) */
-void dt_view_lighttable_change_offset(dt_view_manager_t *vm, gboolean reset, gint imgid);
 
 /* accel window */
 void dt_view_accels_show(dt_view_manager_t *vm);
 void dt_view_accels_hide(dt_view_manager_t *vm);
 void dt_view_accels_refresh(dt_view_manager_t *vm);
 
-/*
- * Print View Proxy
- */
+
+// Print View Proxy
 #ifdef HAVE_PRINT
 void dt_view_print_settings(const dt_view_manager_t *vm, dt_print_info_t *pinfo);
 #endif

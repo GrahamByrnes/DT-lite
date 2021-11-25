@@ -504,7 +504,9 @@ static int _thumbs_load_needed(dt_thumbtable_t *table)
 
     int space = first->y;
 
-    if(table->mode == DT_THUMBTABLE_MODE_FILMSTRIP) space = first->x;
+    if(table->mode == DT_THUMBTABLE_MODE_FILMSTRIP)
+      space = first->x;
+
     const int nb_to_load = space / table->thumb_size + (space % table->thumb_size != 0);
     gchar *query = g_strdup_printf(
        "SELECT rowid, imgid"
@@ -524,11 +526,13 @@ static int _thumbs_load_needed(dt_thumbtable_t *table)
         dt_thumbnail_t *thumb
             = dt_thumbnail_new(table->thumb_size, table->thumb_size, sqlite3_column_int(stmt, 1),
                                sqlite3_column_int(stmt, 0), table->overlays, FALSE, table->show_tooltips);
+
         if(table->mode == DT_THUMBTABLE_MODE_FILMSTRIP)
         {
           thumb->single_click = TRUE;
           thumb->sel_mode = DT_THUMBNAIL_SEL_MODE_MOD_ONLY;
         }
+
         thumb->x = posx;
         thumb->y = posy;
         table->list = g_list_prepend(table->list, thumb);
@@ -690,13 +694,10 @@ static gboolean _move(dt_thumbtable_t *table, const int x, const int y, gboolean
   // we update the thumbs_area
   table->thumbs_area.x += posx;
   table->thumbs_area.y += posy;
-
   // we load all needed thumbs
   int changed = _thumbs_load_needed(table);
-
   // we remove the images not visible on screen
   changed += _thumbs_remove_unneeded(table);
-
   // if there has been changed, we recompute thumbs area
   if(changed > 0) _pos_compute_area(table);
 
@@ -864,7 +865,6 @@ static void _filemanager_zoom(dt_thumbtable_t *table, int oldzoom, int newzoom)
   const int new_pos = y / new_size * newzoom + x / new_size;
 
   dt_thumbtable_set_offset(table, thumb->rowid - new_pos, FALSE);
-
   dt_view_lighttable_set_zoom(darktable.view_manager, newzoom);
   gtk_widget_queue_draw(table->widget);
 }
@@ -872,6 +872,7 @@ static void _filemanager_zoom(dt_thumbtable_t *table, int oldzoom, int newzoom)
 void dt_thumbtable_zoom_changed(dt_thumbtable_t *table, const int oldzoom, const int newzoom)
 {
   if(oldzoom == newzoom) return;
+
   if(!table->list) return;
 
   if(table->mode == DT_THUMBTABLE_MODE_FILEMANAGER)
@@ -974,27 +975,20 @@ static gboolean _event_enter_notify(GtkWidget *widget, GdkEventCrossing *event, 
 static gboolean _event_button_press(GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
   dt_thumbtable_t *table = (dt_thumbtable_t *)user_data;
-
   const int id = dt_control_get_mouse_over_id();
 
   if(id > 0 && event->button == 1
      && (table->mode == DT_THUMBTABLE_MODE_FILEMANAGER || table->mode == DT_THUMBTABLE_MODE_ZOOM)
      && event->type == GDK_2BUTTON_PRESS)
-  {
     dt_view_manager_switch(darktable.view_manager, "darkroom");
-  }
   else if(id > 0 && event->button == 1 && table->mode == DT_THUMBTABLE_MODE_FILMSTRIP
           && event->type == GDK_BUTTON_PRESS
           && (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK | GDK_MOD1_MASK)) == 0)
-  {
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_VIEWMANAGER_THUMBTABLE_ACTIVATE, id);
-  }
 
   if(event->button == 1 && event->type == GDK_BUTTON_PRESS)
-  {
     // make sure any edition field loses the focus
     gtk_widget_grab_focus(dt_ui_center(darktable.gui->ui));
-  }
 
   if(table->mode != DT_THUMBTABLE_MODE_ZOOM && id < 1 && event->button == 1 && event->type == GDK_BUTTON_PRESS)
   {
@@ -1331,6 +1325,7 @@ static void _dt_collection_changed_callback(gpointer instance, dt_collection_cha
     // get the new rowid of the new offset image
     const int nrow = _thumb_get_rowid(newid);
     const gboolean offset_changed = (MAX(1, nrow) != table->offset);
+
     if(nrow >= 1)
       table->offset_imgid = newid;
     else
@@ -1341,14 +1336,6 @@ static void _dt_collection_changed_callback(gpointer instance, dt_collection_cha
       dt_conf_set_int("lighttable/zoomable/last_offset", table->offset);
 
     dt_thumbtable_full_redraw(table, TRUE);
-
-    if(offset_changed)
-      dt_view_lighttable_change_offset(darktable.view_manager, FALSE, table->offset_imgid);
-    else
-    {
-      // if we are in culling or preview mode, ensure to refresh active images
-      dt_view_lighttable_culling_preview_refresh(darktable.view_manager);
-    }
 
     // if needed, we restore back the position of the filmstrip
     if(old_offset > 0 && old_offset != table->offset)
@@ -1395,7 +1382,6 @@ static void _dt_collection_changed_callback(gpointer instance, dt_collection_cha
     dt_conf_set_int("lighttable/zoomable/last_pos_x", 0);
     dt_conf_set_int("lighttable/zoomable/last_pos_y", 0);
     dt_thumbtable_full_redraw(table, TRUE);
-    dt_view_lighttable_change_offset(darktable.view_manager, TRUE, table->offset_imgid);
   }
 }
 

@@ -100,7 +100,6 @@ FILE(GLOB SOURCE_FILES
   "develop/masks/path.c"
   "develop/format.c"
   "dtgtk/button.c"
-  "dtgtk/culling.c"
   "dtgtk/drawingarea.c"
   "dtgtk/expander.c"
   "dtgtk/gradientslider.c"

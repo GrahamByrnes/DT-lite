@@ -36,26 +36,14 @@ typedef struct dt_lib_tool_lighttable_t
   GtkWidget *zoom;
   GtkWidget *zoom_entry;
   GtkWidget *layout_combo;
-  GtkWidget *zoom_mode_cb;
-  dt_lighttable_layout_t layout, base_layout;
+  dt_lighttable_layout_t base_layout;
   int current_zoom;
-  dt_lighttable_culling_zoom_mode_t zoom_mode;
   gboolean combo_evt_reset;
 } dt_lib_tool_lighttable_t;
 
 /* set zoom proxy function */
 static void _lib_lighttable_set_zoom(dt_lib_module_t *self, gint zoom);
 static gint _lib_lighttable_get_zoom(dt_lib_module_t *self);
-static dt_lighttable_culling_zoom_mode_t _lib_lighttable_get_zoom_mode(dt_lib_module_t *self);
-
-/* get/set layout proxy function */
-static dt_lighttable_layout_t _lib_lighttable_get_layout(dt_lib_module_t *self);
-static void _lib_lighttable_set_layout(dt_lib_module_t *self, dt_lighttable_layout_t layout);
-
-/* lightable layout changed */
-static void _lib_lighttable_layout_changed(GtkComboBox *widget, gpointer user_data);
-/* lightable culling zoom mode changed */
-static void _lib_lighttable_zoom_mode_changed(GtkComboBox *widget, gpointer user_data);
 /* zoom slider change callback */
 static void _lib_lighttable_zoom_slider_changed(GtkRange *range, gpointer user_data);
 /* zoom entry change callback */
@@ -97,37 +85,7 @@ void gui_init(dt_lib_module_t *self)
   self->data = (void *)d;
 
   self->widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  d->layout = MIN(DT_LIGHTTABLE_LAYOUT_LAST - 1, dt_conf_get_int("plugins/lighttable/layout"));
-  d->base_layout = MIN(DT_LIGHTTABLE_LAYOUT_LAST - 1, dt_conf_get_int("plugins/lighttable/base_layout"));
-
-  if(d->layout == DT_LIGHTTABLE_LAYOUT_CULLING)
-  {
-    d->zoom_mode = dt_conf_get_int("plugins/lighttable/culling_zoom_mode");
-    if(d->zoom_mode == DT_LIGHTTABLE_ZOOM_DYNAMIC && darktable.collection)
-    {
-      d->current_zoom = MAX(1, MIN(DT_LIGHTTABLE_MAX_ZOOM, dt_collection_get_selected_count(darktable.collection)));
-      if(d->current_zoom == 1) d->current_zoom = dt_conf_get_int("plugins/lighttable/culling_num_images");
-    }
-    else
-    {
-      d->current_zoom = dt_conf_get_int("plugins/lighttable/culling_num_images");
-    }
-  }
-  else
-    d->current_zoom = dt_conf_get_int("plugins/lighttable/images_in_row");
-
-  /* create layout selection combobox */
-  d->layout_combo = gtk_combo_box_text_new();
-  gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(d->layout_combo), _("zoomable light table"));
-  gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(d->layout_combo), _("file manager"));
-  gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(d->layout_combo), _("culling"));
-
-  gtk_combo_box_set_active(GTK_COMBO_BOX(d->layout_combo), d->layout);
-
-  g_signal_connect(G_OBJECT(d->layout_combo), "changed", G_CALLBACK(_lib_lighttable_layout_changed), (gpointer)self);
-
-  gtk_box_pack_start(GTK_BOX(self->widget), d->layout_combo, TRUE, TRUE, 0);
-
+  d->current_zoom = dt_conf_get_int("plugins/lighttable/images_in_row");
 
   /* create horizontal zoom slider */
   d->zoom = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 1, DT_LIGHTTABLE_MAX_ZOOM, 1);
@@ -149,41 +107,13 @@ void gui_init(dt_lib_module_t *self)
                    (gpointer)self);
   g_signal_connect(d->zoom_entry, "key-press-event", G_CALLBACK(_lib_lighttable_zoom_entry_changed), self);
   gtk_range_set_value(GTK_RANGE(d->zoom), d->current_zoom);
-
-  d->zoom_mode_cb = gtk_combo_box_text_new();
-  gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(d->zoom_mode_cb), _("fixed zoom"));
-  gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(d->zoom_mode_cb), _("dynamic zoom"));
-  g_signal_connect(G_OBJECT(d->zoom_mode_cb), "changed", G_CALLBACK(_lib_lighttable_zoom_mode_changed),
-                   (gpointer)self);
-  gtk_box_pack_start(GTK_BOX(self->widget), d->zoom_mode_cb, TRUE, TRUE, 0);
-  if(d->layout == DT_LIGHTTABLE_LAYOUT_CULLING)
-  {
-    gtk_widget_show(d->zoom_mode_cb);
-    gtk_combo_box_set_active(GTK_COMBO_BOX(d->zoom_mode_cb), d->zoom_mode == DT_LIGHTTABLE_ZOOM_DYNAMIC);
-  }
-  else
-  {
-    gtk_widget_hide(d->zoom_mode_cb);
-  }
-  gtk_widget_set_no_show_all(d->zoom_mode_cb, TRUE);
-
   _lib_lighttable_zoom_slider_changed(GTK_RANGE(d->zoom), self); // the slider defaults to 1 and GTK doesn't
                                                                  // fire a value-changed signal when setting
                                                                  // it to 1 => empty text box
 
-  _lib_lighttable_layout_changed(GTK_COMBO_BOX(d->layout_combo), self);
-
-  gtk_widget_set_sensitive(
-      d->zoom_entry, (d->layout != DT_LIGHTTABLE_LAYOUT_CULLING || d->zoom_mode != DT_LIGHTTABLE_ZOOM_DYNAMIC));
-  gtk_widget_set_sensitive(
-      d->zoom, (d->layout != DT_LIGHTTABLE_LAYOUT_CULLING || d->zoom_mode != DT_LIGHTTABLE_ZOOM_DYNAMIC));
-
   darktable.view_manager->proxy.lighttable.module = self;
   darktable.view_manager->proxy.lighttable.set_zoom = _lib_lighttable_set_zoom;
   darktable.view_manager->proxy.lighttable.get_zoom = _lib_lighttable_get_zoom;
-  darktable.view_manager->proxy.lighttable.get_zoom_mode = _lib_lighttable_get_zoom_mode;
-  darktable.view_manager->proxy.lighttable.get_layout = _lib_lighttable_get_layout;
-  darktable.view_manager->proxy.lighttable.set_layout = _lib_lighttable_set_layout;
 }
 
 void gui_cleanup(dt_lib_module_t *self)
@@ -197,17 +127,8 @@ void gui_cleanup(dt_lib_module_t *self)
 static void _set_zoom(dt_lib_module_t *self, int zoom)
 {
   dt_lib_tool_lighttable_t *d = (dt_lib_tool_lighttable_t *)self->data;
-  if(d->layout == DT_LIGHTTABLE_LAYOUT_CULLING)
-  {
-    if(d->zoom_mode == DT_LIGHTTABLE_ZOOM_FIXED) dt_conf_set_int("plugins/lighttable/culling_num_images", zoom);
-  }
-  else
-    dt_conf_set_int("plugins/lighttable/images_in_row", zoom);
-
-  if(d->layout == DT_LIGHTTABLE_LAYOUT_FILEMANAGER || d->layout == DT_LIGHTTABLE_LAYOUT_ZOOMABLE)
-  {
-    dt_thumbtable_zoom_changed(dt_ui_thumbtable(darktable.gui->ui), d->current_zoom, zoom);
-  }
+  dt_conf_set_int("plugins/lighttable/images_in_row", zoom);
+  dt_thumbtable_zoom_changed(dt_ui_thumbtable(darktable.gui->ui), d->current_zoom, zoom);
 }
 
 static void _lib_lighttable_zoom_slider_changed(GtkRange *range, gpointer user_data)
@@ -232,12 +153,7 @@ static gboolean _lib_lighttable_zoom_entry_changed(GtkWidget *entry, GdkEventKey
     case GDK_KEY_Escape:
     case GDK_KEY_Tab:
     {
-      // reset
-      int i = 0;
-      if(d->layout == DT_LIGHTTABLE_LAYOUT_CULLING)
-        i = dt_conf_get_int("plugins/lighttable/culling_num_images");
-      else
-        i = dt_conf_get_int("plugins/lighttable/images_in_row");
+      const int i = dt_conf_get_int("plugins/lighttable/images_in_row");
       gchar *i_as_str = g_strdup_printf("%d", i);
       gtk_entry_set_text(GTK_ENTRY(d->zoom_entry), i_as_str);
       g_free(i_as_str);
@@ -289,126 +205,6 @@ static gboolean _lib_lighttable_zoom_entry_changed(GtkWidget *entry, GdkEventKey
   }
 }
 
-static void _lib_lighttable_change_layout(dt_lib_module_t *self, dt_lighttable_layout_t layout)
-{
-  dt_lib_tool_lighttable_t *d = (dt_lib_tool_lighttable_t *)self->data;
-
-  const int current_layout = dt_conf_get_int("plugins/lighttable/layout");
-  d->layout = layout;
-
-  if(current_layout != layout)
-  {
-    if(d->layout == DT_LIGHTTABLE_LAYOUT_CULLING)
-    {
-      gtk_widget_show(d->zoom_mode_cb);
-      if(d->zoom_mode == DT_LIGHTTABLE_ZOOM_DYNAMIC)
-      {
-        d->current_zoom = MAX(1, MIN(30, dt_collection_get_selected_count(darktable.collection)));
-        if(d->current_zoom == 1) d->current_zoom = dt_conf_get_int("plugins/lighttable/culling_num_images");
-      }
-      else
-      {
-        d->current_zoom = dt_conf_get_int("plugins/lighttable/culling_num_images");
-      }
-      gtk_combo_box_set_active(GTK_COMBO_BOX(d->zoom_mode_cb), d->zoom_mode == DT_LIGHTTABLE_ZOOM_DYNAMIC);
-    }
-    else
-    {
-      gtk_widget_hide(d->zoom_mode_cb);
-      d->zoom_mode = DT_LIGHTTABLE_ZOOM_FIXED;
-      d->current_zoom = dt_conf_get_int("plugins/lighttable/images_in_row");
-    }
-    gtk_widget_set_sensitive(
-        d->zoom_entry, (d->layout != DT_LIGHTTABLE_LAYOUT_CULLING || d->zoom_mode != DT_LIGHTTABLE_ZOOM_DYNAMIC));
-    gtk_widget_set_sensitive(
-        d->zoom, (d->layout != DT_LIGHTTABLE_LAYOUT_CULLING || d->zoom_mode != DT_LIGHTTABLE_ZOOM_DYNAMIC));
-    gtk_range_set_value(GTK_RANGE(d->zoom), d->current_zoom);
-
-    dt_conf_set_int("plugins/lighttable/layout", layout);
-    if(layout == DT_LIGHTTABLE_LAYOUT_FILEMANAGER || layout == DT_LIGHTTABLE_LAYOUT_ZOOMABLE)
-    {
-      d->base_layout = layout;
-      dt_conf_set_int("plugins/lighttable/base_layout", layout);
-    }
-    d->combo_evt_reset = TRUE;
-    gtk_combo_box_set_active(GTK_COMBO_BOX(d->layout_combo), layout);
-    d->combo_evt_reset = FALSE;
-    dt_control_queue_redraw_center();
-  }
-  else
-  {
-    dt_control_queue_redraw_center();
-  }
-}
-
-static void _lib_lighttable_layout_changed(GtkComboBox *widget, gpointer user_data)
-{
-  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
-  dt_lib_tool_lighttable_t *d = (dt_lib_tool_lighttable_t *)self->data;
-  if(d->combo_evt_reset) return;
-  const int new_layout = gtk_combo_box_get_active(widget);
-  _lib_lighttable_change_layout(self, new_layout);
-}
-
-static void _lib_lighttable_zoom_mode_changed(GtkComboBox *widget, gpointer user_data)
-{
-  dt_lib_module_t *self = (dt_lib_module_t *)user_data;
-  dt_lib_tool_lighttable_t *d = (dt_lib_tool_lighttable_t *)self->data;
-
-  dt_lighttable_culling_zoom_mode_t new_mode = DT_LIGHTTABLE_ZOOM_FIXED;
-  if(gtk_combo_box_get_active(GTK_COMBO_BOX(d->zoom_mode_cb)) == 1) new_mode = DT_LIGHTTABLE_ZOOM_DYNAMIC;
-  if(new_mode == d->zoom_mode) return;
-
-  d->zoom_mode = new_mode;
-  if(new_mode == DT_LIGHTTABLE_ZOOM_FIXED)
-  {
-    _lib_lighttable_set_zoom(self, dt_conf_get_int("plugins/lighttable/culling_num_images"));
-  }
-  else
-  {
-    int selnb = dt_collection_get_selected_count(darktable.collection);
-    if(selnb <= 1) selnb = dt_conf_get_int("plugins/lighttable/culling_num_images");
-    _lib_lighttable_set_zoom(self, selnb);
-    // and we set the offset to the first selected image
-    if(selnb != 0)
-    {
-      sqlite3_stmt *stmt;
-      DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
-                                  "SELECT m.imgid FROM memory.collected_images as m, main.selected_images as s "
-                                  "WHERE m.imgid=s.imgid "
-                                  "ORDER BY m.rowid LIMIT 1",
-                                  -1, &stmt, NULL);
-      if(sqlite3_step(stmt) == SQLITE_ROW)
-      {
-        dt_view_lighttable_change_offset(darktable.view_manager, FALSE, sqlite3_column_int(stmt, 0));
-      }
-      sqlite3_finalize(stmt);
-    }
-  }
-  dt_view_lighttable_culling_init_mode(darktable.view_manager);
-
-  gtk_widget_set_sensitive(
-      d->zoom_entry, (d->layout != DT_LIGHTTABLE_LAYOUT_CULLING || d->zoom_mode != DT_LIGHTTABLE_ZOOM_DYNAMIC));
-  gtk_widget_set_sensitive(
-      d->zoom, (d->layout != DT_LIGHTTABLE_LAYOUT_CULLING || d->zoom_mode != DT_LIGHTTABLE_ZOOM_DYNAMIC));
-
-  if(d->layout == DT_LIGHTTABLE_LAYOUT_CULLING)
-  {
-    dt_conf_set_int("plugins/lighttable/culling_zoom_mode", d->zoom_mode);
-  }
-}
-
-static void _lib_lighttable_set_layout(dt_lib_module_t *self, dt_lighttable_layout_t layout)
-{
-  _lib_lighttable_change_layout(self, layout);
-}
-
-static dt_lighttable_layout_t _lib_lighttable_get_layout(dt_lib_module_t *self)
-{
-  dt_lib_tool_lighttable_t *d = (dt_lib_tool_lighttable_t *)self->data;
-  return d->layout;
-}
-
 static void _lib_lighttable_set_zoom(dt_lib_module_t *self, gint zoom)
 {
   dt_lib_tool_lighttable_t *d = (dt_lib_tool_lighttable_t *)self->data;
@@ -420,12 +216,6 @@ static gint _lib_lighttable_get_zoom(dt_lib_module_t *self)
 {
   dt_lib_tool_lighttable_t *d = (dt_lib_tool_lighttable_t *)self->data;
   return d->current_zoom;
-}
-
-static dt_lighttable_culling_zoom_mode_t _lib_lighttable_get_zoom_mode(dt_lib_module_t *self)
-{
-  dt_lib_tool_lighttable_t *d = (dt_lib_tool_lighttable_t *)self->data;
-  return d->zoom_mode;
 }
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
