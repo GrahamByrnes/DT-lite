@@ -230,7 +230,6 @@ void leave(dt_view_t *self)
     darktable.view_manager->active_images = NULL;
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_ACTIVE_IMAGES_CHANGE);
   }
-  // we hide culling and preview too
   // exit preview mode if non-sticky
   if(lib->preview_state && lib->preview_sticky == 0)
     _preview_quit(self);

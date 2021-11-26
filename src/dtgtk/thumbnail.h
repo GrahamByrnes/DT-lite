@@ -115,8 +115,6 @@ typedef struct
   gboolean tooltip;             // should we show the tooltip ?
   int expose_again_timeout_id;  // source id of the expose_again timeout
 
-  // specific for culling and preview
-//  gboolean zoomable;   // can we zoom in/out the thumbnail (used for culling/preview)
   double aspect_ratio; // aspect ratio of the image
 
   // difference between the global zoom values and the value to apply to this specific thumbnail
