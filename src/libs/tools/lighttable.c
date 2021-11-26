@@ -35,8 +35,6 @@ typedef struct dt_lib_tool_lighttable_t
 {
   GtkWidget *zoom;
   GtkWidget *zoom_entry;
-  GtkWidget *layout_combo;
-  dt_lighttable_layout_t base_layout;
   int current_zoom;
   gboolean combo_evt_reset;
 } dt_lib_tool_lighttable_t;

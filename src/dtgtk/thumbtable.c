@@ -1281,45 +1281,9 @@ static void _dt_collection_changed_callback(gpointer instance, dt_collection_cha
     if(in_list)
     {
       if(next > 0 && _thumb_get_rowid(table->offset_imgid) != table->offset)
-      {
         // if offset has changed, that means the offset img has moved. So we use the next untouched image as offset
         // but we have to ensure next is in the selection if we navigate inside sel.
         newid = next;
-        if(table->navigate_inside_selection)
-        {
-          sqlite3_stmt *stmt;
-          gchar *query = g_strdup_printf(
-              "SELECT m.imgid FROM memory.collected_images as m, main.selected_images as s "
-              "WHERE m.imgid=s.imgid AND m.rowid>=(SELECT rowid FROM memory.collected_images WHERE imgid=%d) "
-              "ORDER BY m.rowid LIMIT 1",
-              next);
-          DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), query, -1, &stmt, NULL);
-
-          if(sqlite3_step(stmt) == SQLITE_ROW)
-            newid = sqlite3_column_int(stmt, 0);
-
-          else
-          {
-            // no select image after, search before
-            g_free(query);
-            sqlite3_finalize(stmt);
-            query = g_strdup_printf(
-              "SELECT m.imgid"
-              " FROM memory.collected_images AS m, main.selected_images AS s"
-              " WHERE m.imgid=s.imgid"
-              "   AND m.rowid>=(SELECT rowid FROM memory.collected_images WHERE imgid=%d)"
-              " ORDER BY m.rowid LIMIT 1",
-                next);
-            DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db), query, -1, &stmt, NULL);
-            if(sqlite3_step(stmt) == SQLITE_ROW)
-            {
-              newid = sqlite3_column_int(stmt, 0);
-            }
-          }
-          g_free(query);
-          sqlite3_finalize(stmt);
-        }
-      }
     }
 
     // get the new rowid of the new offset image

@@ -82,23 +82,16 @@ typedef struct dt_thumbtable_t
   // for some reasons, in filemanager, first image can not be at x=0
   // in that case, we count the number of "scroll-top" try and reallign after 2 try
   int realign_top_try;
-
   gboolean mouse_inside; // is the mouse pointer inside thumbatable widget ?
-
   GSList *accel_closures; // list of associated accels
 
   // when performing a drag, we store the list of items to drag here
   // as this can change during the drag and drop (esp. because of the image_over_id)
   GList *drag_list;
-
   // to desactivate scrollbars event because we have updated it by hand in the code
   gboolean code_scrolling;
-
   // are scrollbars shown ?
   gboolean scrollbars;
-
-  // in lighttable preview or culling, we can navigate inside selection or inside full collection
-  gboolean navigate_inside_selection;
 
   int pref_embedded;
   int pref_hq;

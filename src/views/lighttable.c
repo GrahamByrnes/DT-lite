@@ -62,8 +62,6 @@ DT_MODULE(1)
  */
 typedef struct dt_library_t
 {
-  dt_lighttable_layout_t current_layout;
-
   int preview_sticky;       // are we in sticky preview mode
   gboolean preview_state;   // are we in preview mode (always combined with another layout)
   GtkWidget *profile_floating_window;
@@ -86,8 +84,6 @@ static void _preview_quit(dt_view_t *self)
   lib->preview_state = FALSE;
   // restore panels
   dt_ui_restore_panels(darktable.gui->ui);
-
-  dt_ui_thumbtable(darktable.gui->ui)->navigate_inside_selection = FALSE;
   dt_lib_set_visible(darktable.view_manager->proxy.filmstrip.module, FALSE); // not available in this layouts
   dt_lib_set_visible(darktable.view_manager->proxy.timeline.module,
                      TRUE); // always on, visibility is driven by panel state
@@ -255,7 +251,6 @@ int key_pressed(dt_view_t *self, guint key, guint state)
 
 GSList *mouse_actions(const dt_view_t *self)
 {
-  dt_library_t *lib = (dt_library_t *)self->data;
   GSList *lm = NULL;
   dt_mouse_action_t *a = NULL;
 
@@ -264,46 +259,24 @@ GSList *mouse_actions(const dt_view_t *self)
   g_strlcpy(a->name, _("open image in darkroom"), sizeof(a->name));
   lm = g_slist_append(lm, a);
 
-  if(lib->preview_state)
+  a = (dt_mouse_action_t *)calloc(1, sizeof(dt_mouse_action_t));
+  a->action = DT_MOUSE_ACTION_SCROLL;
+  g_strlcpy(a->name, _("scroll the collection"), sizeof(a->name));
+  lm = g_slist_append(lm, a);
+
+  a = (dt_mouse_action_t *)calloc(1, sizeof(dt_mouse_action_t));
+  a->key.accel_mods = GDK_CONTROL_MASK;
+  a->action = DT_MOUSE_ACTION_SCROLL;
+  g_strlcpy(a->name, _("change number of images per row"), sizeof(a->name));
+  lm = g_slist_append(lm, a);
+
+  if(darktable.collection->params.sort == DT_COLLECTION_SORT_CUSTOM_ORDER)
   {
     a = (dt_mouse_action_t *)calloc(1, sizeof(dt_mouse_action_t));
-    a->action = DT_MOUSE_ACTION_SCROLL;
-    g_strlcpy(a->name, _("switch to next/previous image"), sizeof(a->name));
+    a->key.accel_mods = GDK_BUTTON1_MASK;
+    a->action = DT_MOUSE_ACTION_DRAG_DROP;
+    g_strlcpy(a->name, _("change image order"), sizeof(a->name));
     lm = g_slist_append(lm, a);
-
-    a = (dt_mouse_action_t *)calloc(1, sizeof(dt_mouse_action_t));
-    a->key.accel_mods = GDK_CONTROL_MASK;
-    a->action = DT_MOUSE_ACTION_SCROLL;
-    g_strlcpy(a->name, _("zoom in the image"), sizeof(a->name));
-    lm = g_slist_append(lm, a);
-
-    a = (dt_mouse_action_t *)calloc(1, sizeof(dt_mouse_action_t));
-    a->action = DT_MOUSE_ACTION_MIDDLE;
-    /* xgettext:no-c-format */
-    g_strlcpy(a->name, _("zoom to 100% and back"), sizeof(a->name));
-    lm = g_slist_append(lm, a);
-  }
-  else if(lib->current_layout == DT_LIGHTTABLE_LAYOUT_FILEMANAGER)
-  {
-    a = (dt_mouse_action_t *)calloc(1, sizeof(dt_mouse_action_t));
-    a->action = DT_MOUSE_ACTION_SCROLL;
-    g_strlcpy(a->name, _("scroll the collection"), sizeof(a->name));
-    lm = g_slist_append(lm, a);
-
-    a = (dt_mouse_action_t *)calloc(1, sizeof(dt_mouse_action_t));
-    a->key.accel_mods = GDK_CONTROL_MASK;
-    a->action = DT_MOUSE_ACTION_SCROLL;
-    g_strlcpy(a->name, _("change number of images per row"), sizeof(a->name));
-    lm = g_slist_append(lm, a);
-
-    if(darktable.collection->params.sort == DT_COLLECTION_SORT_CUSTOM_ORDER)
-    {
-      a = (dt_mouse_action_t *)calloc(1, sizeof(dt_mouse_action_t));
-      a->key.accel_mods = GDK_BUTTON1_MASK;
-      a->action = DT_MOUSE_ACTION_DRAG_DROP;
-      g_strlcpy(a->name, _("change image order"), sizeof(a->name));
-      lm = g_slist_append(lm, a);
-    }
   }
 
   return lm;

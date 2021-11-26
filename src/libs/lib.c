@@ -1154,12 +1154,7 @@ static gchar *_get_lib_view_path(dt_lib_module_t *module, char *suffix)
   char lay[32] = "";
 
   if(g_strcmp0(cv->module_name, "lighttable") == 0)
-  {
-    if(dt_view_lighttable_preview_state(darktable.view_manager))
-      g_snprintf(lay, sizeof(lay), "preview/");
-    else
-      g_snprintf(lay, sizeof(lay), "%d/", dt_view_lighttable_get_layout(darktable.view_manager));
-  }
+    g_snprintf(lay, sizeof(lay), "1/");
   else if(g_strcmp0(cv->module_name, "darkroom") == 0)
     g_snprintf(lay, sizeof(lay), "%d/", dt_view_darkroom_get_layout(darktable.view_manager));
 
