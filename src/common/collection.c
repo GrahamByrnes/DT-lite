@@ -241,9 +241,16 @@ int dt_collection_update(const dt_collection_t *collection)
                            rejected_check);
 
     if(collection->params.filter_flags & COLLECTION_FILTER_ALTERED)
-      wq = dt_util_dstrcat(wq, " %s id IN (SELECT imgid FROM main.images, main.history_hash WHERE imgid=mi.id AND history_hash.imgid=id AND (basic_hash IS NULL OR current_hash != basic_hash) AND (auto_hash IS NULL OR current_hash != auto_hash))", and_operator(&and_term));
+      wq = dt_util_dstrcat(wq, " %s id IN (SELECT imgid FROM main.images, main.history_hash "
+                                           "WHERE imgid=mi.id AND history_hash.imgid=id AND "
+                                           " (basic_hash IS NULL OR current_hash != basic_hash) AND "
+                                           " (auto_hash IS NULL OR current_hash != auto_hash))", 
+                           and_operator(&and_term));
     else if(collection->params.filter_flags & COLLECTION_FILTER_UNALTERED)
-      wq = dt_util_dstrcat(wq, " %s id IN (SELECT imgid FROM main.images, main.history_hash WHERE imgid=mi.id AND history_hash.imgid=id AND (current_hash == basic_hash OR current_hash == auto_hash))", and_operator(&and_term));
+      wq = dt_util_dstrcat(wq, " %s id IN (SELECT imgid FROM main.images, main.history_hash "
+                                           "WHERE imgid=mi.id AND history_hash.imgid=id AND "
+                                           " (current_hash == basic_hash OR current_hash == auto_hash))",
+                           and_operator(&and_term));
 
     /* add where ext if wanted */
     if((collection->params.query_flags & COLLECTION_QUERY_USE_WHERE_EXT))
@@ -568,7 +575,7 @@ void dt_collection_set_extended_where(const dt_collection_t *collection, gchar *
   ((dt_collection_t *)collection)->where_ext = g_strdupv(extended_where);
 }
 
-void dt_collection_set_film_id(const dt_collection_t *collection, const uint32_t film_id)
+void dt_collection_set_film_id(const dt_collection_t *collection, const int32_t film_id)
 {
   dt_collection_params_t *params = (dt_collection_params_t *)&collection->params;
   params->film_id = film_id;
@@ -646,7 +653,7 @@ void dt_collection_set_sort(const dt_collection_t *collection, dt_collection_sor
 
   if(sort != DT_COLLECTION_SORT_NONE)
   {
-    if( sort != params->sort )
+    if(sort != params->sort)
       params->sort_second_order = params->sort;/*remember previous sorting criteria if new one is selected*/
   
     params->sort = sort;
@@ -721,9 +728,9 @@ const char *dt_collection_name(dt_collection_properties_t prop)
 
 gchar *dt_collection_get_sort_query(const dt_collection_t *collection)
 {
-  gchar *second_order = NULL;/*string for previous sorting criteria as second order sorting criteria*/
+  gchar *second_order = NULL;//string for previous sorting criteria as second order sorting criteria
 
-  switch(collection->params.sort_second_order)/*build ORDER BY string for second order*/
+  switch(collection->params.sort_second_order)//build ORDER BY string for second order
   {
     case DT_COLLECTION_SORT_DATETIME:
     case DT_COLLECTION_SORT_IMPORT_TIMESTAMP:
@@ -748,57 +755,55 @@ gchar *dt_collection_get_sort_query(const dt_collection_t *collection)
       }
 
     case DT_COLLECTION_SORT_RATING:
-      second_order = g_strdup_printf("%CASE WHEN flags & 8 = 8 THEN -1 ELSE flags & 7 END %s",
+      second_order = g_strdup_printf("CASE WHEN flags & 8 = 8 THEN -1 ELSE flags & 7 END %s",
          (collection->params.descending ? "" : "DESC"));
       break;
 
     case DT_COLLECTION_SORT_FILENAME:
-      second_order = g_strdup_printf("%filename %s", (collection->params.descending ? "DESC" : ""));
+      second_order = g_strdup_printf("filename %s", (collection->params.descending ? "DESC" : ""));
       break;
 
     case DT_COLLECTION_SORT_ID:
-      second_order = g_strdup_printf("%mi.id %s", (collection->params.descending ? "DESC" : ""));
+      second_order = g_strdup_printf("mi.id %s", (collection->params.descending ? "DESC" : ""));
       break;
 
     case DT_COLLECTION_SORT_COLOR:
-      second_order = g_strdup_printf("%color %s", (collection->params.descending ? "" : "DESC"));
+      second_order = g_strdup_printf("color %s", (collection->params.descending ? "" : "DESC"));
       break;
 
     case DT_COLLECTION_SORT_GROUP:
-      second_order = g_strdup_printf("%group_id %s, mi.id-group_id != 0", (collection->params.descending ? "DESC" : ""));
+      second_order = g_strdup_printf("group_id %s, mi.id-group_id != 0", (collection->params.descending ? "DESC" : ""));
       break;
 
     case DT_COLLECTION_SORT_PATH:
-      second_order = g_strdup_printf("%folder %s, filename %s", (collection->params.descending ? "DESC" : ""), 
+      second_order = g_strdup_printf("folder %s, filename %s", (collection->params.descending ? "DESC" : ""), 
          (collection->params.descending ? "DESC" : ""));
       break;
 
     case DT_COLLECTION_SORT_CUSTOM_ORDER:
-      second_order = g_strdup_printf("%position %s", (collection->params.descending ? "DESC" : ""));
+      second_order = g_strdup_printf("position %s", (collection->params.descending ? "DESC" : ""));
       break;
 
      case DT_COLLECTION_SORT_TITLE:
      case DT_COLLECTION_SORT_DESCRIPTION:/*same sorting for TITLE and DESCRIPTION -> Fall through*/
-       second_order = g_strdup_printf("%m.value %s", (collection->params.descending ? "DESC" : ""));
+       second_order = g_strdup_printf("m.value %s", (collection->params.descending ? "DESC" : ""));
        break;
 
     case DT_COLLECTION_SORT_ASPECT_RATIO:
-      second_order = g_strdup_printf("%aspect_ratio %s", (collection->params.descending ? "DESC" : ""));
+      second_order = g_strdup_printf("aspect_ratio %s", (collection->params.descending ? "DESC" : ""));
       break;
 
-    case DT_COLLECTION_SORT_SHUFFLE:
-      // do not remember shuffle for second order
-      if(!second_order) second_order = g_strdup_printf("%filename %s", (collection->params.descending ? "DESC" : ""));
+    case DT_COLLECTION_SORT_SHUFFLE: // do not remember shuffle for second order
+      if(!second_order) second_order = g_strdup_printf("filename %s", (collection->params.descending ? "DESC" : ""));
       //only set if not yet initialized
       break;
 
-    case DT_COLLECTION_SORT_NONE:/*fall through for default*/
+    case DT_COLLECTION_SORT_NONE://fall through for default
     default:
       // shouldn't happen
-      second_order = g_strdup_printf("%filename %s", (collection->params.descending ? "DESC" : ""));
+      second_order = g_strdup_printf("filename %s", (collection->params.descending ? "DESC" : ""));
       break;
   }
-
 
   gchar *sq = NULL;
 
@@ -870,14 +875,14 @@ gchar *dt_collection_get_sort_query(const dt_collection_t *collection)
 
 
       case DT_COLLECTION_SORT_SHUFFLE:
-        sq = g_strdup_printf("ORDER BY RANDOM()"); /* do not consider second order for shuffle */
+        sq = g_strdup("ORDER BY RANDOM()"); /* do not consider second order for shuffle */
         /* do not remember shuffle for second order */
         break;
 
       case DT_COLLECTION_SORT_NONE:
       default:/*fall through for default*/
         // shouldn't happen
-        sq = g_strdup_printf("ORDER BY mi.id DESC");
+        sq = g_strdup("ORDER BY mi.id DESC");
         break;
     }
   }
@@ -948,14 +953,13 @@ gchar *dt_collection_get_sort_query(const dt_collection_t *collection)
         break;
 
       case DT_COLLECTION_SORT_SHUFFLE:
-        sq = g_strdup_printf("ORDER BY RANDOM()"); /* do not consider second order for shuffle */
-        /* do not remember shuffle for second order */
+        sq = g_strdup("ORDER BY RANDOM()"); // do not consider second order for shuffle
         break;
 
       case DT_COLLECTION_SORT_NONE:
       default:/*fall through for default*/
         // shouldn't happen
-        sq = g_strdup_printf("ORDER BY mi.id");
+        sq = g_strdup("ORDER BY mi.id");
         break;
     }
   }
