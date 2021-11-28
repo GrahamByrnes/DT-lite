@@ -39,12 +39,12 @@ typedef struct dt_lib_tool_lighttable_t
   gboolean combo_evt_reset;
 } dt_lib_tool_lighttable_t;
 
-/* set zoom proxy function */
+// set zoom proxy function
 static void _lib_lighttable_set_zoom(dt_lib_module_t *self, gint zoom);
 static gint _lib_lighttable_get_zoom(dt_lib_module_t *self);
-/* zoom slider change callback */
+// zoom slider change callback
 static void _lib_lighttable_zoom_slider_changed(GtkRange *range, gpointer user_data);
-/* zoom entry change callback */
+// zoom entry change callback
 static gboolean _lib_lighttable_zoom_entry_changed(GtkWidget *entry, GdkEventKey *event,
                                                    dt_lib_module_t *self);
 
@@ -78,21 +78,21 @@ int position()
 
 void gui_init(dt_lib_module_t *self)
 {
-  /* initialize ui widgets */
+  // initialize ui widgets
   dt_lib_tool_lighttable_t *d = (dt_lib_tool_lighttable_t *)g_malloc0(sizeof(dt_lib_tool_lighttable_t));
   self->data = (void *)d;
 
   self->widget = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   d->current_zoom = dt_conf_get_int("plugins/lighttable/images_in_row");
 
-  /* create horizontal zoom slider */
+  // create horizontal zoom slider
   d->zoom = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 1, DT_LIGHTTABLE_MAX_ZOOM, 1);
   gtk_widget_set_size_request(GTK_WIDGET(d->zoom), DT_PIXEL_APPLY_DPI(140), -1);
   gtk_scale_set_draw_value(GTK_SCALE(d->zoom), FALSE);
   gtk_range_set_increments(GTK_RANGE(d->zoom), 1, 1);
   gtk_box_pack_start(GTK_BOX(self->widget), d->zoom, TRUE, TRUE, 0);
 
-  /* manual entry of the zoom level */
+  // manual entry of the zoom level
   d->zoom_entry = gtk_entry_new();
   gtk_entry_set_alignment(GTK_ENTRY(d->zoom_entry), 1.0);
   gtk_entry_set_max_length(GTK_ENTRY(d->zoom_entry), 2);

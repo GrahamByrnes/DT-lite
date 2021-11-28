@@ -62,8 +62,6 @@ DT_MODULE(1)
  */
 typedef struct dt_library_t
 {
-  int preview_sticky;       // are we in sticky preview mode
-  gboolean preview_state;   // are we in preview mode (always combined with another layout)
   GtkWidget *profile_floating_window;
 } dt_library_t;
 
@@ -77,33 +75,9 @@ uint32_t view(const dt_view_t *self)
   return DT_VIEW_LIGHTTABLE;
 }
 
-// exit the full preview mode
-static void _preview_quit(dt_view_t *self)
-{
-  dt_library_t *lib = (dt_library_t *)self->data;
-  lib->preview_state = FALSE;
-  // restore panels
-  dt_ui_restore_panels(darktable.gui->ui);
-  dt_lib_set_visible(darktable.view_manager->proxy.filmstrip.module, FALSE); // not available in this layouts
-  dt_lib_set_visible(darktable.view_manager->proxy.timeline.module,
-                     TRUE); // always on, visibility is driven by panel state
-
-  dt_thumbtable_set_parent(dt_ui_thumbtable(darktable.gui->ui), dt_ui_center_base(darktable.gui->ui),
-                           DT_THUMBTABLE_MODE_FILEMANAGER);
-  gtk_widget_show(dt_ui_thumbtable(darktable.gui->ui)->widget);
-  dt_thumbtable_full_redraw(dt_ui_thumbtable(darktable.gui->ui), TRUE);
-}
-
-static gboolean _preview_get_state(dt_view_t *self)
-{
-  dt_library_t *lib = (dt_library_t *)self->data;
-  return lib->preview_state;
-}
-
 void init(dt_view_t *self)
 {
   self->data = calloc(1, sizeof(dt_library_t));
-  darktable.view_manager->proxy.lighttable.get_preview_state = _preview_get_state;
   darktable.view_manager->proxy.lighttable.view = self;
   dt_collection_memory_update();
 }
@@ -176,7 +150,6 @@ static int _lighttable_expose_empty(dt_view_t *self, cairo_t *cr, int32_t width,
 
 void expose(dt_view_t *self, cairo_t *cr, int32_t width, int32_t height, int32_t pointerx, int32_t pointery)
 {
-//  dt_library_t *lib = (dt_library_t *)self->data;
   const double start = dt_get_wtime();
 
   if(!darktable.collection || darktable.collection->count <= 0)
@@ -195,14 +168,10 @@ void expose(dt_view_t *self, cairo_t *cr, int32_t width, int32_t height, int32_t
 
 void enter(dt_view_t *self)
 {
-  dt_library_t *lib = (dt_library_t *)self->data;
   // we want to reacquire the thumbtable if needed
-  if(!lib->preview_state)
-  {
-    dt_thumbtable_set_parent(dt_ui_thumbtable(darktable.gui->ui), dt_ui_center_base(darktable.gui->ui),
-                             DT_THUMBTABLE_MODE_FILEMANAGER);
-    gtk_widget_show(dt_ui_thumbtable(darktable.gui->ui)->widget);
-  }
+  dt_thumbtable_set_parent(dt_ui_thumbtable(darktable.gui->ui), dt_ui_center_base(darktable.gui->ui),
+                           DT_THUMBTABLE_MODE_FILEMANAGER);
+  gtk_widget_show(dt_ui_thumbtable(darktable.gui->ui)->widget);
 
   // clean the undo list
   dt_undo_clear(darktable.undo, DT_UNDO_LIGHTTABLE);
@@ -210,26 +179,20 @@ void enter(dt_view_t *self)
   dt_collection_hint_message(darktable.collection);
 
   dt_lib_set_visible(darktable.view_manager->proxy.filmstrip.module, FALSE); // not available in this layouts
-  dt_lib_set_visible(darktable.view_manager->proxy.timeline.module,
-                     TRUE); // always on, visibility is driven by panel state
+  dt_lib_set_visible(darktable.view_manager->proxy.timeline.module, TRUE); // always on, visibility is driven by panel state
   // restore panels
   dt_ui_restore_panels(darktable.gui->ui);
 }
 
 void leave(dt_view_t *self)
 {
-  dt_library_t *lib = (dt_library_t *)self->data;
-  // ensure we have no active image remaining
   if(darktable.view_manager->active_images)
   {
     g_slist_free(darktable.view_manager->active_images);
     darktable.view_manager->active_images = NULL;
     dt_control_signal_raise(darktable.signals, DT_SIGNAL_ACTIVE_IMAGES_CHANGE);
   }
-  // exit preview mode if non-sticky
-  if(lib->preview_state && lib->preview_sticky == 0)
-    _preview_quit(self);
-  // we remove the thumbtable from main view
+  
   dt_thumbtable_set_parent(dt_ui_thumbtable(darktable.gui->ui), NULL, DT_THUMBTABLE_MODE_FILMSTRIP);
   dt_ui_scrollbars_show(darktable.gui->ui, FALSE);
 }

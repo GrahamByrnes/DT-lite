@@ -132,21 +132,12 @@ static void _overlays_show_popup(dt_lib_module_t *self)
   dt_lib_tool_preferences_t *d = (dt_lib_tool_preferences_t *)self->data;
   d->disable_over_events = TRUE;
   gboolean show = FALSE;
-
   // thumbnails part
   const dt_view_t *cv = dt_view_manager_get_current_view(darktable.view_manager);
   gboolean thumbs_state;
-  if(g_strcmp0(cv->module_name, "slideshow") == 0)
-  {
-    thumbs_state = FALSE;
-  }
-  else if(g_strcmp0(cv->module_name, "lighttable") == 0)
-  {
-    if(dt_view_lighttable_preview_state(darktable.view_manager))
-      thumbs_state = dt_ui_panel_visible(darktable.gui->ui, DT_UI_PANEL_BOTTOM);
-    else
-      thumbs_state = TRUE;
-  }
+
+  if(g_strcmp0(cv->module_name, "lighttable") == 0)
+    thumbs_state = TRUE;
   else
     thumbs_state = dt_ui_panel_visible(darktable.gui->ui, DT_UI_PANEL_BOTTOM);
 

@@ -351,8 +351,6 @@ void dt_view_active_images_add(int imgid, gboolean raise);
 GSList *dt_view_active_images_get();
 /** get the darkroom current layout */
 dt_darkroom_layout_t dt_view_darkroom_get_layout(dt_view_manager_t *vm);
-/** get the lighttable full preview state */
-gboolean dt_view_lighttable_preview_state(dt_view_manager_t *vm);
 /** sets the lighttable image in row zoom */
 void dt_view_lighttable_set_zoom(dt_view_manager_t *vm, gint zoom);
 /** gets the lighttable image in row zoom */

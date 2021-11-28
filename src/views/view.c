@@ -1130,14 +1130,6 @@ gint dt_view_lighttable_get_zoom(dt_view_manager_t *vm)
     return 10;
 }
 
-gboolean dt_view_lighttable_preview_state(dt_view_manager_t *vm)
-{
-  if(vm->proxy.lighttable.module)
-    return vm->proxy.lighttable.get_preview_state(vm->proxy.lighttable.view);
-  else
-    return FALSE;
-}
-
 void dt_view_collection_update(const dt_view_manager_t *vm)
 {
   if(vm->proxy.module_collect.module)
