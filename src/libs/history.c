@@ -283,13 +283,7 @@ static int _check_deleted_instances(dt_develop_t *dev, GList **_iop_list, GList 
   {
     dt_iop_module_t *mod = (dt_iop_module_t *)modules->data;
     int delete_module = 0;
-    // base modules are a special case
-    // most base modules won't be in history and must not be deleted
-    // but the user may have deleted a base instance of a multi-instance module
-    // and then undo and redo, so we will end up with two entries in dev->iop
-    // with multi_priority == 0, this can't happen and the extra one must be deleted
-    // dev->iop is sorted by (priority, multi_priority DESC), so if the next one is
-    // a base instance too, one must be deleted
+    
     if(mod->multi_priority == 0)
     {
       GList *modules_next = g_list_next(modules);
@@ -346,8 +340,9 @@ static int _check_deleted_instances(dt_develop_t *dev, GList **_iop_list, GList 
       // we remove the plugin effectively
       if(!dt_iop_is_hidden(mod))
       {
+        gtk_widget_hide(mod->expander);
+        gtk_widget_destroy(mod->widget);
         dt_iop_gui_cleanup_module(mod);
-        gtk_widget_destroy(mod->expander);
       }
 
       iop_list = g_list_remove_link(iop_list, modules);

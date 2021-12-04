@@ -1670,13 +1670,12 @@ static int _brush_events_button_released(struct dt_iop_module_t *module, float p
           dt_masks_set_edit_mode_single_form(crea_module, form->formid, DT_MASKS_EDIT_FULL);
         else if(!gui->creation_continuous)
           dt_masks_set_edit_mode(crea_module, DT_MASKS_EDIT_FULL);
+
         dt_masks_iop_update(crea_module);
         gui->creation_module = NULL;
       }
       else
-      {
         dt_dev_masks_selection_change(darktable.develop, form->formid, TRUE);
-      }
 
       if(gui->creation_continuous)
       {
@@ -1684,6 +1683,7 @@ static int _brush_events_button_released(struct dt_iop_module_t *module, float p
         if(strcmp(crea_module->so->op, "spots") != 0 && strcmp(crea_module->so->op, "retouch") != 0)
         {
           dt_iop_gui_blend_data_t *bd = (dt_iop_gui_blend_data_t *)crea_module->blend_data;
+
           for(int n = 0; n < DEVELOP_MASKS_NB_SHAPES; n++)
             if(bd->masks_type[n] == form->type)
               gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(bd->masks_shapes[n]), TRUE);
@@ -1710,6 +1710,7 @@ static int _brush_events_button_released(struct dt_iop_module_t *module, float p
         dt_masks_form_t *grp = darktable.develop->form_visible;
         if(!grp || !(grp->type & DT_MASKS_GROUP)) return 1;
         int pos3 = 0, pos2 = -1;
+
         for(GList *fs = grp->points; fs; fs = g_list_next(fs))
         {
           dt_masks_point_group_t *pt = (dt_masks_point_group_t *)fs->data;
@@ -1821,11 +1822,13 @@ static int _brush_events_button_released(struct dt_iop_module_t *module, float p
     dt_masks_point_brush_t *point
         = (dt_masks_point_brush_t *)g_list_nth_data(form->points, gui->point_dragging);
     gui->point_dragging = -1;
+
     if(gui->scrollx != 0.0f || gui->scrolly != 0.0f)
     {
       gui->scrollx = gui->scrolly = 0;
       return 1;
     }
+
     gui->scrollx = gui->scrolly = 0;
     float wd = darktable.develop->preview_pipe->backbuf_width;
     float ht = darktable.develop->preview_pipe->backbuf_height;
@@ -1873,11 +1876,8 @@ static int _brush_events_button_released(struct dt_iop_module_t *module, float p
     point->ctrl2[1] = (float)p2y / darktable.develop->preview_pipe->iheight;
 
     point->state = DT_MASKS_POINT_STATE_USER;
-
     _brush_init_ctrl_points(form);
-
     dt_dev_add_masks_history_item(darktable.develop, module, TRUE);
-
     // we recreate the form points
     dt_masks_gui_form_remove(form, gui, index);
     dt_masks_gui_form_create(form, gui, index, module);
@@ -1889,7 +1889,6 @@ static int _brush_events_button_released(struct dt_iop_module_t *module, float p
   else if(gui->point_border_dragging >= 0)
   {
     gui->point_border_dragging = -1;
-
     // we save the move
     dt_dev_add_masks_history_item(darktable.develop, module, TRUE);
     dt_masks_update_image(darktable.develop);
@@ -2158,6 +2157,7 @@ static int _brush_events_mouse_moved(struct dt_iop_module_t *module, float pzx, 
   float dist;
   _brush_get_distance(pzx, pzy, as, gui, index, nb, &in, &inb, &near, &ins, &dist);
   gui->seg_selected = near;
+
   if(near < 0)
   {
     if(ins)
@@ -2171,9 +2171,7 @@ static int _brush_events_mouse_moved(struct dt_iop_module_t *module, float pzx, 
       gui->border_selected = TRUE;
     }
     else if(in)
-    {
       gui->form_selected = TRUE;
-    }
   }
   dt_control_queue_redraw_center();
   if(!gui->form_selected && !gui->border_selected && gui->seg_selected < 0) return 0;
@@ -2426,13 +2424,10 @@ static void _brush_events_post_expose(cairo_t *cr, float zoom_scale, dt_masks_fo
     {
       float anchor_size = 0.0f;
       if(k == gui->point_dragging || k == gui->point_selected)
-      {
         anchor_size = 7.0f / zoom_scale;
-      }
       else
-      {
         anchor_size = 5.0f / zoom_scale;
-      }
+
       dt_draw_set_color_overlay(cr, 0.8, 0.8);
       cairo_rectangle(cr, gpt->points[k * 6 + 2] - (anchor_size * 0.5),
                       gpt->points[k * 6 + 3] - (anchor_size * 0.5), anchor_size, anchor_size);
@@ -2445,6 +2440,7 @@ static void _brush_events_post_expose(cairo_t *cr, float zoom_scale, dt_masks_fo
         cairo_set_line_width(cr, 2.0 / zoom_scale);
       else
         cairo_set_line_width(cr, 1.0 / zoom_scale);
+
       dt_draw_set_color_overlay(cr, 0.3, 0.8);
       cairo_stroke(cr);
     }
@@ -2477,6 +2473,7 @@ static void _brush_events_post_expose(cairo_t *cr, float zoom_scale, dt_masks_fo
       cairo_arc(cr, ffx, ffy, 3.0f / zoom_scale, 0, 2.0 * M_PI);
     else
       cairo_arc(cr, ffx, ffy, 1.5f / zoom_scale, 0, 2.0 * M_PI);
+
     dt_draw_set_color_overlay(cr, 0.8, 0.8);
     cairo_fill_preserve(cr);
 
@@ -2491,21 +2488,22 @@ static void _brush_events_post_expose(cairo_t *cr, float zoom_scale, dt_masks_fo
     cairo_move_to(cr, gpt->border[nb * 6], gpt->border[nb * 6 + 1]);
 
     for(int i = nb * 3 + 1; i < gpt->border_count; i++)
-    {
       cairo_line_to(cr, gpt->border[i * 2], gpt->border[i * 2 + 1]);
-    }
     // we execute the drawing
     if(gui->border_selected)
       cairo_set_line_width(cr, 2.0 / zoom_scale);
     else
       cairo_set_line_width(cr, 1.0 / zoom_scale);
+
     dt_draw_set_color_overlay(cr, 0.3, 0.8);
     cairo_set_dash(cr, dashed, len, 0);
     cairo_stroke_preserve(cr);
+
     if(gui->border_selected)
       cairo_set_line_width(cr, 2.0 / zoom_scale);
     else
       cairo_set_line_width(cr, 1.0 / zoom_scale);
+
     dt_draw_set_color_overlay(cr, 0.8, 0.8);
     cairo_set_dash(cr, dashed, len, 4);
     cairo_stroke(cr);
@@ -2516,13 +2514,10 @@ static void _brush_events_post_expose(cairo_t *cr, float zoom_scale, dt_masks_fo
     {
       //draw the point
       if (gui->point_border_selected == k)
-      {
         anchor_size = 7.0f / zoom_scale;
-      }
       else
-      {
         anchor_size = 5.0f / zoom_scale;
-      }
+
       cairo_set_source_rgba(cr, .8, .8, .8, .8);
       cairo_rectangle(cr,
                       gpt->border[k*6] - (anchor_size*0.5),
@@ -2530,8 +2525,11 @@ static void _brush_events_post_expose(cairo_t *cr, float zoom_scale, dt_masks_fo
                       anchor_size, anchor_size);
       cairo_fill_preserve(cr);
 
-      if (gui->point_border_selected == k) cairo_set_line_width(cr, 2.0/zoom_scale);
-      else cairo_set_line_width(cr, 1.0/zoom_scale);
+      if (gui->point_border_selected == k)
+        cairo_set_line_width(cr, 2.0/zoom_scale);
+      else
+        cairo_set_line_width(cr, 1.0/zoom_scale);
+
       cairo_set_source_rgba(cr, .3, .3, .3, .8);
       cairo_set_dash(cr, dashed, 0, 0);
       cairo_stroke(cr);
@@ -2546,34 +2544,44 @@ static void _brush_events_post_expose(cairo_t *cr, float zoom_scale, dt_masks_fo
     cairo_move_to(cr, gpt->source[2], gpt->source[3]);
     cairo_line_to(cr, gpt->points[2], gpt->points[3]);
     cairo_set_dash(cr, dashed, 0, 0);
+
     if((gui->group_selected == index) && (gui->form_selected || gui->form_dragging))
       cairo_set_line_width(cr, 2.5 / zoom_scale);
     else
       cairo_set_line_width(cr, 1.5 / zoom_scale);
     dt_draw_set_color_overlay(cr, 0.3, 0.8);
     cairo_stroke_preserve(cr);
+
     if((gui->group_selected == index) && (gui->form_selected || gui->form_dragging))
       cairo_set_line_width(cr, 1.0 / zoom_scale);
     else
       cairo_set_line_width(cr, 0.5 / zoom_scale);
+
     dt_draw_set_color_overlay(cr, 0.8, 0.8);
     cairo_stroke(cr);
 
     // we draw the source
     cairo_set_dash(cr, dashed, 0, 0);
+
     if((gui->group_selected == index) && (gui->form_selected || gui->form_dragging))
       cairo_set_line_width(cr, 2.5 / zoom_scale);
     else
       cairo_set_line_width(cr, 1.5 / zoom_scale);
+
     dt_draw_set_color_overlay(cr, 0.3, 0.8);
     cairo_move_to(cr, gpt->source[nb * 6], gpt->source[nb * 6 + 1]);
-    for(int i = nb * 3; i < gpt->source_count; i++) cairo_line_to(cr, gpt->source[i * 2], gpt->source[i * 2 + 1]);
+
+    for(int i = nb * 3; i < gpt->source_count; i++)
+      cairo_line_to(cr, gpt->source[i * 2], gpt->source[i * 2 + 1]);
+
     cairo_line_to(cr, gpt->source[nb * 6], gpt->source[nb * 6 + 1]);
     cairo_stroke_preserve(cr);
+
     if((gui->group_selected == index) && (gui->form_selected || gui->form_dragging))
       cairo_set_line_width(cr, 1.0 / zoom_scale);
     else
       cairo_set_line_width(cr, 0.5 / zoom_scale);
+
     dt_draw_set_color_overlay(cr, 0.8, 0.8);
     cairo_stroke(cr);
   }
