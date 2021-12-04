@@ -224,6 +224,7 @@ static void _tree_add_exist(GtkButton *button, dt_masks_form_t *grp)
   if(!grp || !(grp->type & DT_MASKS_GROUP)) return;
   // we get the new formid
   int id = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(button), "formid"));
+  dt_iop_module_t *module = g_object_get_data(G_OBJECT(button), "module");
   // we add the form in this group
   dt_masks_form_t *form = dt_masks_get_from_id(darktable.develop, id);
   if(form && dt_masks_group_add_form(grp, form))
@@ -232,6 +233,7 @@ static void _tree_add_exist(GtkButton *button, dt_masks_form_t *grp)
     dt_dev_add_masks_history_item(darktable.develop, NULL, FALSE);
     // and we apply the change
     dt_masks_update_image(darktable.develop);
+    dt_masks_iop_update(module);
     dt_dev_masks_selection_change(darktable.develop, NULL, grp->formid, TRUE);
   }
 }
@@ -894,6 +896,7 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
   GtkTreeIter iter;
   dt_iop_module_t *module = NULL;
   int on_row = 0;
+
   if(gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview), (gint)event->x, (gint)event->y, &mouse_path, NULL,
                                    NULL, NULL))
   {
@@ -907,7 +910,7 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
       g_value_unset(&gv);
     }
   }
-  /* single click with the right mouse button? */
+  // single click with the right mouse button?
   if(event->type == GDK_BUTTON_PRESS && event->button == 1)
   {
     // if click on a blank space, then deselect all
@@ -954,7 +957,9 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
       }
       g_list_free_full(selected, (GDestroyNotify)gtk_tree_path_free);
     }
-    if(depth > 1) from_group = 1;
+
+    if(depth > 1)
+      from_group = 1;
 
     if(nb == 0)
     {
@@ -1008,6 +1013,7 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
         // existing forms
         GtkWidget *menu0 = gtk_menu_new();
         gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), menu0);
+
         for(GList *forms = darktable.develop->forms; forms; forms = g_list_next(forms))
         {
           dt_masks_form_t *form = (dt_masks_form_t *)forms->data;
@@ -1036,7 +1042,10 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
                     nbuse = -1;
                     break;
                   }
-                  if(nbuse == 0) g_strlcat(str, " (", sizeof(str));
+
+                  if(nbuse == 0)
+                    g_strlcat(str, " (", sizeof(str));
+
                   g_strlcat(str, " ", sizeof(str));
                   gchar *module_label = dt_history_item_get_name(m);
                   g_strlcat(str, module_label, sizeof(str));
@@ -1048,11 +1057,12 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
           }
           if(nbuse != -1)
           {
-            if(nbuse > 0) g_strlcat(str, " )", sizeof(str));
-
+            if(nbuse > 0)
+              g_strlcat(str, " )", sizeof(str));
             // we add the menu entry
             item = gtk_menu_item_new_with_label(str);
             g_object_set_data(G_OBJECT(item), "formid", GUINT_TO_POINTER(form->formid));
+            g_object_set_data(G_OBJECT(item), "module", module);
             g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(_tree_add_exist), grp);
             gtk_menu_shell_append(menu, item);
           }
@@ -1068,6 +1078,7 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
         g_signal_connect(item, "activate", (GCallback)_tree_duplicate_shape, self);
         gtk_menu_shell_append(menu, item);
       }
+
       item = gtk_menu_item_new_with_label(_("delete this shape"));
       g_signal_connect(item, "activate", (GCallback)_tree_delete_shape, self);
       gtk_menu_shell_append(menu, item);
@@ -1086,7 +1097,6 @@ static int _tree_button_pressed(GtkWidget *treeview, GdkEventButton *event, dt_l
       g_signal_connect(item, "activate", (GCallback)_tree_group, self);
       gtk_menu_shell_append(menu, item);
     }
-
 
     if(from_group && depth < 3)
     {
