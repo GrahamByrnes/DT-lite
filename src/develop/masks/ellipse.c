@@ -29,7 +29,6 @@ static inline void _ellipse_point_transform(const float xref, const float yref, 
 {
   const float xtmp = (sinr * sinr + cosr * cosr) * (x - xref) + (cosr * sinr - cosr * sinr) * (y - yref);
   const float ytmp = (cosr * sinr - cosr * sinr) * (x - xref) + (sinr * sinr + cosr * cosr) * (y - yref);
-
   *xnew = xref + xtmp;
   *ynew = yref + ytmp;
 }
@@ -1642,10 +1641,10 @@ static void _fill_mask(const size_t numpoints, float *const bufptr, const float 
                        const float *const center, const float a, const float b, const float ta, const float tb,
                        const float alpha, const size_t out_scale)
 {
-  const float a2 = a * a;
-  const float b2 = b * b;
-  const float ta2 = ta * ta;
-  const float tb2 = tb * tb;
+  const float a2 = sqf(a);
+  const float b2 = sqf(b);
+  const float ta2 = sqf(ta);
+  const float tb2 = sqf(tb);
   const float cos_alpha = cosf(alpha);
   const float sin_alpha = sinf(alpha);
 
@@ -1674,8 +1673,8 @@ static void _fill_mask(const size_t numpoints, float *const bufptr, const float 
       const float l2 = x * x + y * y;
       const float l = sqrtf(l2);
       // normalize the point's coordinate to form a unit vector, taking care not to divide by zero
-      const float x_norm = l ? x / l : 0.0f;
-      const float y_norm = l ? y / l : 1.0f;  // ensure we don't get 0 for both sine and cosine below
+      const float x_norm = l > 0.0f ? x / l : 0.0f;
+      const float y_norm = l > 0.0f ? y / l : 1.0f;  // ensure we don't get 0 for both sine and cosine below
       // apply the rotation matrix
       const float x_rot = x_norm * cos_alpha + y_norm * sin_alpha;
       const float y_rot = -x_norm * sin_alpha + y_norm * cos_alpha;
@@ -1691,8 +1690,8 @@ static void _fill_mask(const size_t numpoints, float *const bufptr, const float 
       // ratio = 0.0 at the outer border, >= 1.0 within the ellipse, negative outside the falloff
       const float ratio = (total2 - l2) / (total2 - radius2);
       // enforce 1.0 inside the ellipse and 0.0 outside the feathering
-      const float f = ratio > 1.0f ? 1.0 : ratio;
-      bufptr[i << out_scale] = f * f;
+      const float f = CLIP(ratio);
+      bufptr[i << out_scale] = f;
     }
 }
 

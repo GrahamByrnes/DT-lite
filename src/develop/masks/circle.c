@@ -1042,7 +1042,7 @@ static int _circle_get_mask(const dt_iop_module_t *const restrict module,
     const float ratio = (total2 - l2) / border2;
     // enforce 1.0 inside the circle and 0.0 outside the feathering
     const float f = CLIP(ratio);
-    ptbuffer[i] = sqf(f);
+    ptbuffer[i] = f;
   }
 
   dt_free_align(points);
