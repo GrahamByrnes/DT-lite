@@ -232,7 +232,7 @@ static void _tree_add_exist(GtkButton *button, dt_masks_form_t *grp)
     dt_dev_add_masks_history_item(darktable.develop, NULL, FALSE);
     // and we apply the change
     dt_masks_update_image(darktable.develop);
-    dt_dev_masks_selection_change(darktable.develop, grp->formid, TRUE);
+    dt_dev_masks_selection_change(darktable.develop, NULL, grp->formid, TRUE);
   }
 }
 
@@ -772,10 +772,10 @@ static void _tree_duplicate_shape(GtkButton *button, dt_lib_module_t *self)
     gtk_tree_model_get_value(model, &iter, TREE_FORMID, &gv3);
     int id = g_value_get_int(&gv3);
     g_value_unset(&gv3);
-
     int nid = dt_masks_form_duplicate(darktable.develop, id);
+
     if(nid > 0)
-      dt_dev_masks_selection_change(darktable.develop, nid, TRUE);
+      dt_dev_masks_selection_change(darktable.develop, NULL, nid, TRUE);
   }
   g_list_free_full(items, (GDestroyNotify)gtk_tree_path_free);
 }
@@ -1471,9 +1471,11 @@ static void _lib_history_change_callback(gpointer instance, gpointer user_data)
   _lib_masks_recreate_list(self);
 }
 
-static void _lib_masks_selection_change(dt_lib_module_t *self, int selectid, int throw_event)
+static void _lib_masks_selection_change(dt_lib_module_t *self, struct dt_iop_module_t *module,
+                                        const int selectid, const int throw_event)
 {
   dt_lib_masks_t *lm = (dt_lib_masks_t *)self->data;
+
   if(!lm->treeview) return;
 
   // we first unselect all
@@ -1481,12 +1483,12 @@ static void _lib_masks_selection_change(dt_lib_module_t *self, int selectid, int
   lm->gui_reset = 1;
   gtk_tree_selection_unselect_all(selection);
   lm->gui_reset = 0;
-
   // we go through all nodes
   lm->gui_reset = 1 - throw_event;
   GtkTreeIter iter;
   GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(lm->treeview));
   gboolean valid = gtk_tree_model_get_iter_first(model, &iter);
+
   while(valid)
   {
     // we get the formid from the iter
@@ -1494,6 +1496,7 @@ static void _lib_masks_selection_change(dt_lib_module_t *self, int selectid, int
     gtk_tree_model_get_value(model, &iter, TREE_FORMID, &gv);
     int id = g_value_get_int(&gv);
     g_value_unset(&gv);
+
     if(id == selectid)
     {
       gtk_tree_selection_select_iter(selection, &iter);
