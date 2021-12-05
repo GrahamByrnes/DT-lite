@@ -76,7 +76,6 @@ static void _gradient_get_distance(float x, float y, float as, dt_masks_form_gui
   }
 }
 
-
 static int _gradient_events_mouse_scrolled(struct dt_iop_module_t *module, float pzx, float pzy, int up,
                                            uint32_t state, dt_masks_form_t *form, int parentid,
                                            dt_masks_form_gui_t *gui, int index)
@@ -230,8 +229,8 @@ static void _gradient_init_values(float zoom_scale, dt_masks_form_gui_t *gui, fl
   float dx = 0.0f, dy = 0.0f;
 
   if(!gui->form_dragging
-     || (gui->posx_source - xpos > -diff && gui->posx_source - xpos < diff && gui->posy_source - ypos > -diff
-         && gui->posy_source - ypos < diff))
+     || (gui->posx_source - xpos > -diff && gui->posx_source - xpos < diff
+         && gui->posy_source - ypos > -diff && gui->posy_source - ypos < diff))
   {
     x0 = pzx;
     y0 = pzy;
@@ -266,10 +265,10 @@ static void _gradient_init_values(float zoom_scale, dt_masks_form_gui_t *gui, fl
   // Normalize to the range -180 to 180 degrees
   check_angle = atan2f(sinf(check_angle), cosf(check_angle));
 
-  if(check_angle < 0.0f) rot -= M_PI;
+  if(check_angle < 0.0f)
+    rot -= M_PI;
 
   const float compr = MIN(1.0f, dt_conf_get_float("plugins/darkroom/masks/gradient/compression"));
-
   *rotation = -rot / M_PI * 180.0f;
   *compression = MAX(0.0f, compr);
   *curvature = MAX(-2.0f, MIN(2.0f, dt_conf_get_float("plugins/darkroom/masks/gradient/curvature")));
@@ -301,6 +300,7 @@ static int _gradient_events_button_released(struct dt_iop_module_t *module, floa
           break;
         }
       }
+
       gui->edit_mode = DT_MASKS_EDIT_FULL;
     }
     // we remove the shape
@@ -631,12 +631,21 @@ static int _gradient_get_points(dt_develop_t *dev, float x, float y, float rotat
   const float y2 = y * ht + distance * sinf(v2);
   (*points)[4] = x2;
   (*points)[5] = y2;
-
+////////////////
+  const int nthreads = omp_get_max_threads();
+  size_t c_padded_size;
+  uint32_t *pts_count = dt_calloc_perthread(nthreads, sizeof(uint32_t), &c_padded_size);
+  float *const restrict pts = dt_alloc_align_float((size_t)2 * count * nthreads);
+/////////////
   const float xstart = fabsf(curvature) > 1.0f ? -sqrtf(1.0f / fabsf(curvature)) : -1.0f;
   const float xdelta = -2.0f * xstart / (count - 3);
 
-  gboolean in_frame = FALSE;
-
+//  gboolean in_frame = FALSE;
+#ifdef _OPENMP
+#pragma omp parallel for default(none)                                                                       \
+    dt_omp_firstprivate(nthreads, pts, pts_count, count, cosv, sinv, xstart, xdelta, curvature, scale, x, y, wd,  \
+                        ht, c_padded_size, points) schedule(static) if(count > 100)
+#endif
   for(int i = 3; i < count; i++)
   {
     const float xi = xstart + (i - 3) * xdelta;
@@ -645,27 +654,34 @@ static int _gradient_get_points(dt_develop_t *dev, float x, float y, float rotat
     const float yii = (sinv * xi - cosv * yi) * scale;
     const float xiii = xii + x * wd;
     const float yiii = yii + y * ht;
-
     // don't generate guide points if they extend too far beyond the image frame;
     // this is to avoid that modules like lens correction fail on out of range coordinates
-    if(xiii < -wd || xiii > 2 * wd || yiii < -ht || yiii > 2 * ht)
+    if(!(xiii < -wd || xiii > 2 * wd || yiii < -ht || yiii > 2 * ht))
     {
-      if(!in_frame)
-        continue;         // we have not entered the frame yet
-      else
-        break;            // we have left the frame
+      const int thread = omp_get_thread_num();
+      uint32_t *tcount = dt_get_perthread(pts_count, c_padded_size);
+      pts[(thread * count) + *tcount * 2]     = xiii;
+      pts[(thread * count) + *tcount * 2 + 1] = yiii;
+      (*tcount)++;
     }
-    else
-      in_frame = TRUE;    // we are in the frame
-
-    (*points)[*points_count * 2] = xiii;
-    (*points)[*points_count * 2 + 1] = yiii;
-    (*points_count)++;
   }
 
+  *points_count = 3;
+  for(int thread = 0; thread < nthreads; thread++)
+  {
+    const uint32_t tcount = *(uint32_t *)dt_get_bythread(pts_count, c_padded_size, thread);
+    for(int k = 0; k < tcount; k++)
+    {
+      (*points)[(*points_count) * 2]     = pts[(thread * count) + k * 2];
+      (*points)[(*points_count) * 2 + 1] = pts[(thread * count) + k * 2 + 1];
+      (*points_count)++;
+    }
+  }
+
+  dt_free_align(pts_count);
+  dt_free_align(pts);
   // and we transform them with all distorted modules
   if(dt_dev_distort_transform(dev, *points, *points_count)) return 1;
-
   // if we failed, then free all and return
   dt_free_align(*points);
   *points = NULL;
@@ -964,8 +980,8 @@ static void _gradient_events_post_expose(cairo_t *cr, float zoom_scale, dt_masks
     int draw = _gradient_get_points(darktable.develop, xx, yy, rotation, curvature, &points, &points_count);
 
     if(draw && compression > 0.0)
-      draw = _gradient_get_pts_border(darktable.develop, xx, yy, rotation, compression, curvature, &border,
-                                      &border_count);
+      draw = _gradient_get_pts_border(darktable.develop, xx, yy, rotation, compression, curvature,
+                                      &border, &border_count);
 
     cairo_save(cr);
     // draw main line
@@ -1029,7 +1045,9 @@ static int _gradient_get_area(const dt_iop_module_t *const module, const dt_dev_
   float points[8] = { 0.0f, 0.0f, wd, 0.0f, wd, ht, 0.0f, ht };
 
   // and we transform them with all distorted modules
-  if(!dt_dev_distort_transform_plus(module->dev, piece->pipe, module->iop_order, DT_DEV_TRANSFORM_DIR_BACK_INCL, points, 4)) return 0;
+  if(!dt_dev_distort_transform_plus(module->dev, piece->pipe, module->iop_order,
+      DT_DEV_TRANSFORM_DIR_BACK_INCL, points, 4))
+    return 0;
 
   // now we search min and max
   float xmin = 0.0f, xmax = 0.0f, ymin = 0.0f, ymax = 0.0f;
@@ -1189,12 +1207,10 @@ static int _gradient_get_mask(const dt_iop_module_t *const module, const dt_dev_
     {
       const float x = points[(j * gw + i) * 2];
       const float y = points[(j * gw + i) * 2 + 1];
-
       const float x0 = (cosv * x + sinv * y - xoffset) * hwscale;
       const float y0 = (sinv * x - cosv * y - yoffset) * hwscale;
 
       const float distance = y0 - curvature * x0 * x0;
-
       points[(j * gw + i) * 2] = (distance <= -4.0f * compression) ? 0.0f :
                                     ((distance >= 4.0f * compression) ? 1.0f : dt_gradient_lookup(clut, distance * ihwscale));
     }
@@ -1285,7 +1301,6 @@ static int _gradient_get_mask_roi(const dt_iop_module_t *const module, const dt_
   for(int j = 0; j < gh; j++)
     for(int i = 0; i < gw; i++)
     {
-
       const size_t index = (size_t)j * gw + i;
       points[index * 2] = (grid * i + px) * iscale;
       points[index * 2 + 1] = (grid * j + py) * iscale;
@@ -1373,13 +1388,12 @@ static int _gradient_get_mask_roi(const dt_iop_module_t *const module, const dt_
       const size_t index = (size_t)j * gw + i;
       const float x = points[index * 2];
       const float y = points[index * 2 + 1];
-
       const float x0 = (cosv * x + sinv * y - xoffset) * hwscale;
       const float y0 = (sinv * x - cosv * y - yoffset) * hwscale;
 
       const float distance = y0 - curvature * x0 * x0;
-
-      points[index * 2] = (distance <= -4.0f * compression) ? 0.0f : ((distance >= 4.0f * compression) ? 1.0f : dt_gradient_lookup(clut, distance * ihwscale));
+      points[index * 2] = (distance <= -4.0f * compression) ? 0.0f : 
+                           ((distance >= 4.0f * compression) ? 1.0f : dt_gradient_lookup(clut, distance * ihwscale));
     }
   }
 
@@ -1439,7 +1453,6 @@ static GSList *_gradient_setup_mouse_actions(const struct dt_masks_form_t *const
 
 static void _gradient_sanitize_config(dt_masks_type_t type)
 {
-  // we always want to start with no curvature
   dt_conf_set_float("plugins/darkroom/masks/gradient/curvature", 0.0f);
 }
 

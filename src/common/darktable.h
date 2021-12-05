@@ -246,6 +246,7 @@ typedef enum dt_debug_thread_t
   DT_DEBUG_PARAMS         = 1 << 21,
   DT_DEBUG_DEMOSAIC       = 1 << 22,
   DT_DEBUG_TILING         = 1 << 23,
+  DT_DEBUG_ACT_ON         = 1 << 24                                   
 } dt_debug_thread_t;
 
 typedef struct dt_codepath_t
@@ -323,6 +324,12 @@ void dt_gettime_t(char *datetime, size_t datetime_len, time_t t);
 void dt_gettime(char *datetime, size_t datetime_len);
 int dt_worker_threads();
 void *dt_alloc_align(size_t alignment, size_t size);
+static inline void* dt_calloc_align(size_t alignment, size_t size)
+{
+  void *buf = dt_alloc_align(alignment, size);
+  if(buf) memset(buf, 0, size);
+  return buf;
+}
 static inline float *dt_alloc_align_float(size_t pixels)
 {
   return (float*)__builtin_assume_aligned(dt_alloc_align(64, pixels * sizeof(float)), 64);
@@ -337,6 +344,9 @@ static inline float *dt_calloc_align_float(size_t pixels)
 }
 
 #ifdef _WIN32
+void dt_free_align(void *mem);
+#define dt_free_align_ptr dt_free_align
+#elif _DEBUG // debug build makes sure that we get a crash on using plain free() on an aligned allocation
 void dt_free_align(void *mem);
 #define dt_free_align_ptr dt_free_align
 #else
@@ -464,15 +474,35 @@ static inline void *dt_alloc_perthread(const size_t n, const size_t objsize, siz
   const size_t cache_lines = (alloc_size+63)/64;
   *padded_size = 64 * cache_lines / objsize;
   return __builtin_assume_aligned(dt_alloc_align(64, 64 * cache_lines * dt_get_num_threads()), 64);
-      
 }
+
 static inline void *dt_calloc_perthread(const size_t n, const size_t objsize, size_t* padded_size)
-                                               
 {
   void *const buf = (float*)dt_alloc_perthread(n, objsize, padded_size);
   memset(buf, 0, *padded_size * dt_get_num_threads() * objsize);
   return buf;
 }
+// Same as dt_alloc_perthread, but the object is a float.
+static inline float *dt_alloc_perthread_float(const size_t n, size_t* padded_size)
+{
+  return (float*)dt_alloc_perthread(n, sizeof(float), padded_size);
+}
+// Allocate floats, cleared to zero
+static inline float *dt_calloc_perthread_float(const size_t n, size_t* padded_size)
+{
+  float *const buf = (float*)dt_alloc_perthread(n, sizeof(float), padded_size);
+  if(buf)
+    for (size_t i = 0; i < *padded_size * dt_get_num_threads(); i++)
+      buf[i] = 0.0f;
+
+  return buf;
+}
+
+// Given the buffer and object count returned by dt_alloc_perthread, return the current thread's private buffer.
+#define dt_get_perthread(buf, padsize) DT_IS_ALIGNED((buf) + ((padsize) * dt_get_thread_num()))
+// Given the buffer and object count returned by dt_alloc_perthread and a thread count in 0..dt_get_num_threads(),
+// return a pointer to the indicated thread's private buffer.
+#define dt_get_bythread(buf, padsize, tnum) DT_IS_ALIGNED((buf) + ((padsize) * (tnum)))
 
 static inline void dt_print_mem_usage()
 {
