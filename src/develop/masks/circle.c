@@ -1037,12 +1037,9 @@ static int _circle_get_mask(const dt_iop_module_t *const restrict module,
   {
     // find the square of the distance from the center
     const float l2 = sqf(points[2 * i] - centerx) + sqf(points_y[2 * i] - centery);
-                                                                                  
-    // quadratic falloff between the circle's radius and the radius of the outside of the feathering
     const float ratio = (total2 - l2) / border2;
     // enforce 1.0 inside the circle and 0.0 outside the feathering
-    const float f = CLIP(ratio);
-    ptbuffer[i] = f;
+    ptbuffer[i] = CLIP(ratio);
   }
 
   dt_free_align(points);

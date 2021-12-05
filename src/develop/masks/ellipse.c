@@ -1666,33 +1666,27 @@ static void _fill_mask(const size_t numpoints, float *const bufptr, const float 
 #endif
 
   for(size_t i = 0; i < numpoints; i++)
-    {
-      const float x = points[2 * i] - center[0];
-      const float y = points[2 * i + 1] - center[1];
-      // find the square of the distance from the center
-      const float l2 = x * x + y * y;
-      const float l = sqrtf(l2);
-      // normalize the point's coordinate to form a unit vector, taking care not to divide by zero
-      const float x_norm = l > 0.0f ? x / l : 0.0f;
-      const float y_norm = l > 0.0f ? y / l : 1.0f;  // ensure we don't get 0 for both sine and cosine below
-      // apply the rotation matrix
-      const float x_rot = x_norm * cos_alpha + y_norm * sin_alpha;
-      const float y_rot = -x_norm * sin_alpha + y_norm * cos_alpha;
-      // at this point, x_rot = cos(v) and y_rot = sin(v) since they are on the unit circle; we need the squared values
-      const float cosv2 = x_rot * x_rot;
-      const float sinv2 = y_rot * y_rot;
-
-      // project the rotated unit vector out to the ellipse and the outer border
-      const float radius2 = a2 * b2 / (a2 * sinv2 + b2 * cosv2);
-      const float total2 = ta2 * tb2 / (ta2 * sinv2 + tb2 * cosv2);
-
-      // quadratic falloff between the ellipses's radius and the radius of the outside of the feathering
-      // ratio = 0.0 at the outer border, >= 1.0 within the ellipse, negative outside the falloff
-      const float ratio = (total2 - l2) / (total2 - radius2);
-      // enforce 1.0 inside the ellipse and 0.0 outside the feathering
-      const float f = CLIP(ratio);
-      bufptr[i << out_scale] = f;
-    }
+  {
+    const float x = points[2 * i] - center[0];
+    const float y = points[2 * i + 1] - center[1];
+    // find the square of the distance from the center
+    const float l2 = x * x + y * y;
+    const float l = sqrtf(l2);
+    // normalize the point's coordinate to form a unit vector, taking care not to divide by zero
+    const float x_norm = l > 0.0f ? x / l : 0.0f;
+    const float y_norm = l > 0.0f ? y / l : 1.0f;  // ensure we don't get 0 for both sine and cosine below
+    // apply the rotation matrix
+    const float x_rot = x_norm * cos_alpha + y_norm * sin_alpha;
+    const float y_rot = -x_norm * sin_alpha + y_norm * cos_alpha;
+    // at this point, x_rot = cos(v) and y_rot = sin(v) since they are on the unit circle; we need the squared values
+    const float cosv2 = x_rot * x_rot;
+    const float sinv2 = y_rot * y_rot;
+    // project the rotated unit vector out to the ellipse and the outer border
+    const float radius2 = a2 * b2 / (a2 * sinv2 + b2 * cosv2);
+    const float total2 = ta2 * tb2 / (ta2 * sinv2 + tb2 * cosv2);
+    const float ratio = (total2 - l2) / (total2 - radius2);
+    bufptr[i << out_scale] = CLIP(ratio);
+  }
 }
 
 static float *const _ellipse_points_to_transform(const float center_x, const float center_y, const float dim1, const float dim2,
@@ -1718,18 +1712,15 @@ static float *const _ellipse_points_to_transform(const float center_x, const flo
 
   const float sinv = sinf(v);
   const float cosv = cosf(v);
-
   // how many points do we need ?
   const float lambda = (a - b) / (a + b);
   const int l = (int)(M_PI * (a + b)
                       * (1.0f + (3.0f * lambda * lambda) / (10.0f + sqrtf(4.0f - 3.0f * lambda * lambda))));
-
   // buffer allocation
   float *points = dt_alloc_align_float((size_t) 2 * (l + 5));
   if(points == NULL)
     return NULL;
   *point_count = l + 5;
-
   // now we set the points - first the center
   const float x = points[0] = center_x * wd;
   const float y = points[1] = center_y * ht;
