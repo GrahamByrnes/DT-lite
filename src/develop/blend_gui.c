@@ -1967,12 +1967,12 @@ void dt_iop_gui_update_blending(dt_iop_module_t *module)
   dt_bauhaus_slider_set(bd->brightness_slider, module->blend_params->brightness);
   dt_bauhaus_slider_set(bd->contrast_slider, module->blend_params->contrast);
 
-  /* reset all alternative display modes for blendif */
+  // reset all alternative display modes for blendif
   memset(bd->altmode, 0, sizeof(bd->altmode));
   dt_iop_gui_update_blendif(module);
   dt_iop_gui_update_masks(module);
   dt_iop_gui_update_raster(module);
-  /* now show hide controls as required */
+  // now show hide controls as required
   const unsigned int mask_mode = module->blend_params->mask_mode;
 
   if(mask_mode & DEVELOP_MASK_ENABLED)
@@ -2037,7 +2037,7 @@ void dt_iop_gui_update_blending(dt_iop_module_t *module)
     gtk_widget_show(GTK_WIDGET(bd->blendif_box));
   else if(bd->blendif_inited)
   {
-    /* switch off color picker */
+    // switch off color picker
     dt_iop_color_picker_reset(module, FALSE);
     gtk_widget_hide(GTK_WIDGET(bd->blendif_box));
   }

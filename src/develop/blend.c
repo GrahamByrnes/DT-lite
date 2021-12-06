@@ -187,7 +187,6 @@ static inline void _blend_Lab_rescale(const float *i, float *o)
   o[2] = i[2] * 128.0f;
 }
 
-
 static inline void _blend_noop(const _blend_buffer_desc_t *bd, const float *a, float *b, const float *mask,
                                const float *min, const float *max)
 {
@@ -197,7 +196,6 @@ static inline void _blend_noop(const _blend_buffer_desc_t *bd, const float *a, f
     if(bd->cst != iop_cs_RAW) b[j + 3] = mask[i];
   }
 }
-
 
 /* generate blend mask */
 static void _blend_make_mask(const _blend_buffer_desc_t *bd, const unsigned int blendif,
@@ -210,8 +208,8 @@ static void _blend_make_mask(const _blend_buffer_desc_t *bd, const unsigned int 
     float form = mask[i];
     float conditional = _blendif_factor(bd->cst, &a[j], &b[j], blendif, blendif_parameters, mask_mode,
                                         mask_combine, work_profile);
-    float opacity = (mask_combine & DEVELOP_COMBINE_INCL) ? 1.0f - (1.0f - form) * (1.0f - conditional)
-                                                          : form * conditional;
+    float opacity = (mask_combine & DEVELOP_COMBINE_INCL)
+                     ? 1.0f - (1.0f - form) * (1.0f - conditional) : form * conditional;
     opacity = (mask_combine & DEVELOP_COMBINE_INV) ? 1.0f - opacity : opacity;
     mask[i] = opacity * gopacity;
   }
@@ -648,7 +646,7 @@ static void _blend_RGB_R(const _blend_buffer_desc_t *bd, const float *a, float *
     _blend_noop(bd, a, b, mask, NULL, NULL); // Noop for Lab and Raw (unclamped)
 }
 
-/* blend only R-channel in RGB color space without any clamping (a noop for
+/* blend only G-channel in RGB color space without any clamping (a noop for
  * other color spaces) */
 static void _blend_RGB_G(const _blend_buffer_desc_t *bd, const float *a, float *b, const float *mask)
 {
@@ -668,7 +666,7 @@ static void _blend_RGB_G(const _blend_buffer_desc_t *bd, const float *a, float *
     _blend_noop(bd, a, b, mask, NULL, NULL); // Noop for Lab and Raw (unclamped)
 }
 
-/* blend only R-channel in RGB color space without any clamping (a noop for
+/* blend only B-channel in RGB color space without any clamping (a noop for
  * other color spaces) */
 static void _blend_RGB_B(const _blend_buffer_desc_t *bd, const float *a, float *b, const float *mask)
 {
@@ -927,10 +925,6 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   const float iscale = roi_in->scale;
   const float oscale = roi_out->scale;
   const _Bool rois_equal = (iwidth == owidth || iheight == oheight || xoffs == 0 || yoffs == 0);
-  // In most cases of blending-enabled modules input and output of the module have
-  // the exact same dimensions. Only in very special cases we allow a module's input
-  // to exceed its output. This is namely the case for the spot removal module where
-  // the source of a patch might lie outside the roi of the output image. Therefore:
   // We can only handle blending if roi_out and roi_in have the same scale and
   // if roi_out fits into the area given by roi_in. xoffs and yoffs describe the relative
   // offset of the input image to the output image.
@@ -1211,8 +1205,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   // register if _this_ module should expose mask or display channel
   if(request_mask_display & (DT_DEV_PIXELPIPE_DISPLAY_MASK | DT_DEV_PIXELPIPE_DISPLAY_CHANNEL))
     piece->pipe->mask_display = request_mask_display;
-  // check if we should store the mask for export or use in subsequent modules
-  // TODO: should we skip raster masks?
+
   if(piece->pipe->store_all_raster_masks || dt_iop_is_raster_mask_used(self, 0))
     g_hash_table_replace(piece->raster_masks, GINT_TO_POINTER(0), _mask);
   else
@@ -1251,34 +1244,6 @@ int dt_develop_blend_legacy_params(dt_iop_module_t *module, const void *const ol
   }
 
   return 1;
-}
-
-int dt_develop_blend_legacy_params_from_so(dt_iop_module_so_t *module_so, const void *const old_params,
-                                           const int old_version, void *new_params, const int new_version,
-                                           const int length)
-{
-  // we need a dt_iop_module_t for dt_develop_blend_legacy_params()
-  dt_iop_module_t *module;
-  module = (dt_iop_module_t *)calloc(1, sizeof(dt_iop_module_t));
-
-  if(dt_iop_load_module_by_so(module, module_so, NULL))
-  {
-    free(module);
-    return 1;
-  }
-
-  if(module->params_size == 0)
-  {
-    dt_iop_cleanup_module(module);
-    free(module);
-    return 1;
-  }
-  // convert the old blend params to new
-  int res = dt_develop_blend_legacy_params(module, old_params, old_version,
-                                           new_params, dt_develop_blend_version(), length);
-  dt_iop_cleanup_module(module);
-  free(module);
-  return res;
 }
 
 // tools/update_modelines.sh

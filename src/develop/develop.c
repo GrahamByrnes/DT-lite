@@ -109,7 +109,7 @@ void dt_dev_init(dt_develop_t *dev, int32_t gui_attached)
   dev->allprofile_info = NULL;
   dev->iop_order_version = 0;
   dev->iop_order_list = NULL;
-  dev->proxy.exposure = NULL;
+  dev->proxy.exposure.module = NULL;
 
   dev->rawoverexposed.enabled = FALSE;
   dev->rawoverexposed.mode = dt_conf_get_int("darkroom/ui/rawoverexposed/mode");
@@ -136,7 +136,6 @@ void dt_dev_cleanup(dt_develop_t *dev)
 {
   if(!dev) return;
   // image_cache does not have to be unref'd, this is done outside develop module.
-  dt_pthread_mutex_destroy(&dev->pipe_mutex);
   dt_pthread_mutex_destroy(&dev->pipe_mutex);
   dt_pthread_mutex_destroy(&dev->preview_pipe_mutex);
   dt_pthread_mutex_destroy(&dev->preview2_pipe_mutex);
@@ -186,7 +185,6 @@ void dt_dev_cleanup(dt_develop_t *dev)
 
   g_list_free_full(dev->forms, (void (*)(void *))dt_masks_free_form);
   g_list_free_full(dev->allforms, (void (*)(void *))dt_masks_free_form);
-  g_list_free_full(dev->proxy.exposure, g_free);
 
   dt_conf_set_int("darkroom/ui/rawoverexposed/mode", dev->rawoverexposed.mode);
   dt_conf_set_int("darkroom/ui/rawoverexposed/colorscheme", dev->rawoverexposed.colorscheme);
@@ -200,12 +198,11 @@ void dt_dev_cleanup(dt_develop_t *dev)
 
 float dt_dev_get_preview_downsampling()
 {
-  gchar *preview_downsample = dt_conf_get_string("preview_downsampling");
+  const char *preview_downsample = dt_conf_get_string_const("preview_downsampling");
   const float downsample = (g_strcmp0(preview_downsample, "original") == 0) ? 1.0f
         : (g_strcmp0(preview_downsample, "to 1/2")==0) ? 0.5f
         : (g_strcmp0(preview_downsample, "to 1/3")==0) ? 1/3.0f
         : 0.25f;
-  g_free(preview_downsample);
   return downsample;
 }
 
@@ -222,7 +219,7 @@ void dt_dev_process_image(dt_develop_t *dev)
 void dt_dev_process_preview(dt_develop_t *dev)
 {
   if(!dev->gui_attached) return;
-  int err = dt_control_add_job_res(darktable.control, dt_dev_process_preview_job_create(dev),
+  const int err = dt_control_add_job_res(darktable.control, dt_dev_process_preview_job_create(dev),
                                    DT_CTL_WORKER_ZOOM_FILL);
   if(err) fprintf(stderr, "[dev_process_preview] job queue exceeded!\n");
 }
@@ -231,7 +228,7 @@ void dt_dev_process_preview2(dt_develop_t *dev)
 {
   if(!dev->gui_attached) return;
   if(!(dev->second_window.widget && GTK_IS_WIDGET(dev->second_window.widget))) return;
-  int err = dt_control_add_job_res(darktable.control, dt_dev_process_preview2_job_create(dev),
+  const int err = dt_control_add_job_res(darktable.control, dt_dev_process_preview2_job_create(dev),
                                    DT_CTL_WORKER_ZOOM_2);
   if(err) fprintf(stderr, "[dev_process_preview2] job queue exceeded!\n");
 }
@@ -1990,10 +1987,10 @@ gint dt_dev_exposure_hooks_sort(gconstpointer a, gconstpointer b)
 
 static dt_dev_proxy_exposure_t *find_last_exposure_instance(dt_develop_t *dev)
 {
-  if(!dev->proxy.exposure)
+  if(!dev->proxy.exposure.module)
     return NULL;
 
-  dt_dev_proxy_exposure_t *instance = (dt_dev_proxy_exposure_t *)(g_list_first(dev->proxy.exposure)->data);
+  dt_dev_proxy_exposure_t *instance = &dev->proxy.exposure;
   return instance;
 };
 
@@ -2010,13 +2007,9 @@ gboolean dt_dev_exposure_hooks_available(dt_develop_t *dev)
 
 void dt_dev_exposure_reset_defaults(dt_develop_t *dev)
 {
-  if(!dev->proxy.exposure)
-    return;
-
   dt_dev_proxy_exposure_t *instance = find_last_exposure_instance(dev);
 
-  if(!(instance && instance->module))
-    return;
+  if(!(instance && instance->module)) return;
 
   dt_iop_module_t *exposure = instance->module;
   memcpy(exposure->params, exposure->default_params, exposure->params_size);

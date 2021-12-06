@@ -122,8 +122,7 @@ typedef enum dt_develop_blendif_channels_t
 /** blend parameters current version */
 typedef struct dt_develop_blend_params_t
 {
-  /** what kind of masking to use: off, non-mask (uniformly), hand-drawn mask and/or conditional mask
-   *  or raster mask */
+  /** what kind of masking to use: off, uniform, hand-drawn and/or conditional mask or raster mask */
   uint32_t mask_mode;
   /** blending mode */
   uint32_t blend_mode;
@@ -257,10 +256,6 @@ int dt_develop_blend_version(void);
 int dt_develop_blend_legacy_params(dt_iop_module_t *module, const void *const old_params,
                                    const int old_version, void *new_params, const int new_version,
                                    const int length);
-
-int dt_develop_blend_legacy_params_from_so(dt_iop_module_so_t *module_so, const void *const old_params,
-                                           const int old_version, void *new_params, const int new_version,
-                                           const int length);
 
 /** gui related stuff */
 void dt_iop_gui_init_blendif(GtkBox *blendw, dt_iop_module_t *module);

@@ -204,7 +204,30 @@ typedef struct dt_develop_t
   {
     // list of exposure iop instances, with plugin hooks, used by histogram dragging functions
     // each element is dt_dev_proxy_exposure_t
-    GList *exposure;
+    dt_dev_proxy_exposure_t exposure;
+    // modulegroups plugin hooks
+    struct
+    {
+      struct dt_lib_module_t *module;
+      /* switch module group */
+      void (*set)(struct dt_lib_module_t *self, uint32_t group);
+      /* get current module group */
+      uint32_t (*get)(struct dt_lib_module_t *self);
+      /* get activated module group */
+      uint32_t (*get_activated)(struct dt_lib_module_t *self);
+      /* test if iop group flags matches modulegroup */
+      gboolean (*test)(struct dt_lib_module_t *self, uint32_t group, struct dt_iop_module_t *module);
+      /* switch to modulegroup */
+      void (*switch_group)(struct dt_lib_module_t *self, struct dt_iop_module_t *module);
+      /* update modulegroup visibility */
+      void (*update_visibility)(struct dt_lib_module_t *self);
+      /* set focus to the search module text box */
+      void (*search_text_focus)(struct dt_lib_module_t *self);
+      /* test if module is preset in one of the current groups */
+      gboolean (*test_visible)(struct dt_lib_module_t *self, gchar *module);
+      /* add or remove module or widget in current quick access list */
+      gboolean (*basics_module_toggle)(struct dt_lib_module_t *self, GtkWidget *widget, gboolean doit);
+    } modulegroups;
     // snapshots plugin hooks
     struct
     {

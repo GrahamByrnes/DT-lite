@@ -282,22 +282,11 @@ void gui_init(struct dt_iop_module_t *self)
 void gui_cleanup(struct dt_iop_module_t *self)
 {
   dt_iop_exposure_gui_data_t *g = (dt_iop_exposure_gui_data_t *)self->gui_data;
-
-  GList *instances = darktable.develop->proxy.exposure;
-  while(instances != NULL)
-  {
-    GList *next = g_list_next(instances);
-    dt_dev_proxy_exposure_t *instance = (dt_dev_proxy_exposure_t *)instances->data;
-    if(instance->module == self)
-    {
-      g_free(instance);
-      darktable.develop->proxy.exposure = g_list_delete_link(darktable.develop->proxy.exposure, instances);
-    }
-    instances = next;
-  }
+  
+  if(darktable.develop->proxy.exposure.module == self)
+    darktable.develop->proxy.exposure.module = NULL;
   
   dt_pthread_mutex_destroy(&g->lock);
-
   free(self->gui_data);
   self->gui_data = NULL;
 }
