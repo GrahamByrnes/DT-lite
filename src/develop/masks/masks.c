@@ -76,7 +76,6 @@ static int _get_opacity(dt_masks_form_gui_t *gui, const dt_masks_form_t *form)
   if(!sel) return 0;
 
   const int formid = sel->formid;
-  // look for apacity
   const dt_masks_form_t *grp = dt_masks_get_from_id(darktable.develop, fpt->parentid);
 
   if(!grp || !(grp->type & DT_MASKS_GROUP))
@@ -391,10 +390,8 @@ int dt_masks_form_duplicate(dt_develop_t *dev, int formid)
   // we copy all the points
   if(fbase->functions)
     fbase->functions->duplicate_points(dev, fbase, fdest);
-
   // we save the form
   dt_dev_add_masks_history_item(dev, NULL, TRUE);
-
   // and we return its id
   return fdest->formid;
 }
@@ -767,11 +764,7 @@ int dt_masks_events_mouse_scrolled(struct dt_iop_module_t *module, double x, dou
     if(gui->creation && dt_modifier_is(state, GDK_CONTROL_MASK))
     {
       float opacity = dt_conf_get_float("plugins/darkroom/masks/opacity");
-      float amount = 0.05f;
-
-      if(up)
-        amount = -amount;
-
+      const float amount = up ? 0.05f : -0.05f;
       opacity = CLAMP(opacity + amount, 0.05f, 1.0f);
       dt_conf_set_float("plugins/darkroom/masks/opacity", opacity);
       const int opacitypercent = opacity * 100;
@@ -1287,7 +1280,7 @@ void dt_masks_form_remove(struct dt_iop_module_t *module, dt_masks_form_t *grp, 
       dt_masks_update_image(darktable.develop);
     }
 
-    if(ok && g_list_length(grp->points) == 0)
+    if(ok && grp->points == NULL)
       dt_masks_form_remove(module, NULL, grp);
 
     return;
@@ -1329,7 +1322,8 @@ void dt_masks_form_remove(struct dt_iop_module_t *module, dt_masks_form_t *grp, 
         if(iopgrp && (iopgrp->type & DT_MASKS_GROUP))
         {
           int ok = 0;
-          for(GList *forms = iopgrp->points; forms; forms = g_list_next(forms))
+          GList *forms = iopgrp->points;
+          while(forms)
           {
             dt_masks_point_group_t *grpt = (dt_masks_point_group_t *)forms->data;
             if(grpt->formid == id)
@@ -1340,6 +1334,7 @@ void dt_masks_form_remove(struct dt_iop_module_t *module, dt_masks_form_t *grp, 
               forms = iopgrp->points;
               continue;
             }
+            forms = g_list_next(forms); // advance to next form
           }
 
           if(ok)
@@ -1374,20 +1369,15 @@ void dt_masks_form_remove(struct dt_iop_module_t *module, dt_masks_form_t *grp, 
 void dt_masks_form_change_opacity(dt_masks_form_t *form, int parentid, int up)
 {
   if(!form) return;
+  
   dt_masks_form_t *grp = dt_masks_get_from_id(darktable.develop, parentid);
 
-  if(!grp || !(grp->type & DT_MASKS_GROUP))
-    return;
+  if(!grp || !(grp->type & DT_MASKS_GROUP)) return;
   // we first need to test if the opacity can be set to the form
-  if(form->type & DT_MASKS_GROUP)
-    return;
+  if(form->type & DT_MASKS_GROUP) return;
 
   const int id = form->formid;
-  float amount = 0.05f;
-
-  if(up)
-    amount = -amount;
-
+  const float amount = up ? 0.05f : -0.05f;
   // so we change the value inside the group
   for(GList *fpts = grp->points; fpts; fpts = g_list_next(fpts))
   {
@@ -1425,19 +1415,15 @@ void dt_masks_form_move(dt_masks_form_t *grp, int formid, int up)
     pos++;
   }
 
-  // we remove the form and readd it
+  // we remove the form and read it
   if(grpt)
   {
-    if(up && pos == 0) return;
+    if(!up && pos == 0) return;
 
-    if(!up && pos == g_list_length(grp->points) - 1) return;
+    if(up && pos == g_list_length(grp->points) - 1) return;
 
     grp->points = g_list_remove(grp->points, grpt);
-
-    if(up)
-      pos -= 1;
-    else
-      pos += 1;
+    pos += up ? 1 : -1;
 
     grp->points = g_list_insert(grp->points, grpt, pos);
     dt_dev_add_masks_history_item(darktable.develop, NULL, TRUE);
@@ -1484,7 +1470,7 @@ dt_masks_point_group_t *dt_masks_group_add_form(dt_masks_form_t *grp, dt_masks_f
     return grpt;
   }
 
-  dt_control_log(_("masks can not contain themselves"));
+  dt_control_log(_("masks cannot contain themselves"));
   return NULL;
 }
 
@@ -1589,7 +1575,7 @@ char *dt_masks_group_get_hash_buffer(dt_masks_form_t *form, char *str)
 
 void dt_masks_update_image(dt_develop_t *dev)
 {
-  /* invalidate image data*/
+  // invalidate image data
   // dt_similarity_image_dirty(dev->image_storage.id);
   // invalidate buffers and force redraw of darkroom
   dev->pipe->changed |= DT_DEV_PIPE_SYNCH;
