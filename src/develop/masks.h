@@ -41,7 +41,7 @@ typedef enum dt_masks_type_t
   DT_MASKS_NON_CLONE = 1 << 7
 } dt_masks_type_t;
 
-/**masts states */
+/**masks states */
 typedef enum dt_masks_state_t
 {
   DT_MASKS_STATE_NONE = 0,
