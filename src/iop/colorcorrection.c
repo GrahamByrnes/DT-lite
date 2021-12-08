@@ -315,14 +315,26 @@ static gboolean dt_iop_colorcorrection_draw(GtkWidget *widget, cairo_t *crf, gpo
     cairo_arc(cr, hia, hib, DT_PIXEL_APPLY_DPI(3), 0, 2.0 * M_PI);
 
   cairo_fill(cr);
-  cairo_set_source_rgb(cr, 0.9, 0.0, 0.0);
   
   if(g->selected == 3)
-    cairo_arc(cr, qua, qub, DT_PIXEL_APPLY_DPI(5), 0, 2.0 * M_PI);
+  {
+    cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
+    cairo_arc(cr, qua, qub, DT_PIXEL_APPLY_DPI(5), 0.25 * M_PI, 1.25 * M_PI);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+    cairo_arc(cr, qua, qub, DT_PIXEL_APPLY_DPI(5), 1.25 * M_PI, 0.25 * M_PI);
+    cairo_fill(cr);
+  }
   else
-    cairo_arc(cr, qua, qub, DT_PIXEL_APPLY_DPI(3), 0, 2.0 * M_PI);
-    
-  cairo_fill(cr);
+  {
+    cairo_set_source_rgb(cr, 0.1, 0.1, 0.1);
+    cairo_arc(cr, qua, qub, DT_PIXEL_APPLY_DPI(3), 0.25 * M_PI, 1.25 * M_PI);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+    cairo_arc(cr, qua, qub, DT_PIXEL_APPLY_DPI(3), 1.25 * M_PI, 0.25 * M_PI);
+    cairo_fill(cr);
+  }
+
   cairo_destroy(cr);
   cairo_set_source_surface(crf, cst, 0, 0);
   cairo_paint(crf);
