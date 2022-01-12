@@ -58,8 +58,6 @@ typedef struct dt_iop_exposure_params_t
   dt_iop_exposure_mode_t mode; // $DEFAULT: EXPOSURE_MODE_MANUAL
   float black;    // $MIN: -1.0 $MAX: 1.0 $DEFAULT: 0.0 $DESCRIPTION: "black level correction"
   float exposure; // $MIN: -18.0 $MAX: 18.0 $DEFAULT: 0.0
-  float deflicker_percentile;
-  float deflicker_target_level;
   int compensate_exposure_bias;
 } dt_iop_exposure_params_t;
 
@@ -71,11 +69,6 @@ typedef struct dt_iop_exposure_gui_data_t
   GtkStack *mode_stack;
   GtkWidget *exposure;
   GtkWidget *autoexpp;
-  GtkWidget *deflicker_percentile;
-  GtkWidget *deflicker_target_level;
-  uint32_t *deflicker_histogram; // used to cache histogram of source file
-  dt_dev_histogram_stats_t deflicker_histogram_stats;
-  GtkLabel *deflicker_used_EC;
   GtkWidget *compensate_exposure_bias;
   float deflicker_computed_exposure;
   dt_pthread_mutex_t lock;
@@ -145,8 +138,9 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
       
     ((float *)o)[k + 3] = ((float *)i)[k + 3];
   }
-  for(int k = 0; k < 3; k++)
-    piece->pipe->dsc.processed_maximum[k] *= d->scale;
+
+  for(int j = 0; j < 3; j++)
+    piece->pipe->dsc.processed_maximum[j] *= d->scale;
 }
 
 void commit_params(struct dt_iop_module_t *self, dt_iop_params_t *p1, dt_dev_pixelpipe_t *pipe,
@@ -187,8 +181,7 @@ static void exposure_set_white(struct dt_iop_module_t *self, const float white)
   dt_iop_exposure_params_t *p = (dt_iop_exposure_params_t *)self->params;
   const float exposure = white2exposure(white);
 
-  if(p->exposure == exposure)
-    return;
+  if(p->exposure == exposure) return;
 
   p->exposure = exposure;
   
@@ -225,9 +218,8 @@ void color_picker_apply(dt_iop_module_t *self, GtkWidget *picker, dt_dev_pixelpi
 {
   if(darktable.gui->reset) return;
 
-  dt_iop_exposure_gui_data_t *g = (dt_iop_exposure_gui_data_t *)self->gui_data;
   const float white = fmaxf(fmaxf(self->picked_color_max[0], self->picked_color_max[1]),
-                            self->picked_color_max[2]) * (1.0 - dt_bauhaus_slider_get(g->autoexpp));
+                            self->picked_color_max[2]);
   exposure_set_white(self, white);
 }
 
@@ -259,7 +251,6 @@ void gui_init(struct dt_iop_module_t *self)
 {
   self->gui_data = malloc(sizeof(dt_iop_exposure_gui_data_t));
   dt_iop_exposure_gui_data_t *g = (dt_iop_exposure_gui_data_t *)self->gui_data;
-  g->deflicker_histogram = NULL;////
   dt_pthread_mutex_init(&g->lock, NULL);
 
   const float low_lim = dt_conf_get_float("exposure_lower_limit");
