@@ -41,12 +41,13 @@ typedef struct dt_module_param_t
 
 static inline void process_changed_value(dt_iop_module_t *self, GtkWidget *widget, void *data)
 {
-  if(!self) self = DT_BAUHAUS_WIDGET(widget)->module;
+  if(!self)
+    self = DT_BAUHAUS_WIDGET(widget)->module;
 
-  if(self->gui_changed) self->gui_changed(self, widget, data);
+  if(self->gui_changed)
+    self->gui_changed(self, widget, data);
 
   dt_iop_color_picker_reset(self, TRUE);
-
   dt_dev_add_history_item(darktable.develop, self, TRUE);
 }
 
@@ -67,7 +68,8 @@ void dt_iop_slider_int_callback(GtkWidget *slider, int *field)
   int previous = *field;
   *field = dt_bauhaus_slider_get(slider);
 
-  if(*field != previous) process_changed_value(NULL, slider, &previous);
+  if(*field != previous)
+    process_changed_value(NULL, slider, &previous);
 }
 
 void dt_iop_combobox_enum_callback(GtkWidget *combobox, int *field)
@@ -75,10 +77,10 @@ void dt_iop_combobox_enum_callback(GtkWidget *combobox, int *field)
   if(darktable.gui->reset) return;
 
   int previous = *field;
-
   *field = GPOINTER_TO_INT(dt_bauhaus_combobox_get_data(combobox));
 
-  if(*field != previous) process_changed_value(NULL, combobox, &previous);
+  if(*field != previous)
+    process_changed_value(NULL, combobox, &previous);
 }
 
 void dt_iop_combobox_int_callback(GtkWidget *combobox, int *field)
@@ -86,10 +88,10 @@ void dt_iop_combobox_int_callback(GtkWidget *combobox, int *field)
   if(darktable.gui->reset) return;
 
   int previous = *field;
-
   *field = dt_bauhaus_combobox_get(combobox);
 
-  if(*field != previous) process_changed_value(NULL, combobox, &previous);
+  if(*field != previous)
+    process_changed_value(NULL, combobox, &previous);
 }
 
 void dt_iop_combobox_bool_callback(GtkWidget *combobox, gboolean *field)
@@ -99,7 +101,8 @@ void dt_iop_combobox_bool_callback(GtkWidget *combobox, gboolean *field)
   gboolean previous = *field;
   *field = dt_bauhaus_combobox_get(combobox);
 
-  if(*field != previous) process_changed_value(NULL, combobox, &previous);
+  if(*field != previous)
+    process_changed_value(NULL, combobox, &previous);
 }
 
 static void _iop_toggle_callback(GtkWidget *togglebutton, dt_module_param_t *data)
@@ -108,11 +111,11 @@ static void _iop_toggle_callback(GtkWidget *togglebutton, dt_module_param_t *dat
 
   dt_iop_module_t *self = data->module;
   gboolean *field = (gboolean*)(data->param);
-
   gboolean previous = *field;
   *field = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(togglebutton));
 
-  if(*field != previous) process_changed_value(self, togglebutton, &previous);
+  if(*field != previous)
+    process_changed_value(self, togglebutton, &previous);
 }
 
 GtkWidget *dt_bauhaus_slider_from_params(dt_iop_module_t *self, const char *param)
@@ -120,22 +123,17 @@ GtkWidget *dt_bauhaus_slider_from_params(dt_iop_module_t *self, const char *para
   dt_iop_params_t *p = (dt_iop_params_t *)self->params;
 
   size_t param_index = 0;
-
   const size_t param_length = strlen(param) + 1;
   char *param_name = g_malloc(param_length);
   char *base_name = g_malloc(param_length);
+  
   if(sscanf(param, "%[^[][%zu]", base_name, &param_index) == 2)
-  {
     sprintf(param_name, "%s[0]", base_name);
-  }
   else
-  {
     memcpy(param_name, param, param_length);
-  }
+
   g_free(base_name);
-
   const dt_introspection_field_t *f = self->so->get_f(param_name);
-
   GtkWidget *slider = NULL;
   gchar *str;
 
@@ -148,34 +146,31 @@ GtkWidget *dt_bauhaus_slider_from_params(dt_iop_module_t *self, const char *para
       const float defval = *(float*)self->so->get_p(p, param_name);
       int digits = 2;
       float step = 0;
-
       const float top = fminf(max-min, fmaxf(fabsf(min),fabsf(max)));
+      
       if (top>=100)
-      {
         step = 1.f;
-      }
       else
       {
         step = top / 100;
         const float log10step = log10f(step);
         const float fdigits = floorf(log10step+.1);
         step = powf(10.f,fdigits);
+
         if (log10step - fdigits > .5)
           step *= 5;
+
         if (fdigits < -2.f) 
           digits = -fdigits;
       }
 
       slider = dt_bauhaus_slider_new_with_range_and_feedback(self, min, max, step, defval, digits, 1);
-
       const char *post = ""; // set " %%", " EV" etc
 
       if (min < 0 || (post && *post))
       {
         str = g_strdup_printf("%%%s.0%df%s", (min < 0 ? "+" : ""), digits, post);
-
         dt_bauhaus_slider_set_format(slider, str);
-      
         g_free(str);
       }
 
@@ -190,7 +185,6 @@ GtkWidget *dt_bauhaus_slider_from_params(dt_iop_module_t *self, const char *para
       const int defval = *(float*)self->so->get_p(p, param_name);
 
       slider = dt_bauhaus_slider_new_with_range_and_feedback(self, min, max, 1, defval, 0, 1);
-
       g_signal_connect(G_OBJECT(slider), "value-changed", 
                        G_CALLBACK(dt_iop_slider_int_callback), 
                        p + f->header.offset + param_index * sizeof(int));
@@ -199,33 +193,28 @@ GtkWidget *dt_bauhaus_slider_from_params(dt_iop_module_t *self, const char *para
     if (*f->header.description)
     {
       // we do not want to support a context as it break all translations see #5498
-      // dt_bauhaus_widget_set_label(slider, NULL, g_dpgettext2(NULL, "introspection description", f->header.description));
       dt_bauhaus_widget_set_label(slider, NULL, gettext(f->header.description));
     }
     else
     {
       str = dt_util_str_replace(f->header.field_name, "_", " ");
-    
       dt_bauhaus_widget_set_label(slider, NULL, _(str));
-
       g_free(str);
     }
   }
   else
   {
     str = g_strdup_printf("'%s' is not a float/int/slider parameter", param_name);
-
     slider = dt_bauhaus_slider_new(self);
     dt_bauhaus_widget_set_label(slider, NULL, str);
-
     g_free(str);
   }
 
-  if(!self->widget) self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, DT_BAUHAUS_SPACE);
+  if(!self->widget)
+    self->widget = gtk_box_new(GTK_ORIENTATION_VERTICAL, DT_BAUHAUS_SPACE);
+
   gtk_box_pack_start(GTK_BOX(self->widget), slider, FALSE, FALSE, 0);
-
   g_free(param_name);
-
   return slider;
 }
 
