@@ -82,12 +82,6 @@ typedef struct dt_iop_exposure_data_t
   float scale;
 } dt_iop_exposure_data_t;
 
-typedef struct dt_iop_exposure_global_data_t
-{
-  int kernel_exposure;
-} dt_iop_exposure_global_data_t;
-
-
 const char *name()
 {
   return _("exposure");
