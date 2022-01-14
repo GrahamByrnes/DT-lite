@@ -118,23 +118,26 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
 {
   const dt_iop_exposure_data_t *const d = (const dt_iop_exposure_data_t *const)piece->data;
   process_common_setup(self, piece);
+  int bch = piece->colors < 4 ? bch = piece->colors - 1 : piece->colors;
   const size_t npixels = roi_out->width * roi_out->height;
-
+  const float black = d->black;
+  const float scale = d->scale;
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
-  dt_omp_firstprivate(d, i, o, npixels) \
+  dt_omp_firstprivate(black, scale, bch, i, o, npixels) \
   schedule(static)
 #endif
-  for(size_t k = 0; k < (size_t)4 * npixels; k += 4)
+  for(size_t k = 0; k < (size_t)bch * npixels; k += 4)
   {
-    for(int j = 0; j < 3; j++)
-      ((float *)o)[k + j] = (((float *)i)[k + j] - d->black) * d->scale;
-      
-    ((float *)o)[k + 3] = ((float *)i)[k + 3];
+    for(int j = 0; j < bch; j++)
+      ((float *)o)[k + j] = (((float *)i)[k + j] - black) * scale;
+
+    if(bch == 4)
+      ((float *)o)[k + 3] = ((float *)i)[k + 3];
   }
 
-  for(int j = 0; j < 3; j++)
-    piece->pipe->dsc.processed_maximum[j] *= d->scale;
+  for(int j = 0; j < bch; j++)
+    piece->pipe->dsc.processed_maximum[j] *= scale;
 }
 
 void commit_params(struct dt_iop_module_t *self, dt_iop_params_t *p1, dt_dev_pixelpipe_t *pipe,
