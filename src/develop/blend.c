@@ -924,7 +924,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   const size_t buffsize = (size_t)owidth * oheight;
   const float iscale = roi_in->scale;
   const float oscale = roi_out->scale;
-  const _Bool rois_equal = (iwidth == owidth || iheight == oheight || xoffs == 0 || yoffs == 0);
+  const gboolean rois_equal = (iwidth == owidth || iheight == oheight || xoffs == 0 || yoffs == 0);
   // We can only handle blending if roi_out and roi_in have the same scale and
   // if roi_out fits into the area given by roi_in. xoffs and yoffs describe the relative
   // offset of the input image to the output image.
@@ -945,11 +945,11 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   const dt_iop_colorspace_type_t cst = self->blend_colorspace(self, piece->pipe, piece);
   const dt_iop_order_iccprofile_info_t *const work_profile = dt_ioppr_get_pipe_work_profile_info(piece->pipe);
   // check if mask should be suppressed temporarily (i.e. just set to global opacity value)
-  const _Bool suppress_mask = self->suppress_mask && self->dev->gui_attached && (self == self->dev->gui_module)
+  const gboolean suppress_mask = self->suppress_mask && self->dev->gui_attached && (self == self->dev->gui_module)
                               && (piece->pipe == self->dev->pipe) && (mask_mode & DEVELOP_MASK_MASK_CONDITIONAL);
-  const _Bool mask_feather = d->feathering_radius > 0.1f;
-  const _Bool mask_blur = d->blur_radius > 0.1f;
-  const _Bool mask_tone_curve = fabsf(d->contrast) >= 0.01f || fabsf(d->brightness) >= 0.01f;
+  const gboolean mask_feather = d->feathering_radius >= 0.1f;
+  const gboolean mask_blur = d->blur_radius >= 0.1f;
+  const gboolean mask_tone_curve = fabsf(d->contrast) >= 0.01f || fabsf(d->brightness) >= 0.01f;
   // get the clipped opacity value  0 - 1
   const float opacity = fminf(fmaxf(0.0f, (d->opacity / 100.0f)), 1.0f);
   // allocate space for blend mask
@@ -976,10 +976,10 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   }
   else if(mask_mode & DEVELOP_MASK_RASTER)
   {
-    /* use a raster mask from another module earlier in the pipe */
+    // use a raster mask from another module earlier in the pipe
     gboolean free_mask = FALSE; // if no transformations were applied we get the cached original back
-    float *raster_mask = dt_dev_get_raster_mask(piece->pipe, self->raster_mask.sink.source, self->raster_mask.sink.id,
-                                                self, &free_mask);
+    float *raster_mask = dt_dev_get_raster_mask(piece->pipe, self->raster_mask.sink.source,
+                                                self->raster_mask.sink.id, self, &free_mask);
 
     if(raster_mask)
     {
@@ -1085,7 +1085,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
       if(w < 1)
         w = 1;
 
-      float sqrt_eps = 1.f;
+      const float sqrt_eps = 1.f;
       float guide_weight = 1.f;
 
       switch(cst)
@@ -1178,10 +1178,10 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   // now apply blending with per-pixel opacity value as defined in mask
   // select the blend operator
   _blend_row_func *const blend = dt_develop_choose_blend_func(d->blend_mode);
-  _blend_buffer_desc_t bd = { .cst = cst, .stride = (size_t)owidth * 4, .ch = (size_t)4, .bch = bch };
+  _blend_buffer_desc_t bd = { .cst = cst, .stride = (size_t)owidth * 4, .ch = (size_t)ch, .bch = bch };
 #ifdef _OPENMP
 #pragma omp parallel for default(none)                                                                            \
-  dt_omp_firstprivate(bch, blend, cst, ivoid, iwidth, mask, \
+  dt_omp_firstprivate(ch, blend, cst, ivoid, iwidth, mask, \
                       mask_display, oheight, ovoid, owidth, \
                       request_mask_display, work_profile, xoffs, yoffs, bd)
 #endif
@@ -1198,7 +1198,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
     else
       blend(&bd, in, out, m);
 
-    if((mask_display & DT_DEV_PIXELPIPE_DISPLAY_MASK) && cst != iop_cs_RAW)
+    if((mask_display & DT_DEV_PIXELPIPE_DISPLAY_MASK) && cst != iop_cs_RAW && ch == 4)
       for(size_t j = 0; j < (size_t)owidth * 4; j += 4)
         out[j + 3] = in[j + 3];
   }
