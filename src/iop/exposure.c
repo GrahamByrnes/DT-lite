@@ -118,7 +118,7 @@ void process(struct dt_iop_module_t *self, dt_dev_pixelpipe_iop_t *piece, const 
 {
   const dt_iop_exposure_data_t *const d = (const dt_iop_exposure_data_t *const)piece->data;
   process_common_setup(self, piece);
-  int bch = piece->colors < 4 ? bch = piece->colors - 1 : piece->colors;
+  const int bch = piece->colors < 4 ? piece->colors - 1 : piece->colors;
   const size_t npixels = roi_out->width * roi_out->height;
   const float black = d->black;
   const float scale = d->scale;
