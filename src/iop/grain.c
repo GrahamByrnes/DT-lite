@@ -48,6 +48,7 @@
 #define GRAIN_LUT_DELTA_MIN 0.0001
 #define GRAIN_LUT_PAPER_GAMMA 1.0
 
+DT_MODULE_INTROSPECTION(1, dt_iop_grain_params_t)
 
 typedef enum _dt_iop_grain_channel_t
 {
