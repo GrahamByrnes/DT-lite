@@ -924,7 +924,6 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   const size_t buffsize = (size_t)owidth * oheight;
   const float iscale = roi_in->scale;
   const float oscale = roi_out->scale;
-  const gboolean rois_equal = (iwidth == owidth || iheight == oheight || xoffs == 0 || yoffs == 0);
   // We can only handle blending if roi_out and roi_in have the same scale and
   // if roi_out fits into the area given by roi_in. xoffs and yoffs describe the relative
   // offset of the input image to the output image.
@@ -947,6 +946,7 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   // check if mask should be suppressed temporarily (i.e. just set to global opacity value)
   const gboolean suppress_mask = self->suppress_mask && self->dev->gui_attached && (self == self->dev->gui_module)
                               && (piece->pipe == self->dev->pipe) && (mask_mode & DEVELOP_MASK_MASK_CONDITIONAL);
+  const gboolean rois_equal = (iwidth == owidth || iheight == oheight || xoffs == 0 || yoffs == 0);
   const gboolean mask_feather = d->feathering_radius >= 0.1f;
   const gboolean mask_blur = d->blur_radius >= 0.1f;
   const gboolean mask_tone_curve = fabsf(d->contrast) >= 0.01f || fabsf(d->brightness) >= 0.01f;
@@ -966,7 +966,6 @@ void dt_develop_blend_process(struct dt_iop_module_t *self, struct dt_dev_pixelp
   if(mask_mode == DEVELOP_MASK_ENABLED || suppress_mask)
   {
     // blend uniformly (no drawn or parametric mask)
-
 #ifdef _OPENMP
 #pragma omp parallel for default(none) \
     dt_omp_firstprivate(buffsize, mask, opacity)

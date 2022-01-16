@@ -1823,29 +1823,41 @@ static int _ellipse_get_mask(const dt_iop_module_t *const module, const dt_dev_p
     dt_print(DT_DEBUG_MASKS, "[masks %s] ellipse area took %0.04f sec\n", form->name, dt_get_wtime() - start2);
     start2 = dt_get_wtime();
   }
-
   // we get the ellipse values
   dt_masks_point_ellipse_t *ellipse = (dt_masks_point_ellipse_t *)((form->points)->data);
-
   // we create a buffer of points with all points in the area
   int w = *width, h = *height;
   float *points = dt_alloc_align_float((size_t)2 * w * h);
 
   if(points == NULL) return 0;
 
+  const float pos_x = *posx;
+  const float pos_y = *posy;
+
+#ifdef _OPENMP
+#pragma omp parallel for default(none) \
+  dt_omp_firstprivate(h, w) \
+  dt_omp_sharedconst(points, pos_x, pos_y) \
+  schedule(static) if(h*w > 50000) num_threads(MIN(darktable.num_openmp_threads,(h*w)/20000))
+#endif
+
   for(int i = 0; i < h; i++)
+  {
+    const float y = i + pos_y;
+
     for(int j = 0; j < w; j++)
     {
-      points[(i * w + j) * 2] = (j + (*posx));
-      points[(i * w + j) * 2 + 1] = (i + (*posy));
+      points[(i * w + j) * 2] = j + pos_x;
+      points[(i * w + j) * 2 + 1] = y;
     }
+  }
 
   if(darktable.unmuted & DT_DEBUG_PERF)
   {
     dt_print(DT_DEBUG_MASKS, "[masks %s] ellipse draw took %0.04f sec\n", form->name, dt_get_wtime() - start2);
     start2 = dt_get_wtime();
   }
-  // we back transform all this points
+  // we back transform all these points
   if(!dt_dev_distort_backtransform_plus(module->dev, piece->pipe, module->iop_order,
                                         DT_DEV_TRANSFORM_DIR_BACK_INCL, points, (size_t)w * h))
   {
@@ -1875,7 +1887,7 @@ static int _ellipse_get_mask(const dt_iop_module_t *const module, const dt_dev_p
                                                                             : ellipse->radius[0] + ellipse->border) * MIN(wi, hi),
                             (ellipse->flags & DT_MASKS_ELLIPSE_PROPORTIONAL ? ellipse->radius[1] * (1.0f + ellipse->border)
                                                                             : ellipse->radius[1] + ellipse->border) * MIN(wi, hi) };
-  float a = 0.0F, b = 0.0F, ta = 0.0F, tb = 0.0F, alpha = 0.0F;
+  float a = 0.0f, b = 0.0f, ta = 0.0f, tb = 0.0f, alpha = 0.0f;
 
   if(radius[0] >= radius[1])
   {
@@ -1946,7 +1958,6 @@ static int _ellipse_get_mask_roi(const dt_iop_module_t *const module, const dt_d
     dt_print(DT_DEBUG_MASKS, "[masks %s] ellipse init took %0.04f sec\n", form->name, dt_get_wtime() - start2);
     start2 = dt_get_wtime();
   }
-
   // we look at the outer line of the shape - no effects outside of this ellipse;
   // we need many points as we do not know how the ellipse might get distorted in the pixelpipe
   const float lambda = (ta - tb) / (ta + tb);
@@ -2040,10 +2051,9 @@ static int _ellipse_get_mask_roi(const dt_iop_module_t *const module, const dt_d
     return 1;
 
   float *points = dt_alloc_align_float((size_t)2 * bbw * bbh);
+
   if(points == NULL) return 0;
-
   // we populate the grid points in module coordinates
-
 #ifdef _OPENMP
 #if !defined(__SUNOS__) && !defined(__NetBSD__)
 #pragma omp parallel for default(none) \
@@ -2069,8 +2079,8 @@ static int _ellipse_get_mask_roi(const dt_iop_module_t *const module, const dt_d
   }
 
   // we back transform all these points to the input image coordinates
-  if(!dt_dev_distort_backtransform_plus(module->dev, piece->pipe, module->iop_order, DT_DEV_TRANSFORM_DIR_BACK_INCL, points,
-                                        (size_t)bbw * bbh))
+  if(!dt_dev_distort_backtransform_plus(module->dev, piece->pipe, module->iop_order,
+                                        DT_DEV_TRANSFORM_DIR_BACK_INCL, points, (size_t)bbw * bbh))
   {
     dt_free_align(points);
     return 0;

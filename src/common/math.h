@@ -100,7 +100,7 @@ static inline float sqf(const float x)
 #endif
 static inline float CLIP(const float x)
 {
-  return x <= 1.0f ? x : 1.0f;
+  return x < 0.0f ? 0.0f : x > 1.0f ? 1.0f : x;
 }
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh

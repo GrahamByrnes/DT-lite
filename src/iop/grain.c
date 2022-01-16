@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "bauhaus/bauhaus.h"
+#include "common/math.h"
 #include "control/control.h"
 #include "develop/develop.h"
 #include "develop/imageop.h"
@@ -46,9 +47,6 @@
 #define GRAIN_LUT_DELTA_MAX 2.0
 #define GRAIN_LUT_DELTA_MIN 0.0001
 #define GRAIN_LUT_PAPER_GAMMA 1.0
-
-#define CLIP(x) ((x < 0) ? 0.0 : (x > 1.0) ? 1.0 : x)
-DT_MODULE_INTROSPECTION(2, dt_iop_grain_params_t)
 
 
 typedef enum _dt_iop_grain_channel_t

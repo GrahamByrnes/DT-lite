@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "bauhaus/bauhaus.h"
+#include "common/math.h"
 #include "control/control.h"
 #include "develop/blend.h"
 #include "develop/develop.h"
@@ -38,7 +39,6 @@
 
 DT_MODULE_INTROSPECTION(4, dt_iop_vignette_params_t)
 
-#define CLIP(x) ((x < 0) ? 0.0 : (x > 1.0) ? 1.0 : x)
 #define TEA_ROUNDS 8
 
 typedef enum dt_iop_dither_t

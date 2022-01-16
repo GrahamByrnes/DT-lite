@@ -40,7 +40,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CLIP(x) ((x < 0) ? 0.0 : (x > 1.0) ? 1.0 : x)
 DT_MODULE_INTROSPECTION(1, dt_iop_splittoning_params_t)
 
 const float half = 50.0f; // sets luminance for sliders
