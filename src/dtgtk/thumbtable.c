@@ -1044,10 +1044,8 @@ static gboolean _event_button_release(GtkWidget *widget, GdkEventButton *event, 
   table->dragging = FALSE;
 
   if((abs(table->drag_dx) + abs(table->drag_dy)) <= DT_PIXEL_APPLY_DPI(8) && dt_control_get_mouse_over_id() < 1)
-  {
     // if we are on empty area and have detect no real movement, we deselect
     dt_selection_clear(darktable.selection);
-  }
 
   // we ensure that all thumbnails moved property is reset
   GList *l = table->list;
@@ -1070,14 +1068,10 @@ static void _thumbtable_restore_scrollbars(dt_thumbtable_t *table)
   table->scrollbars = FALSE;
 
   if(table->mode == DT_THUMBTABLE_MODE_FILMSTRIP)
-  {
     table->scrollbars = dt_conf_get_bool("darkroom/ui/scrollbars");
-  }
 
   if(table->mode == DT_THUMBTABLE_MODE_FILEMANAGER)
-  {
     table->scrollbars = dt_conf_get_bool("lighttable/ui/scrollbars");
-  }
 
   dt_ui_scrollbars_show(darktable.gui->ui, table->scrollbars);
 }
@@ -1086,8 +1080,8 @@ static void _thumbtable_restore_scrollbars(dt_thumbtable_t *table)
 static void _dt_pref_change_callback(gpointer instance, gpointer user_data)
 {
   if(!user_data) return;
+  
   dt_thumbtable_t *table = (dt_thumbtable_t *)user_data;
-
   dt_thumbtable_full_redraw(table, TRUE);
 
   for(const GList *l = table->list; l; l = g_list_next(l))
@@ -1129,10 +1123,9 @@ static void _dt_active_images_callback(gpointer instance, gpointer user_data)
 static void _dt_mouse_over_image_callback(gpointer instance, gpointer user_data)
 {
   if(!user_data) return;
+  
   dt_thumbtable_t *table = (dt_thumbtable_t *)user_data;
-
   const int imgid = dt_control_get_mouse_over_id();
-
   int groupid = -1;
   // we crawl over all images to find the right one
   for(const GList *l = table->list; l; l = g_list_next(l))
@@ -1141,7 +1134,9 @@ static void _dt_mouse_over_image_callback(gpointer instance, gpointer user_data)
     // if needed, the change mouseover value of the thumb
     if(th->mouse_over != (th->imgid == imgid)) dt_thumbnail_set_mouseover(th, (th->imgid == imgid));
     // now the grouping stuff
-    if(th->imgid == imgid && th->is_grouped) groupid = th->groupid;
+    if(th->imgid == imgid && th->is_grouped)
+      groupid = th->groupid;
+
     if(th->group_borders)
     {
       // to be sure we don't have any borders remaining
@@ -1154,6 +1149,7 @@ static void _dt_mouse_over_image_callback(gpointer instance, gpointer user_data)
   if(groupid > 0)
   {
     int pos = 0;
+
     for(const GList *l = table->list; l; l = g_list_next(l))
     {
       dt_thumbnail_t *th = (dt_thumbnail_t *)l->data;
@@ -1169,6 +1165,7 @@ static void _dt_mouse_over_image_callback(gpointer instance, gpointer user_data)
             dt_thumbnail_t *th1 = (dt_thumbnail_t *)g_list_nth_data(table->list, pos - 1);
             if(th1->groupid == groupid) b = FALSE;
           }
+
           if(b)
           {
             dt_thumbnail_set_group_border(th, DT_THUMBNAIL_BORDER_LEFT);
@@ -1193,7 +1190,6 @@ static void _dt_mouse_over_image_callback(gpointer instance, gpointer user_data)
           dt_thumbnail_set_group_border(th, DT_THUMBNAIL_BORDER_TOP);
           dt_thumbnail_set_group_border(th, DT_THUMBNAIL_BORDER_BOTTOM);
         }
-
         // top border
         b = TRUE;
 

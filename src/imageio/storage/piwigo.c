@@ -520,8 +520,10 @@ static void _piwigo_album_changed(GtkComboBox *cb, gpointer data)
 {
   dt_storage_piwigo_gui_data_t *ui = (dt_storage_piwigo_gui_data_t *)data;
   const gchar *value = dt_bauhaus_combobox_get_text(ui->album_list);
+  // early return if the combo is not yet populated
+  if(value == NULL) return;
 
-  if(value != NULL && strcmp(value, _("create new album")) == 0)
+  if(strcmp(value, _("create new album")) == 0)
   {
     gtk_widget_set_no_show_all(GTK_WIDGET(ui->create_box), FALSE);
     gtk_widget_show_all(GTK_WIDGET(ui->create_box));
@@ -616,12 +618,11 @@ static void _piwigo_refresh_albums(dt_storage_piwigo_gui_data_t *ui, const gchar
 
       snprintf(data, sizeof(data), "%*c%s (%"PRId64")", indent * 3, ' ', new_album->name, new_album->size);
 
-      if(to_select && !strcmp(new_album->name, to_select)) index = i + 1;
+      if(to_select && !strcmp(new_album->name, to_select))
+        index = i + 1;
 
       g_strlcpy(new_album->label, data, sizeof(new_album->label));
-
       ui->albums = g_list_append(ui->albums, new_album);
-
       dt_bauhaus_combobox_add_aligned(ui->album_list, data, DT_BAUHAUS_COMBOBOX_ALIGN_LEFT);
       dt_bauhaus_combobox_add_aligned(ui->parent_album_list, data, DT_BAUHAUS_COMBOBOX_ALIGN_LEFT);
     }
