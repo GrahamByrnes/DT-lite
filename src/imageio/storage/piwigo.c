@@ -529,7 +529,28 @@ static void _piwigo_album_changed(GtkComboBox *cb, gpointer data)
     gtk_widget_show_all(GTK_WIDGET(ui->create_box));
   }
   else
+  {
     gtk_widget_hide(GTK_WIDGET(ui->create_box));
+    // As the album name has spaces as prefix (for indentation) and a
+    // count of entries in parenthesis as suffix, we need to do some clean-up.
+    gchar *v = g_strstrip(g_strdup(value));
+    gchar *p = v + strlen(v) - 1;
+    
+    if(*p == ')')
+    {
+      while(*p && *p != '(') p--;
+      while(p != v && *p != '(') p--;
+      if(*p == '(')
+      {
+        p--;
+        *p = '\0';
+        if(p >= v) *p = '\0';
+      }
+    }
+    
+    dt_conf_set_string("storage/piwigo/last_album", v);
+    g_free(v);
+  }
 }
 
 /** Refresh albums */
