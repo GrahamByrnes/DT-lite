@@ -173,7 +173,7 @@ static void _gui_styles_update_view(dt_lib_styles_t *d)
   gtk_tree_view_set_model(GTK_TREE_VIEW(d->tree), model);
   g_object_unref(model);
 }
-
+/*
 static void _styles_row_activated_callback(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col,
                                            gpointer user_data)
 {
@@ -194,7 +194,7 @@ static void _styles_row_activated_callback(GtkTreeView *view, GtkTreePath *path,
     dt_styles_apply_to_list(name, list, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->duplicate)));
     g_free(name);
   }
-}
+}*/
 
 // get list of style names from selection
 // free returned list with g_list_free_full(list, g_free)
@@ -508,8 +508,8 @@ void gui_init(dt_lib_module_t *self)
   gtk_tree_view_set_model(GTK_TREE_VIEW(d->tree), GTK_TREE_MODEL(treestore));
   g_object_unref(treestore);
 
-  gtk_widget_set_tooltip_text(GTK_WIDGET(d->tree), _("available styles,\ndoubleclick to apply"));
-  g_signal_connect(d->tree, "row-activated", G_CALLBACK(_styles_row_activated_callback), d);
+//  gtk_widget_set_tooltip_text(GTK_WIDGET(d->tree), _("available styles,\ndoubleclick to apply"));
+//  g_signal_connect(d->tree, "row-activated", G_CALLBACK(_styles_row_activated_callback), d);
   g_signal_connect(gtk_tree_view_get_selection(GTK_TREE_VIEW(d->tree)), "changed", G_CALLBACK(_tree_selection_changed), self);
 
   // filter entry
