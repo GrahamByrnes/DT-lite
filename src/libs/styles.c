@@ -187,8 +187,8 @@ static void _styles_row_activated_callback(GtkTreeView *view, GtkTreePath *path,
 
   gchar *name;
   gtk_tree_model_get(model, &iter, DT_STYLES_COL_FULLNAME, &name, -1);
-  const GList *list = dt_view_get_images_to_act_on(TRUE, TRUE);
 
+  const GList *list = dt_view_get_images_to_act_on(TRUE, TRUE);
   if(name)
   {
     dt_styles_apply_to_list(name, list, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(d->duplicate)));
@@ -494,7 +494,7 @@ void gui_init(dt_lib_module_t *self)
   GtkWidget *w;
   GtkWidget *scrolled;
 
-  /* tree */
+  // tree
   d->tree = GTK_TREE_VIEW(gtk_tree_view_new());
   gtk_tree_view_set_headers_visible(d->tree, FALSE);
   GtkTreeStore *treestore = gtk_tree_store_new(DT_STYLES_NUM_COLS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
@@ -512,7 +512,7 @@ void gui_init(dt_lib_module_t *self)
   g_signal_connect(d->tree, "row-activated", G_CALLBACK(_styles_row_activated_callback), d);
   g_signal_connect(gtk_tree_view_get_selection(GTK_TREE_VIEW(d->tree)), "changed", G_CALLBACK(_tree_selection_changed), self);
 
-  /* filter entry */
+  // filter entry
   w = gtk_entry_new();
   d->entry = GTK_ENTRY(w);
   gtk_widget_set_tooltip_text(w, _("filter style names"));
@@ -523,7 +523,6 @@ void gui_init(dt_lib_module_t *self)
 
   scrolled = gtk_scrolled_window_new(NULL, NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-
   gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scrolled), DT_PIXEL_APPLY_DPI(250));
 
   gtk_box_pack_start(GTK_BOX(self->widget), GTK_WIDGET(d->entry), TRUE, FALSE, 0);
@@ -601,7 +600,7 @@ void gui_init(dt_lib_module_t *self)
   gtk_entry_completion_set_inline_completion(completion, TRUE);
   gtk_entry_set_completion(d->entry, completion);
 
-  /* update filtered list */
+  // update filtered list
   _gui_styles_update_view(d);
 
   dt_control_signal_connect(darktable.signals, DT_SIGNAL_STYLE_CHANGED, G_CALLBACK(_styles_changed_callback), self);
@@ -632,7 +631,6 @@ void gui_cleanup(dt_lib_module_t *self)
   free(self->data);
   self->data = NULL;
 }
-
 
 // modelines: These editor modelines have been set for all relevant files by tools/update_modelines.sh
 // vim: shiftwidth=2 expandtab tabstop=2 cindent

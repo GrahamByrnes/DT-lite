@@ -478,6 +478,8 @@ void dt_styles_apply_to_list(const char *name, const GList *list, gboolean dupli
   if(cv->view((dt_view_t *)cv) == DT_VIEW_DARKROOM)
     dt_dev_write_history(darktable.develop);
 
+  const int mode = dt_conf_get_int("plugins/lighttable/style/applymode");
+  const gboolean is_overwrite = (mode == DT_STYLE_HISTORY_OVERWRITE);
   /* for each selected image apply style */
   dt_undo_start_group(darktable.undo, DT_UNDO_LT_HISTORY);
 
@@ -487,7 +489,7 @@ void dt_styles_apply_to_list(const char *name, const GList *list, gboolean dupli
     if(!duplicate)
       dt_history_delete_on_image_ext(imgid, FALSE);
 
-    dt_styles_apply_to_image(name, duplicate, imgid);
+    dt_styles_apply_to_image(name, is_overwrite, imgid);
     selected = TRUE;
   }
 
@@ -496,8 +498,8 @@ void dt_styles_apply_to_list(const char *name, const GList *list, gboolean dupli
 
   if(!selected)
     dt_control_log(_("no image selected!"));
-
-  dt_control_log(_("style %s successfully applied!"), name);
+  else
+    dt_control_log(_("style %s successfully applied!"), name);
 }
 
 void dt_multiple_styles_apply_to_list(GList *styles, const GList *list, gboolean duplicate)
@@ -580,7 +582,7 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
               style_item->multi_name);
     }
     else
-    {                
+    {
       module->instance = mod_src->instance;
       module->multi_priority = style_item->multi_priority;
       module->iop_order = style_item->iop_order;
