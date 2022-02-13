@@ -292,7 +292,9 @@ void dt_styles_update(const char *name, const char *newname, const char *newdesc
 
     for(GList *list = filter; list; list = g_list_next(list))
     {
-      if(list != filter) g_strlcat(include, ",", sizeof(include));
+      if(list != filter)
+        g_strlcat(include, ",", sizeof(include));
+
       snprintf(tmp, sizeof(tmp), "%d", GPOINTER_TO_INT(list->data));
       g_strlcat(include, tmp, sizeof(include));
     }
@@ -309,7 +311,7 @@ void dt_styles_update(const char *name, const char *newname, const char *newdesc
 
   _dt_style_update_from_image(id, imgid, filter, update);
   _dt_style_update_iop_order(name, id, imgid, copy_iop_order, update_iop_order);
-  /* backup style to disk */
+  // backup style to disk
   char stylesdir[PATH_MAX] = { 0 };
   dt_loc_get_user_config_dir(stylesdir, sizeof(stylesdir));
   g_strlcat(stylesdir, "/styles", sizeof(stylesdir));
@@ -330,7 +332,7 @@ void dt_styles_create_from_style(const char *name, const char *newname, const ch
 
   if(oldid == 0)
     return;
-  /* create the style header */
+  // create the style header
   if(!dt_styles_create_style_header(newname, description, NULL))
     return;
 
@@ -341,12 +343,14 @@ void dt_styles_create_from_style(const char *name, const char *newname, const ch
       char tmp[64];
       char include[2048] = { 0 };
       g_strlcat(include, "num IN (", sizeof(include));
+
       for(GList *list = filter; list; list = g_list_next(list))
       {
         if(list != filter) g_strlcat(include, ",", sizeof(include));
         snprintf(tmp, sizeof(tmp), "%d", GPOINTER_TO_INT(list->data));
         g_strlcat(include, tmp, sizeof(include));
       }
+
       g_strlcat(include, ")", sizeof(include));
       char query[4096] = { 0 };
 
@@ -371,6 +375,7 @@ void dt_styles_create_from_style(const char *name, const char *newname, const ch
                                   " FROM data.style_items"
                                   " WHERE styleid=?2",
                                   -1, &stmt, NULL);
+
     DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, id);
     DT_DEBUG_SQLITE3_BIND_INT(stmt, 2, oldid);
     sqlite3_step(stmt);
@@ -378,9 +383,7 @@ void dt_styles_create_from_style(const char *name, const char *newname, const ch
     // insert items from imgid if defined
 
     _dt_style_update_from_image(id, imgid, filter, update);
-
     _dt_style_update_iop_order(name, id, imgid, copy_iop_order, update_iop_order);
-
     // backup style to disk
     char stylesdir[PATH_MAX] = { 0 };
     dt_loc_get_user_config_dir(stylesdir, sizeof(stylesdir));
@@ -525,7 +528,7 @@ void dt_multiple_styles_apply_to_list(GList *styles, const GList *list, gboolean
 
   const int mode = dt_conf_get_int("plugins/lighttable/style/applymode");
   const gboolean is_overwrite = (mode == DT_STYLE_HISTORY_OVERWRITE);
-  /* for each selected image apply style */
+  // for each selected image apply style
   dt_undo_start_group(darktable.undo, DT_UNDO_LT_HISTORY);
 
   for(const GList *l = list; l; l = g_list_next(l))
@@ -848,10 +851,8 @@ GList *dt_styles_get_item_list(const char *name, gboolean params, int imgid)
         item->num = sqlite3_column_int(stmt, 0);
 
       item->multi_priority = sqlite3_column_int(stmt, 1);
-
       item->selimg_num = -1;
       item->module_version = sqlite3_column_int(stmt, 2);
-
       item->enabled = sqlite3_column_int(stmt, 4);
 
       if(params)
@@ -885,7 +886,8 @@ GList *dt_styles_get_item_list(const char *name, gboolean params, int imgid)
         const char *multi_name = (const char *)sqlite3_column_text(stmt, 7);
         gboolean has_multi_name = FALSE;
 
-        if(multi_name && *multi_name && strcmp(multi_name, "0") != 0) has_multi_name = TRUE;
+        if(multi_name && *multi_name && strcmp(multi_name, "0") != 0)
+          has_multi_name = TRUE;
 
         if(has_multi_name)
           g_snprintf(iname, sizeof(iname), "%s %s (%s)",
@@ -929,7 +931,6 @@ char *dt_styles_get_item_list_as_string(const char *name)
   }
 
   names = g_list_reverse(names);
-  
   char *result = dt_util_glist_to_str("\n", names);
   g_list_free_full(names, g_free);
   g_list_free_full(items, dt_style_item_free);
@@ -946,6 +947,7 @@ GList *dt_styles_get_list(const char *filter)
       "SELECT name, description FROM data.styles WHERE name LIKE ?1 OR description LIKE ?1 ORDER BY name", -1,
       &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_TEXT(stmt, 1, filterstring, -1, SQLITE_TRANSIENT);
+
   GList *result = NULL;
   while(sqlite3_step(stmt) == SQLITE_ROW)
   {
@@ -956,6 +958,7 @@ GList *dt_styles_get_list(const char *filter)
     s->description = g_strdup(description);
     result = g_list_prepend(result, s);
   }
+
   sqlite3_finalize(stmt);
   return g_list_reverse(result);
 }
@@ -1015,6 +1018,7 @@ void dt_styles_save_to_file(const char *style_name, const char *filedir, gboolea
   xmlTextWriterStartElement(writer, BAD_CAST "info");
   xmlTextWriterWriteFormatElement(writer, BAD_CAST "name", "%s", style_name);
   xmlTextWriterWriteFormatElement(writer, BAD_CAST "description", "%s", dt_styles_get_description(style_name));
+
   GList *iop_list = dt_styles_module_order_list(style_name);
   if(iop_list)
   {
@@ -1023,8 +1027,8 @@ void dt_styles_save_to_file(const char *style_name, const char *filedir, gboolea
     g_free(iop_list_text);
     g_list_free_full(iop_list, g_free);
   }
-  xmlTextWriterEndElement(writer);
 
+  xmlTextWriterEndElement(writer);
   xmlTextWriterStartElement(writer, BAD_CAST "style");
   DT_DEBUG_SQLITE3_PREPARE_V2(dt_database_get(darktable.db),
                               "SELECT num, module, operation, op_params, enabled,"
@@ -1033,6 +1037,7 @@ void dt_styles_save_to_file(const char *style_name, const char *filedir, gboolea
                               " WHERE styleid =?1",
                               -1, &stmt, NULL);
   DT_DEBUG_SQLITE3_BIND_INT(stmt, 1, dt_styles_get_id_by_name(style_name));
+
   while(sqlite3_step(stmt) == SQLITE_ROW)
   {
     xmlTextWriterStartElement(writer, BAD_CAST "plugin");
@@ -1047,6 +1052,7 @@ void dt_styles_save_to_file(const char *style_name, const char *filedir, gboolea
     xmlTextWriterWriteFormatElement(writer, BAD_CAST "multi_name", "%s", sqlite3_column_text(stmt, 8));
     xmlTextWriterEndElement(writer);
   }
+
   sqlite3_finalize(stmt);
   xmlTextWriterEndDocument(writer);
   xmlFreeTextWriter(writer);
@@ -1057,7 +1063,6 @@ static StyleData *dt_styles_style_data_new()
   StyleInfoData *info = g_new0(StyleInfoData, 1);
   info->name = g_string_new("");
   info->description = g_string_new("");
-
   StyleData *data = g_new0(StyleData, 1);
   data->info = info;
   data->in_plugin = FALSE;
