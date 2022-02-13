@@ -489,7 +489,7 @@ void dt_styles_apply_to_list(const char *name, const GList *list, gboolean dupli
     if(!duplicate)
       dt_history_delete_on_image_ext(imgid, FALSE);
 
-    dt_styles_apply_to_image(name, is_overwrite, imgid);
+    dt_styles_apply_to_image(name, duplicate, is_overwrite, imgid);
     selected = TRUE;
   }
 
@@ -541,7 +541,7 @@ void dt_multiple_styles_apply_to_list(GList *styles, const GList *list, gboolean
       dt_history_delete_on_image_ext(imgid, FALSE);
  
     for (GList *style = styles; style; style = g_list_next(style))
-      dt_styles_apply_to_image((char*)style->data, duplicate, imgid);
+      dt_styles_apply_to_image((char*)style->data, duplicate, is_overwrite, imgid);
   }
 
   dt_undo_end_group(darktable.undo);
@@ -629,7 +629,7 @@ void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, 
   }
 }
 
-void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const int32_t imgid)
+void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const gboolean overwrite, const int32_t imgid)
 {
   int id = 0;
   sqlite3_stmt *stmt;
@@ -643,7 +643,12 @@ void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const 
       newimgid = dt_image_duplicate(imgid);
 
       if(newimgid != -1)
-        dt_history_copy_and_paste_on_image(imgid, newimgid, FALSE, NULL, TRUE, TRUE);
+      {
+        if(overwrite)
+          dt_history_delete_on_image_ext(newimgid, FALSE);
+        else
+          dt_history_copy_and_paste_on_image(imgid, newimgid, FALSE, NULL, TRUE, TRUE);
+      }
     }
     else
       newimgid = imgid;

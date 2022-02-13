@@ -26,11 +26,6 @@
 #include <inttypes.h>
 #include <sqlite3.h>
 
-/** The definition of styles are copied historystack to
-        reproduce an development style such as sepia, cross process
-        etc.
-*/
-
 typedef struct dt_style_t
 {
   gchar *name;
@@ -54,12 +49,12 @@ typedef struct dt_style_item_t
   int32_t params_size, blendop_params_size;
 } dt_style_item_t;
 
-/** helpers that free a style or style_item. can be used in g_list_free_full() */
+// helpers that free a style or style_item. can be used in g_list_free_full()
 void dt_style_free(gpointer data);
 void dt_style_item_free(gpointer data);
 
-/** creates a new style from specified image, items are the history stack number of items to include in style
- */
+// creates a new style from specified image, items are the history stack number of items to include in style
+
 gboolean dt_styles_create_from_image(const char *name, const char *description,
                                      const int32_t imgid, GList *items, gboolean copy_iop_order);
 
@@ -86,7 +81,7 @@ void dt_multiple_styles_apply_to_list(GList *styles, const GList *list, gboolean
 void dt_styles_apply_style_item(dt_develop_t *dev, dt_style_item_t *style_item, GList **modules_used, const gboolean append);
 
 /** applies the style to image by imgid*/
-void dt_styles_apply_to_image(const char *name, const gboolean dulpicate, const int32_t imgid);
+void dt_styles_apply_to_image(const char *name, const gboolean duplicate, const gboolean overwrite, const int32_t imgid);
 
 /** delete a style by name */
 void dt_styles_delete_by_name(const char *name);
